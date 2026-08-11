@@ -36,8 +36,7 @@ interface CreatePactResult {
 function getPartyBSigner(): ethers.Wallet {
   const demoKey = config.DEMO_PARTY_B_KEY;
   if (!demoKey) {
-    // Generate a random wallet on first use (no funds, but works for draft creation on testnet)
-    logger.warn({ event: "demo_party_b_no_key" }, "DEMO_PARTY_B_KEY not set — using random wallet. Fund it on testnet for full flow.");
+    logger.warn({ event: "demo_party_b_no_key" }, "DEMO_PARTY_B_KEY not set — using random wallet.");
     return ethers.Wallet.createRandom().connect(getPartyAProvider());
   }
   return new ethers.Wallet(demoKey, getPartyAProvider());
@@ -47,8 +46,78 @@ function getPartyAProvider(): ethers.JsonRpcProvider {
   return new ethers.JsonRpcProvider(config.XLAYER_RPC_URL, config.XLAYER_CHAIN_ID);
 }
 
-const partyAWallet = () => getSigner(); // monitor agent wallet
+const partyAWallet = () => getSigner();
 const partyBWallet = () => getPartyBSigner();
+
+/**
+ * Get nonce accounting for pending transactions (prevents "replacement underpriced" errors)
+ */
+async function getNonce(wallet: ethers.Wallet): Promise<number> {
+  return await wallet.getNonce("pending");
+}
+
+async function sendAndWait(tx: ethers.TransactionResponse, label: string): Promise<ethers.TransactionReceipt> {
+  logger.info({ event: "tx_sent", label, hash: tx.hash, nonce: tx.nonce });
+  const receipt = await tx.wait();
+  logger.info({ event: "tx_confirmed", label, hash: tx.hash, block: receipt?.blockNumber });
+  if (!receipt) throw new Error(`${label}: transaction not confirmed`);
+  return receipt;
+}
+
+/**
+ * Send a transaction with nonce management and retry on replacement underpriced.
+ * The monitor agent also sends txs from the same wallet — we need gas price headroom.
+ */
+async function sendWithRetry(
+  wallet: ethers.Wallet,
+  contractOrTx: ethers.Contract | null,
+  method: string,
+  args: unknown[],
+  label: string,
+): Promise<ethers.TransactionReceipt> {
+  const MAX_RETRIES = 3;
+
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    try {
+      const nonce = await wallet.getNonce("pending");
+      const feeData = await wallet.provider!.getFeeData();
+      const bump = attempt > 0 ? BigInt(Math.floor(125 + attempt * 25)) : BigInt(100);
+      const gasPrice = (feeData.gasPrice ?? 0n) * bump / 100n;
+      const maxPriorityFeePerGas = (feeData.maxPriorityFeePerGas ?? 2000000000n) * bump / 100n;
+      const maxFeePerGas = gasPrice;
+
+      let tx: ethers.TransactionResponse;
+      if (contractOrTx) {
+        // Contract method call: contract.method(...args, overrides)
+        tx = await (contractOrTx as any)[method](...args, {
+          nonce, maxFeePerGas, maxPriorityFeePerGas,
+        });
+      } else {
+        // Simple value transfer: wallet.sendTransaction(overrides)
+        tx = await wallet.sendTransaction({
+          to: args[0] as string,
+          value: args[1] as bigint,
+          nonce, maxFeePerGas, maxPriorityFeePerGas,
+        });
+      }
+
+      logger.info({ event: "tx_sent", label, hash: tx.hash, nonce, attempt });
+      const receipt = await tx.wait();
+      logger.info({ event: "tx_confirmed", label, hash: tx.hash, block: receipt?.blockNumber });
+      if (!receipt) throw new Error(`${label}: not confirmed`);
+      return receipt;
+    } catch (err) {
+      const msg = (err as Error).message ?? "";
+      if (msg.includes("REPLACEMENT_UNDERPRICED") || msg.includes("replacement")) {
+        logger.warn({ event: "tx_retry", label, attempt, err: msg.substring(0, 120) });
+        await new Promise(r => setTimeout(r, 4000));
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw new Error(`${label}: all ${MAX_RETRIES} retries exhausted`);
+}
 
 /**
  * Full pact creation flow: NL description → AI terms → on-chain creation
@@ -87,8 +156,7 @@ export async function createPactFromNL(input: CreatePactInput): Promise<CreatePa
     const contractA = getPactContract(signerA);
 
     logger.info({ event: "create_pact_draft", partyA: signerA.address });
-    const txDraft = await contractA.createDraft();
-    const receiptDraft = await txDraft.wait();
+    const receiptDraft = await sendWithRetry(signerA, contractA, "createDraft", [], "createDraft");
 
     // Extract pactId from DraftCreated event
     const draftEvent = receiptDraft.logs
@@ -104,25 +172,23 @@ export async function createPactFromNL(input: CreatePactInput): Promise<CreatePa
     const pactId = draftEvent.args.pactId as string;
     logger.info({ event: "create_pact_draft_created", pactId });
 
-    // 3. Fund Party B wallet from Party A (so it can pay gas for joinDraft)
+    // 3. Fund Party B wallet from Party A
     const signerB = partyBWallet();
     const contractB = getPactContract(signerB);
 
-    const gasTransfer = await signerA.sendTransaction({
-      to: signerB.address,
-      value: ethers.parseEther("0.01"), // Enough for ~100 transactions
-    });
-    await gasTransfer.wait();
+    await sendWithRetry(signerA, null, "sendTransaction", [
+      signerB.address,
+      ethers.parseEther("0.01"),
+    ], "fundPartyB");
     logger.info({ event: "create_pact_funded_party_b", partyB: signerB.address });
 
-    // 4. Join draft (Party B = demo wallet)
+    // 4. Join draft (Party B)
     logger.info({ event: "create_pact_joining", partyB: signerB.address });
-    const txJoin = await contractB.joinDraft(pactId);
-    await txJoin.wait();
+    await sendWithRetry(signerB, contractB, "joinDraft", [pactId], "joinDraft");
     logger.info({ event: "create_pact_joined", pactId });
 
-    // 4. Propose terms (Party A proposes)
-    const txPropose = await contractA.proposeTerms(pactId, {
+    // 5. Propose terms (Party A)
+    await sendWithRetry(signerA, contractA, "proposeTerms", [pactId, {
       amount: terms.amount,
       settlementAsset: terms.settlementAsset || "0x0000000000000000000000000000000000000000",
       duration: terms.duration,
@@ -134,12 +200,10 @@ export async function createPactFromNL(input: CreatePactInput): Promise<CreatePa
       renegotiationWindow: terms.renegotiationWindow,
       maxRenegotiationRounds: terms.maxRenegotiationRounds,
       monitoredConditions: terms.monitoredConditions,
-    });
-    await txPropose.wait();
+    }], "proposeTerms");
 
-    // 5. Finalize negotiation
-    const txFinalize = await contractA.finalizeNegotiation(pactId);
-    await txFinalize.wait();
+    // 6. Finalize negotiation
+    await sendWithRetry(signerA, contractA, "finalizeNegotiation", [pactId], "finalizeNegotiation");
     logger.info({ event: "create_pact_finalized", pactId, state: "PROPOSED" });
 
     // 6. Read back pact state to confirm
@@ -165,7 +229,7 @@ export async function createPactFromNL(input: CreatePactInput): Promise<CreatePa
       partyA: signerA.address,
       partyB: signerB.address,
       state: "PROPOSED",
-      txHash: txFinalize.hash,
+      txHash: receiptDraft.hash,
       reasoning: aiResult.reasoning || "Terms generated from description heuristics (AI unavailable — deterministic fallback)",
     };
   } catch (err) {
