@@ -107,8 +107,13 @@ export async function fetchActivePacts(): Promise<string[]> {
   const ids: string[] = await contract.getPactIds();
   const active: string[] = [];
   for (const id of ids) {
-    const activeFlag = await contract.isActive(id);
-    if (activeFlag) active.push(id);
+    try {
+      const state = await fetchPactState(id);
+      // Monitor everything except CLOSED(12), EXPIRED(13), TERMINATED(14)
+      if (state.state < 12) {
+        active.push(id);
+      }
+    } catch { /* skip pacts that fail to load */ }
   }
   return active;
 }

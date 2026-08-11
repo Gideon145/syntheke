@@ -1,4 +1,4 @@
-const AGENT_API = process.env.NEXT_PUBLIC_AGENT_API ?? "http://localhost:3002";
+const AGENT_API = process.env.NEXT_PUBLIC_AGENT_API ?? "http://localhost:3005";
 
 export interface AgentStatus {
   agent: string;
@@ -52,3 +52,7 @@ export const STATE_COLORS: Record<string, string> = {
   DRAFT: "bg-muted", NEGOTIATING: "bg-muted", PROPOSED: "bg-muted",
   COMMITTED: "bg-muted", EXPIRED: "bg-muted", TERMINATED: "bg-muted",
 };
+
+export function stateLabel(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+}

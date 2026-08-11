@@ -148,8 +148,8 @@ async function monitorPact(pactId: string): Promise<void> {
     return;
   }
 
-  // Skip non-ACTIVE pacts (the contract's isActive check should already filter)
-  if (pact.state !== 4 && pact.state !== 5 && pact.state !== 6) return; // ACTIVE, DEGRADING, RENEGOTIATING
+  // Skip fully settled/closed pacts
+  if (pact.state === 12 || pact.state === 13 || pact.state === 14) return; // CLOSED, EXPIRED, TERMINATED
 
   const blockNumber = await monitorState.signer.provider!.getBlockNumber();
   const pactTracker = monitorState.pactsMonitored.get(pactId) ?? {

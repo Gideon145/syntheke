@@ -65,14 +65,14 @@ function createServer(): http.Server {
       // GET /pacts
       if (req.method === "GET" && url.pathname === "/pacts") {
         const state = getMonitorState();
-        const pacts: Array<{ id: string; lastState: number; degradationCount: number }> = [];
+        const pactsList: Array<{ pactId: string; lastState: number; degradationCount: number; partyA?: string; partyB?: string; attestationCount?: number }> = [];
         if (state) {
           for (const [id, tracker] of state.pactsMonitored) {
-            pacts.push({ id, lastState: tracker.lastState, degradationCount: tracker.degradationCount });
+            pactsList.push({ pactId: id, lastState: tracker.lastState, degradationCount: tracker.degradationCount, attestationCount: tracker.lastAttestationBlock > 0 ? 1 : 0 });
           }
         }
         res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ pacts, total: pacts.length }));
+        res.end(JSON.stringify({ pacts: pactsList, total: pactsList.length }));
         return;
       }
 
@@ -164,6 +164,14 @@ function createServer(): http.Server {
             reputationRegistry: config.REPUTATION_REGISTRY,
           },
         }));
+        return;
+      }
+
+      // GET /marketplace — OKX AI Marketplace status + agent card
+      if (req.method === "GET" && url.pathname === "/marketplace") {
+        const { generateAgentCard } = await import("./integrations/okx-marketplace");
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(generateAgentCard()));
         return;
       }
 
