@@ -25,9 +25,10 @@ const configSchema = z.object({
   PYTH_ENDPOINT: z.string().default("https://hermes.pyth.network"),
   ONCHAINOS_ENABLED: z.coerce.boolean().default(false),
 
-  // AI (Phase 3 — stub for now)
+  // AI (Phase 3)
   AI_API_KEY: z.string().optional(),
   AI_MODEL: z.string().default("gpt-4o"),
+  AI_BASE_URL: z.string().default("https://api.openai.com/v1"),
 
   // Database
   DATABASE_URL: z.string().default("postgres://syntheke:syntheke@localhost:5432/syntheke"),

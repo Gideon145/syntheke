@@ -20,6 +20,7 @@ import {
 } from "./conditions";
 import { createSigner, syncNonce, type SignerState } from "./signer";
 import { negotiationEngine } from "./negotiator";
+import { generateAIRenegotiation } from "./ai/negotiator";
 import { logger, logCycle, logAttestation, logError, logAgentStart } from "./logger";
 
 /**
@@ -230,16 +231,34 @@ async function monitorPact(pactId: string): Promise<void> {
   if (assessment.recommendedState === RecommendedState.DEGRADING &&
       pactTracker.degradationCount >= config.DEGRADATION_CONSECUTIVE_THRESHOLD &&
       pact.state === 4) { // Currently ACTIVE but degrading
-    const proposal = negotiationEngine.generateRenegotiationProposal(
+    // Use AI for smarter renegotiation proposals when available
+    let proposalReason: string;
+    let fairness: number;
+
+    const aiResult = await generateAIRenegotiation(
       pact.terms,
-      "collateral_ratio_approaching",
+      assessment.reason,
+      "X Layer market conditions — Phase 3 AI monitoring active",
     );
-    const fairness = negotiationEngine.evaluateFairness(pact.terms, proposal.newTerms);
+
+    if (aiResult.terms && aiResult.fairnessScore > 0) {
+      proposalReason = aiResult.reasoning;
+      fairness = aiResult.fairnessScore;
+    } else {
+      // Fall back to deterministic heuristic
+      const proposal = negotiationEngine.generateRenegotiationProposal(
+        pact.terms,
+        "collateral_ratio_approaching",
+      );
+      proposalReason = proposal.reason;
+      fairness = negotiationEngine.evaluateFairness(pact.terms, proposal.newTerms);
+    }
+
     logger.info({
       event: "renegotiation_proposed",
       pactId: pactId.slice(0, 10),
       fairness,
-      reason: proposal.reason,
+      reason: proposalReason,
     }, `Renegotiation proposed (fairness: ${fairness}/100)`);
   }
 }

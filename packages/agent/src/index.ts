@@ -2,6 +2,7 @@ import http from "node:http";
 import { config } from "./config";
 import { startMonitor, stopMonitor, getMonitorState } from "./monitor";
 import { negotiationEngine } from "./negotiator";
+import type { DisputeEvidence } from "./ai/mediator";
 import { logger } from "./logger";
 
 /**
@@ -116,6 +117,37 @@ function createServer(): http.Server {
         return;
       }
 
+      // GET /ai/status — AI service health
+      if (req.method === "GET" && url.pathname === "/ai/status") {
+        const { aiService } = await import("./ai/service");
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({
+          available: aiService.isAvailable,
+          model: config.AI_MODEL,
+        }));
+        return;
+      }
+
+      // POST /ai/mediate — run AI mediation for a dispute
+      if (req.method === "POST" && url.pathname === "/ai/mediate") {
+        const body = await readBody(req);
+        const { mediatorSwarm } = await import("./ai/mediator");
+        const consensus = await mediatorSwarm.mediateDispute(body as unknown as DisputeEvidence);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(consensus));
+        return;
+      }
+
+      // POST /ai/negotiate — generate pact terms from natural language
+      if (req.method === "POST" && url.pathname === "/ai/negotiate") {
+        const body = await readBody(req);
+        const { nlToPactTerms } = await import("./ai/negotiator");
+        const result = await nlToPactTerms(String(body.description ?? ""));
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(result));
+        return;
+      }
+
       // 404
       res.writeHead(404, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ error: "not found" }));
@@ -124,6 +156,20 @@ function createServer(): http.Server {
       res.writeHead(500, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ error: "internal" }));
     }
+  });
+}
+
+// ──── Helpers ────────────────────────────────────────────
+
+function readBody(req: http.IncomingMessage): Promise<Record<string, unknown>> {
+  return new Promise((resolve, reject) => {
+    let body = "";
+    req.on("data", (chunk: Buffer) => { body += chunk.toString(); });
+    req.on("end", () => {
+      try { resolve(JSON.parse(body || "{}")); }
+      catch { resolve({}); }
+    });
+    req.on("error", reject);
   });
 }
 
