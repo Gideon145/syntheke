@@ -22,20 +22,20 @@
     border: 1px solid rgba(255,255,255,0.03);
   }
   .card-glow:hover {
-    border-color: rgba(131,110,249,0.15);
-    box-shadow: 0 0 30px rgba(131,110,249,0.06), 0 0 60px rgba(131,110,249,0.02);
+    border-color: rgba(212,165,116,0.06);
+    box-shadow: 0 0 30px rgba(212,165,116,0.06), 0 0 60px rgba(212,165,116,0.06);
     transform: translateY(-1px);
   }
 
   /* Buttons */
   .btn-primary {
     @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold
-           bg-amber text-white transition-all duration-500
-           hover:bg-amber-soft-hover;
+           bg-amber text-bg transition-all duration-500
+           hover:bg-amber-soft;
     box-shadow: 0 0 0 transparent;
   }
   .btn-primary:hover {
-    box-shadow: 0 0 30px rgba(131,110,249,0.15);
+    box-shadow: 0 0 30px rgba(212,165,116,0.06);
   }
   .btn-primary:active { transform: scale(0.98); }
   .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
@@ -48,8 +48,8 @@
   }
   .btn-secondary:hover {
     @apply text-text-primary;
-    border-color: rgba(131,110,249,0.15);
-    box-shadow: 0 0 30px rgba(131,110,249,0.04);
+    border-color: rgba(212,165,116,0.06);
+    box-shadow: 0 0 30px rgba(212,165,116,0.06);
   }
   .btn-secondary:active { transform: scale(0.98); }
 
@@ -111,8 +111,8 @@
 }
 
 @keyframes lantern-glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(131,110,249,0.04); }
-  50% { box-shadow: 0 0 40px rgba(131,110,249,0.1); }
+  0%, 100% { box-shadow: 0 0 20px rgba(212,165,116,0.06); }
+  50% { box-shadow: 0 0 40px rgba(212,165,116,0.06); }
 }
 
 .animate-fade-up {
@@ -139,4 +139,4 @@
 ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
 
 /* Selection */
-::selection { background: rgba(131,110,249,0.2); color: #fafafa; }
+::selection { background: rgba(212,165,116,0.06); color: #fafafa; }
