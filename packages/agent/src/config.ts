@@ -9,6 +9,7 @@ const configSchema = z.object({
   // Agent identity
   AGENT_PRIVATE_KEY: z.string().min(1, "AGENT_PRIVATE_KEY is required"),
   AGENT_ADDRESS: z.string().optional(),
+  DEMO_PARTY_B_KEY: z.string().optional(), // Demo wallet for Party B in create-pact flow
 
   // Syntheke contracts (Phase 1 deployed addresses)
   SYNTHEKE_CONTRACT: z.string().default("0xe465405380E2E0f625028447E85917662E71ad42"),

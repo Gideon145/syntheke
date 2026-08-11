@@ -175,6 +175,36 @@ function createServer(): http.Server {
         return;
       }
 
+      // POST /pacts/create — create a new pact from natural language (Phase 7: User Flow)
+      if (req.method === "POST" && url.pathname === "/pacts/create") {
+        const body = await readBody(req);
+        const { createPactFromNL } = await import("./create-pact");
+        const result = await createPactFromNL({
+          partyADesc: String(body.partyADesc ?? "Agent Alpha"),
+          partyBDesc: String(body.partyBDesc ?? "Agent Beta"),
+          description: String(body.description ?? ""),
+        });
+        res.writeHead(result.success ? 200 : 400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(result));
+        return;
+      }
+
+      // POST /pacts/join — Party B joins an existing draft pact
+      if (req.method === "POST" && url.pathname === "/pacts/join") {
+        const body = await readBody(req);
+        const pactId = String(body.pactId ?? "");
+        if (!pactId) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ success: false, error: "pactId is required" }));
+          return;
+        }
+        const { joinExistingPact } = await import("./create-pact");
+        const result = await joinExistingPact(pactId);
+        res.writeHead(result.success ? 200 : 400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(result));
+        return;
+      }
+
       // 404
       res.writeHead(404, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ error: "not found" }));

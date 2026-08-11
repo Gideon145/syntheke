@@ -1,4 +1,4 @@
-import { ArrowUpRight, Shield, Activity, FileText, AlertTriangle, CheckCircle, Clock, XCircle, RefreshCw } from "lucide-react";
+import { ArrowUpRight, Shield, Activity, FileText, AlertTriangle, CheckCircle, Clock, XCircle, RefreshCw, Plus } from "lucide-react";
 import { STATE_COLORS, stateLabel } from "@/lib/api";
 
 export function StatusBadge({ state }: { state: string }) {
@@ -63,6 +63,10 @@ export function Navbar() {
             <a href="/dashboard" className="hover:text-accent transition-colors">Dashboard</a>
             <a href="/pacts" className="hover:text-accent transition-colors">Pacts</a>
             <a href="/agents" className="hover:text-accent transition-colors">Agents</a>
+            <a href="/create" className="flex items-center gap-1 px-3 py-1 rounded-md bg-accent/10 border border-accent/20 text-accent hover:bg-accent/20 transition-colors">
+              <Plus className="w-3.5 h-3.5" />
+              Create
+            </a>
           </div>
         </div>
         <div className="flex items-center gap-3">
