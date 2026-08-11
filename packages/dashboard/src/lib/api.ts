@@ -12,10 +12,11 @@ export interface AgentStatus {
 
 export interface PactSummary {
   pactId: string;
-  state: string;
-  partyA: string;
-  partyB: string;
+  lastState: number;
+  degradationCount: number;
   attestationCount: number;
+  partyA?: string;
+  partyB?: string;
 }
 
 export async function fetchAgentStatus(): Promise<AgentStatus | null> {

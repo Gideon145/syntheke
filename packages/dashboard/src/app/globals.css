@@ -4,12 +4,107 @@
 
 @layer base {
   * { @apply border-border; }
-  body { @apply bg-surface text-accent antialiased; font-feature-settings: "cv02","cv03","cv04","cv11"; }
+  body {
+    @apply bg-bg text-text-primary antialiased;
+    font-feature-settings: "cv02","cv03","cv04","cv11";
+    font-size: 16px;
+  }
 }
 
 @layer components {
-  .metric-value { @apply font-mono text-2xl font-medium tracking-tight tabular-nums; }
-  .metric-label { @apply text-2xs uppercase tracking-widest text-muted font-medium; }
-  .section-title { @apply text-sm font-medium text-accent tracking-tight; }
-  .card { @apply bg-surface-raised border border-border-subtle rounded-lg; }
+  /* Card with glow hover */
+  .card-glow {
+    @apply rounded-xl bg-bg-secondary border border-border transition-all duration-300;
+  }
+  .card-glow:hover {
+    @apply border-border-glow shadow-glow;
+    transform: translateY(-1px);
+  }
+
+  /* Interactive button */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold
+           bg-okx text-white transition-all duration-200
+           hover:bg-accent-purple-hover hover:shadow-glow hover:scale-[1.02]
+           active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-none;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium
+           bg-bg-secondary text-text-secondary border border-border transition-all duration-200
+           hover:text-text-primary hover:border-border-glow hover:shadow-glow
+           active:scale-[0.98];
+  }
+
+  /* Glow badge */
+  .badge-live {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium
+           bg-success/10 text-success border border-success/20;
+  }
+
+  .badge-chain {
+    @apply inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium
+           bg-okx/10 text-okx border border-okx/20;
+  }
+
+  /* Section heading */
+  .section-heading {
+    @apply text-base font-semibold text-text-primary tracking-tight;
+  }
+
+  /* Metric card */
+  .metric-card {
+    @apply card-glow p-5 flex flex-col gap-1;
+  }
+  .metric-value {
+    @apply font-mono text-2xl font-semibold tracking-tight tabular-nums text-text-primary;
+  }
+  .metric-label {
+    @apply text-xs uppercase tracking-widest text-text-muted font-medium;
+  }
+
+  /* Pact row */
+  .pact-row {
+    @apply card-glow p-4 flex items-center justify-between cursor-pointer;
+  }
+
+  /* Page title */
+  .page-title {
+    @apply text-3xl font-bold text-text-primary tracking-tight;
+  }
+  .page-subtitle {
+    @apply text-base text-text-muted mt-1.5;
+  }
 }
+
+/* Animations */
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(131,110,249,0.08); }
+  50% { box-shadow: 0 0 30px rgba(131,110,249,0.2); }
+}
+
+@keyframes slide-up {
+  0% { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+.animate-fade-in {
+  animation: fade-in 0.4s ease-out;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #0a0a0b; }
+::-webkit-scrollbar-thumb { background: #27272a; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+
+/* Selection */
+::selection { background: rgba(131,110,249,0.3); color: #fafafa; }
