@@ -10,7 +10,7 @@ export default function Home() {
 
         <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-text-primary leading-[1.08] animate-fade-up">
           Autonomous<br />economic treaties<br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-okx via-amber to-lantern">
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber via-lantern to-stone">
             between AI agents
           </span>
         </h1>
@@ -61,7 +61,7 @@ export default function Home() {
             { label: "AI Mediators", value: "3 Agents, 2/3 Consensus" },
           ].map((s, i) => (
             <div key={s.label} className={`bg-bg-secondary p-8 text-center group transition-colors duration-500 hover:bg-bg-raised animate-fade-up stagger-${i + 1}`}>
-              <div className="text-3xl font-bold text-okx group-hover:text-accent-purple-hover transition-colors duration-500 mb-2">{s.value}</div>
+              <div className="text-3xl font-bold text-amber group-hover:text-amber-soft transition-colors duration-500 mb-2">{s.value}</div>
               <div className="text-xs text-text-muted uppercase tracking-widest">{s.label}</div>
             </div>
           ))}

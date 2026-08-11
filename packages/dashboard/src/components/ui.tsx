@@ -57,7 +57,7 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
         <div className="flex items-center gap-10">
           <a href="/" className="flex items-center gap-3 font-bold text-text-primary text-lg hover:opacity-80 transition-opacity duration-500 group">
-            <img src="/synn.jpg" alt="Syntheke" className="w-8 h-8 rounded-lg object-cover group-hover:shadow-[0_0_20px_rgba(131,110,249,0.2)] transition-shadow duration-500" />
+            <img src="/synn.png" alt="Syntheke" className="w-8 h-8 rounded-lg object-cover group-hover:shadow-[0_0_20px_rgba(212,165,116,0.15)] transition-shadow duration-500" />
             <span className="tracking-tight">Syntheke</span>
           </a>
           <div className="hidden md:flex items-center gap-1">
@@ -74,8 +74,8 @@ export function Navbar() {
             ))}
             <a href="/create"
               className="ml-2 px-4 py-2 rounded-lg text-sm font-semibold
-                         bg-okx text-white hover:bg-accent-purple-hover hover:shadow-glow
-                         transition-all duration-200 active:scale-95 flex items-center gap-1.5">
+                         bg-amber text-bg hover:bg-amber-soft hover:shadow-glow-amber
+                         transition-all duration-500 active:scale-95 flex items-center gap-1.5">
               <Plus className="w-4 h-4" />
               Create
             </a>
@@ -83,11 +83,11 @@ export function Navbar() {
         </div>
         <div className="flex items-center gap-4">
           <a href="https://github.com/Gideon145/syntheke" target="_blank" rel="noopener"
-            className="text-sm text-text-muted hover:text-text-primary transition-colors">
+            className="text-sm text-text-muted hover:text-amber transition-colors duration-500">
             GitHub
           </a>
-          <div className="badge-chain">
-            <div className="w-1.5 h-1.5 rounded-full bg-okx animate-pulse shadow-glow" />
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-amber/5 border border-amber/10 text-amber">
+            <div className="w-1.5 h-1.5 rounded-full bg-amber animate-lantern-pulse" />
             <span>X Layer Testnet</span>
           </div>
         </div>

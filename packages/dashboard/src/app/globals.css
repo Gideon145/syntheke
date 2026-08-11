@@ -30,8 +30,8 @@
   /* Buttons */
   .btn-primary {
     @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold
-           bg-okx text-white transition-all duration-500
-           hover:bg-accent-purple-hover;
+           bg-amber text-white transition-all duration-500
+           hover:bg-amber-soft-hover;
     box-shadow: 0 0 0 transparent;
   }
   .btn-primary:hover {
@@ -61,7 +61,7 @@
 
   .badge-chain {
     @apply inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium
-           bg-okx/10 text-okx border border-okx/10;
+           bg-amber/10 text-amber border border-amber/10;
   }
 
   /* Section heading */

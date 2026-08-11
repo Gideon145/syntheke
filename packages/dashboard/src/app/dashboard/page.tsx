@@ -59,7 +59,7 @@ export default function DashboardPage() {
         ].map(m => (
           <div key={m.label} className="metric-card group">
             <div className="metric-label">{m.label}</div>
-            <div className="metric-value group-hover:text-okx transition-colors">{m.value}</div>
+            <div className="metric-value group-hover:text-amber transition-colors">{m.value}</div>
             <span className="text-xs text-text-muted">{m.sub}</span>
           </div>
         ))}
