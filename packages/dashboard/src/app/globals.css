@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { @apply border-border; }
+  body { @apply bg-surface text-accent antialiased; font-feature-settings: "cv02","cv03","cv04","cv11"; }
+}
+
+@layer components {
+  .metric-value { @apply font-mono text-2xl font-medium tracking-tight tabular-nums; }
+  .metric-label { @apply text-2xs uppercase tracking-widest text-muted font-medium; }
+  .section-title { @apply text-sm font-medium text-accent tracking-tight; }
+  .card { @apply bg-surface-raised border border-border-subtle rounded-lg; }
+}

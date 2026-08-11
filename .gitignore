@@ -22,3 +22,7 @@ Thumbs.db
 
 # Foundry
 contracts/broadcast/
+
+# Next.js build
+packages/dashboard/.next/
+
