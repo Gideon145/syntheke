@@ -1,61 +1,51 @@
 import express from "express";
 import cors from "cors";
 import { config } from "./config";
+import { rateLimiter } from "./middleware/rateLimit";
+import { authMiddleware, type AuthenticatedRequest } from "./middleware/auth";
+import agentsRouter from "./routes/agents";
+import pactsRouter from "./routes/pacts";
+import reputationRouter from "./routes/reputation";
+import statsRouter from "./routes/stats";
 
 const app = express();
 
 app.use(cors());
-app.use(express.json());
-
-// ──── HEALTH ────────────────────────────────────────────
+app.use(express.json({ limit: "1mb" }));
+app.use(rateLimiter);
 
 app.get("/health", (_req, res) => {
-  res.json({ status: "ok", name: "syntheke-backend", timestamp: Date.now() });
+  res.json({ status: "ok", name: "syntheke-api", version: "0.4.0", chainId: config.XLAYER_CHAIN_ID, timestamp: Date.now() });
 });
 
-// ──── AGENTS ────────────────────────────────────────────
+app.use("/api/v1/agents", agentsRouter);
+app.use("/api/v1/pacts", pactsRouter);
+app.use("/api/v1/reputation", reputationRouter);
+app.use("/api/v1/stats", statsRouter);
 
-app.get("/api/v1/agents/:address", async (req, res) => {
-  res.json({ address: req.params.address, status: "not_implemented" });
+app.post("/api/v1/keys", authMiddleware, async (req, res) => {
+  const { generateApiKey } = await import("./middleware/auth");
+  const scopes = (req.body as { scopes?: string[] }).scopes ?? ["read", "write"];
+  const key = generateApiKey((req as AuthenticatedRequest).agentAddress!, scopes);
+  res.status(201).json({ apiKey: key, scopes, message: "Store this key securely." });
 });
 
-app.get("/api/v1/agents/discover", async (_req, res) => {
-  res.json({ agents: [], total: 0 });
+app.delete("/api/v1/keys", authMiddleware, async (req, res) => {
+  const { createHash } = await import("node:crypto");
+  const { revokeApiKey } = await import("./middleware/auth");
+  const raw = (req.body as { key: string }).key;
+  const keyHash = createHash("sha256").update(raw).digest("hex");
+  res.json({ revoked: revokeApiKey(keyHash) });
 });
 
-// ──── PACTS ─────────────────────────────────────────────
-
-app.get("/api/v1/pacts/:id", async (req, res) => {
-  res.json({ id: req.params.id, status: "not_implemented" });
+app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  console.error(err);
+  res.status(500).json({ error: "Internal server error", ...(process.env.NODE_ENV !== "production" && { detail: err.message }) });
 });
-
-app.get("/api/v1/pacts/:id/attestations", async (req, res) => {
-  res.json({ pactId: req.params.id, attestations: [] });
-});
-
-// ──── REPUTATION ────────────────────────────────────────
-
-app.get("/api/v1/reputation/:address", async (req, res) => {
-  res.json({ address: req.params.address, score: 5000 });
-});
-
-// ──── STATS ─────────────────────────────────────────────
-
-app.get("/api/v1/stats", async (_req, res) => {
-  res.json({
-    totalPacts: 0,
-    activePacts: 0,
-    totalAgents: 0,
-    totalValueLocked: "0",
-  });
-});
-
-// ──── START ─────────────────────────────────────────────
 
 app.listen(config.PORT, () => {
-  console.log(`🏛️  Syntheke API running on http://localhost:${config.PORT}`);
+  console.log(`🏛️  Syntheke API v0.4.0 — http://localhost:${config.PORT}`);
   console.log(`   Chain: X Layer (${config.XLAYER_CHAIN_ID})`);
-  console.log(`   RPC: ${config.XLAYER_RPC_URL}`);
 });
 
 export default app;
