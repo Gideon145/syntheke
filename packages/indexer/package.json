@@ -1,0 +1,19 @@
+{
+  "name": "@syntheke/indexer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "viem": "^2.22",
+    "dotenv": "^16.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "tsx": "^4.19",
+    "typescript": "^5.7"
+  }
+}

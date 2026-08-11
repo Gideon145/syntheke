@@ -1,0 +1,33 @@
+{
+  "name": "@syntheke/backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "lint": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.38",
+    "postgres": "^3.4",
+    "express": "^5.0",
+    "cors": "^2.8",
+    "viem": "^2.22",
+    "dotenv": "^16.4",
+    "zod": "^3.24"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0",
+    "@types/cors": "^2.8",
+    "@types/node": "^22",
+    "drizzle-kit": "^0.30",
+    "tsx": "^4.19",
+    "typescript": "^5.7",
+    "vitest": "^3.1"
+  }
+}

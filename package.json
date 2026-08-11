@@ -1,0 +1,19 @@
+{
+  "name": "syntheke",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter @syntheke/backend dev",
+    "build": "pnpm --filter @syntheke/backend build",
+    "contracts:build": "cd contracts && forge build",
+    "contracts:test": "cd contracts && forge test -vvv",
+    "contracts:deploy:local": "cd contracts && forge script script/DeployAll.s.sol --rpc-url http://localhost:8545 --broadcast",
+    "db:generate": "pnpm --filter @syntheke/backend db:generate",
+    "db:migrate": "pnpm --filter @syntheke/backend db:migrate",
+    "lint": "pnpm -r lint",
+    "test": "pnpm contracts:test && pnpm --filter @syntheke/backend test"
+  },
+  "engines": {
+    "node": ">=22",
+    "pnpm": ">=9"
+  }
+}

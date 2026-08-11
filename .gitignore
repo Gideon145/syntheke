@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Build artifacts
+contracts/cache/
+contracts/out/
+contracts/lib/
+packages/*/dist/
+
+# Environment
+.env
+.env.local
+.env.production
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Foundry
+contracts/broadcast/
