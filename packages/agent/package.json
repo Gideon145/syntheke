@@ -1,0 +1,27 @@
+{
+  "name": "@syntheke/agent",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsc",
+    "test": "vitest run",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "ethers": "^6.13",
+    "dotenv": "^16.4",
+    "zod": "^3.24",
+    "drizzle-orm": "^0.38",
+    "postgres": "^3.4",
+    "pino": "^9.6",
+    "pino-pretty": "^11.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "tsx": "^4.19",
+    "typescript": "^5.7",
+    "vitest": "^3.1"
+  }
+}

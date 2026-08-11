@@ -10,7 +10,7 @@ optimizer_runs = 200
 via_ir = true
 
 [rpc_endpoints]
-xlayer_testnet = "${XLAYER_RPC_URL}"
+xlayer_testnet = "https://testrpc.xlayer.tech"
 xlayer_mainnet = "https://rpc.xlayer.tech"
 anvil = "http://localhost:8545"
 

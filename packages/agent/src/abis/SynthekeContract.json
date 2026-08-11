@@ -1,0 +1,1612 @@
+﻿[
+    {
+        "type":  "constructor",
+        "inputs":  [
+                       {
+                           "name":  "_monitorAgent",
+                           "type":  "address",
+                           "internalType":  "address"
+                       },
+                       {
+                           "name":  "_agentRegistry",
+                           "type":  "address",
+                           "internalType":  "address"
+                       },
+                       {
+                           "name":  "_escrowVault",
+                           "type":  "address",
+                           "internalType":  "address"
+                       },
+                       {
+                           "name":  "_reputationRegistry",
+                           "type":  "address",
+                           "internalType":  "address"
+                       }
+                   ],
+        "stateMutability":  "nonpayable"
+    },
+    {
+        "type":  "function",
+        "name":  "acceptRenegotiation",
+        "inputs":  [
+                       {
+                           "name":  "pactId",
+                           "type":  "bytes32",
+                           "internalType":  "bytes32"
+                       },
+                       {
+                           "name":  "newTerms",
+                           "type":  "tuple",
+                           "internalType":  "struct SynthekeContract.PactTerms",
+                           "components":  [
+                                              {
+                                                  "name":  "amount",
+                                                  "type":  "uint256",
+                                                  "internalType":  "uint256"
+                                              },
+                                              {
+                                                  "name":  "settlementAsset",
+                                                  "type":  "address",
+                                                  "internalType":  "address"
+                                              },
+                                              {
+                                                  "name":  "duration",
+                                                  "type":  "uint256",
+                                                  "internalType":  "uint256"
+                                              },
+                                              {
+                                                  "name":  "collateralRatio",
+                                                  "type":  "uint256",
+                                                  "internalType":  "uint256"
+                                              },
+                                              {
+                                                  "name":  "liquidationThreshold",
+                                                  "type":  "uint256",
+                                                  "internalType":  "uint256"
+                                              },
+                                              {
+                                                  "name":  "interestRate",
+                                                  "type":  "uint256",
+                                                  "internalType":  "uint256"
+                                              },
+                                              {
+                                                  "name":  "penaltyBps",
+                                                  "type":  "uint256",
+                                                  "internalType":  "uint256"
+                                              },
+                                              {
+                                                  "name":  "breachGraceBlocks",
+                                                  "type":  "uint256",
+                                                  "internalType":  "uint256"
+                                              },
+                                              {
+                                                  "name":  "renegotiationWindow",
+                                                  "type":  "uint256",
+                                                  "internalType":  "uint256"
+                                              },
+                                              {
+                                                  "name":  "maxRenegotiationRounds",
+                                                  "type":  "uint256",
+                                                  "internalType":  "uint256"
+                                              },
+                                              {
+                                                  "name":  "monitoredConditions",
+                                                  "type":  "uint256",
+                                                  "internalType":  "uint256"
+                                              }
+                                          ]
+                       }
+                   ],
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "nonpayable"
+    },
+    {
+        "type":  "function",
+        "name":  "agentRegistry",
+        "inputs":  [
+
+                   ],
+        "outputs":  [
+                        {
+                            "name":  "",
+                            "type":  "address",
+                            "internalType":  "address"
+                        }
+                    ],
+        "stateMutability":  "view"
+    },
+    {
+        "type":  "function",
+        "name":  "amendments",
+        "inputs":  [
+                       {
+                           "name":  "",
+                           "type":  "bytes32",
+                           "internalType":  "bytes32"
+                       },
+                       {
+                           "name":  "",
+                           "type":  "uint256",
+                           "internalType":  "uint256"
+                       }
+                   ],
+        "outputs":  [
+                        {
+                            "name":  "newTerms",
+                            "type":  "tuple",
+                            "internalType":  "struct SynthekeContract.PactTerms",
+                            "components":  [
+                                               {
+                                                   "name":  "amount",
+                                                   "type":  "uint256",
+                                                   "internalType":  "uint256"
+                                               },
+                                               {
+                                                   "name":  "settlementAsset",
+                                                   "type":  "address",
+                                                   "internalType":  "address"
+                                               },
+                                               {
+                                                   "name":  "duration",
+                                                   "type":  "uint256",
+                                                   "internalType":  "uint256"
+                                               },
+                                               {
+                                                   "name":  "collateralRatio",
+                                                   "type":  "uint256",
+                                                   "internalType":  "uint256"
+                                               },
+                                               {
+                                                   "name":  "liquidationThreshold",
+                                                   "type":  "uint256",
+                                                   "internalType":  "uint256"
+                                               },
+                                               {
+                                                   "name":  "interestRate",
+                                                   "type":  "uint256",
+                                                   "internalType":  "uint256"
+                                               },
+                                               {
+                                                   "name":  "penaltyBps",
+                                                   "type":  "uint256",
+                                                   "internalType":  "uint256"
+                                               },
+                                               {
+                                                   "name":  "breachGraceBlocks",
+                                                   "type":  "uint256",
+                                                   "internalType":  "uint256"
+                                               },
+                                               {
+                                                   "name":  "renegotiationWindow",
+                                                   "type":  "uint256",
+                                                   "internalType":  "uint256"
+                                               },
+                                               {
+                                                   "name":  "maxRenegotiationRounds",
+                                                   "type":  "uint256",
+                                                   "internalType":  "uint256"
+                                               },
+                                               {
+                                                   "name":  "monitoredConditions",
+                                                   "type":  "uint256",
+                                                   "internalType":  "uint256"
+                                               }
+                                           ]
+                        },
+                        {
+                            "name":  "amendedAt",
+                            "type":  "uint256",
+                            "internalType":  "uint256"
+                        },
+                        {
+                            "name":  "round",
+                            "type":  "uint256",
+                            "internalType":  "uint256"
+                        },
+                        {
+                            "name":  "acceptedBy",
+                            "type":  "bytes32",
+                            "internalType":  "bytes32"
+                        }
+                    ],
+        "stateMutability":  "view"
+    },
+    {
+        "type":  "function",
+        "name":  "attestations",
+        "inputs":  [
+                       {
+                           "name":  "",
+                           "type":  "bytes32",
+                           "internalType":  "bytes32"
+                       },
+                       {
+                           "name":  "",
+                           "type":  "uint256",
+                           "internalType":  "uint256"
+                       }
+                   ],
+        "outputs":  [
+                        {
+                            "name":  "conditionBitmap",
+                            "type":  "uint256",
+                            "internalType":  "uint256"
+                        },
+                        {
+                            "name":  "assessedState",
+                            "type":  "uint8",
+                            "internalType":  "enum SynthekeContract.SynthekeState"
+                        },
+                        {
+                            "name":  "dataHash",
+                            "type":  "bytes32",
+                            "internalType":  "bytes32"
+                        },
+                        {
+                            "name":  "timestamp",
+                            "type":  "uint256",
+                            "internalType":  "uint256"
+                        },
+                        {
+                            "name":  "reason",
+                            "type":  "string",
+                            "internalType":  "string"
+                        }
+                    ],
+        "stateMutability":  "view"
+    },
+    {
+        "type":  "function",
+        "name":  "confirmCure",
+        "inputs":  [
+                       {
+                           "name":  "pactId",
+                           "type":  "bytes32",
+                           "internalType":  "bytes32"
+                       }
+                   ],
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "nonpayable"
+    },
+    {
+        "type":  "function",
+        "name":  "createDraft",
+        "inputs":  [
+
+                   ],
+        "outputs":  [
+                        {
+                            "name":  "pactId",
+                            "type":  "bytes32",
+                            "internalType":  "bytes32"
+                        }
+                    ],
+        "stateMutability":  "nonpayable"
+    },
+    {
+        "type":  "function",
+        "name":  "depositEscrow",
+        "inputs":  [
+                       {
+                           "name":  "pactId",
+                           "type":  "bytes32",
+                           "internalType":  "bytes32"
+                       }
+                   ],
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "nonpayable"
+    },
+    {
+        "type":  "function",
+        "name":  "escalateUncuredBreach",
+        "inputs":  [
+                       {
+                           "name":  "pactId",
+                           "type":  "bytes32",
+                           "internalType":  "bytes32"
+                       }
+                   ],
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "nonpayable"
+    },
+    {
+        "type":  "function",
+        "name":  "escrowVault",
+        "inputs":  [
+
+                   ],
+        "outputs":  [
+                        {
+                            "name":  "",
+                            "type":  "address",
+                            "internalType":  "address"
+                        }
+                    ],
+        "stateMutability":  "view"
+    },
+    {
+        "type":  "function",
+        "name":  "expirePact",
+        "inputs":  [
+                       {
+                           "name":  "pactId",
+                           "type":  "bytes32",
+                           "internalType":  "bytes32"
+                       }
+                   ],
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "nonpayable"
+    },
+    {
+        "type":  "function",
+        "name":  "finalizeNegotiation",
+        "inputs":  [
+                       {
+                           "name":  "pactId",
+                           "type":  "bytes32",
+                           "internalType":  "bytes32"
+                       }
+                   ],
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "nonpayable"
+    },
+    {
+        "type":  "function",
+        "name":  "finalizeSettlement",
+        "inputs":  [
+                       {
+                           "name":  "pactId",
+                           "type":  "bytes32",
+                           "internalType":  "bytes32"
+                       }
+                   ],
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "nonpayable"
+    },
+    {
+        "type":  "function",
+        "name":  "getAmendments",
+        "inputs":  [
+                       {
+                           "name":  "pactId",
+                           "type":  "bytes32",
+                           "internalType":  "bytes32"
+                       }
+                   ],
+        "outputs":  [
+                        {
+                            "name":  "",
+                            "type":  "tuple[]",
+                            "internalType":  "struct SynthekeContract.Amendment[]",
+                            "components":  [
+                                               {
+                                                   "name":  "newTerms",
+                                                   "type":  "tuple",
+                                                   "internalType":  "struct SynthekeContract.PactTerms",
+                                                   "components":  [
+                                                                      {
+                                                                          "name":  "amount",
+                                                                          "type":  "uint256",
+                                                                          "internalType":  "uint256"
+                                                                      },
+                                                                      {
+                                                                          "name":  "settlementAsset",
+                                                                          "type":  "address",
+                                                                          "internalType":  "address"
+                                                                      },
+                                                                      {
+                                                                          "name":  "duration",
+                                                                          "type":  "uint256",
+                                                                          "internalType":  "uint256"
+                                                                      },
+                                                                      {
+                                                                          "name":  "collateralRatio",
+                                                                          "type":  "uint256",
+                                                                          "internalType":  "uint256"
+                                                                      },
+                                                                      {
+                                                                          "name":  "liquidationThreshold",
+                                                                          "type":  "uint256",
+                                                                          "internalType":  "uint256"
+                                                                      },
+                                                                      {
+                                                                          "name":  "interestRate",
+                                                                          "type":  "uint256",
+                                                                          "internalType":  "uint256"
+                                                                      },
+                                                                      {
+                                                                          "name":  "penaltyBps",
+                                                                          "type":  "uint256",
+                                                                          "internalType":  "uint256"
+                                                                      },
+                                                                      {
+                                                                          "name":  "breachGraceBlocks",
+                                                                          "type":  "uint256",
+                                                                          "internalType":  "uint256"
+                                                                      },
+                                                                      {
+                                                                          "name":  "renegotiationWindow",
+                                                                          "type":  "uint256",
+                                                                          "internalType":  "uint256"
+                                                                      },
+                                                                      {
+                                                                          "name":  "maxRenegotiationRounds",
+                                                                          "type":  "uint256",
+                                                                          "internalType":  "uint256"
+                                                                      },
+                                                                      {
+                                                                          "name":  "monitoredConditions",
+                                                                          "type":  "uint256",
+                                                                          "internalType":  "uint256"
+                                                                      }
+                                                                  ]
+                                               },
+                                               {
+                                                   "name":  "amendedAt",
+                                                   "type":  "uint256",
+                                                   "internalType":  "uint256"
+                                               },
+                                               {
+                                                   "name":  "round",
+                                                   "type":  "uint256",
+                                                   "internalType":  "uint256"
+                                               },
+                                               {
+                                                   "name":  "acceptedBy",
+                                                   "type":  "bytes32",
+                                                   "internalType":  "bytes32"
+                                               }
+                                           ]
+                        }
+                    ],
+        "stateMutability":  "view"
+    },
+    {
+        "type":  "function",
+        "name":  "getAttestations",
+        "inputs":  [
+                       {
+                           "name":  "pactId",
+                           "type":  "bytes32",
+                           "internalType":  "bytes32"
+                       }
+                   ],
+        "outputs":  [
+                        {
+                            "name":  "",
+                            "type":  "tuple[]",
+                            "internalType":  "struct SynthekeContract.Attestation[]",
+                            "components":  [
+                                               {
+                                                   "name":  "conditionBitmap",
+                                                   "type":  "uint256",
+                                                   "internalType":  "uint256"
+                                               },
+                                               {
+                                                   "name":  "assessedState",
+                                                   "type":  "uint8",
+                                                   "internalType":  "enum SynthekeContract.SynthekeState"
+                                               },
+                                               {
+                                                   "name":  "dataHash",
+                                                   "type":  "bytes32",
+                                                   "internalType":  "bytes32"
+                                               },
+                                               {
+                                                   "name":  "timestamp",
+                                                   "type":  "uint256",
+                                                   "internalType":  "uint256"
+                                               },
+                                               {
+                                                   "name":  "reason",
+                                                   "type":  "string",
+                                                   "internalType":  "string"
+                                               }
+                                           ]
+                        }
+                    ],
+        "stateMutability":  "view"
+    },
+    {
+        "type":  "function",
+        "name":  "getPactCount",
+        "inputs":  [
+
+                   ],
+        "outputs":  [
+                        {
+                            "name":  "",
+                            "type":  "uint256",
+                            "internalType":  "uint256"
+                        }
+                    ],
+        "stateMutability":  "view"
+    },
+    {
+        "type":  "function",
+        "name":  "getPactIds",
+        "inputs":  [
+
+                   ],
+        "outputs":  [
+                        {
+                            "name":  "",
+                            "type":  "bytes32[]",
+                            "internalType":  "bytes32[]"
+                        }
+                    ],
+        "stateMutability":  "view"
+    },
+    {
+        "type":  "function",
+        "name":  "getPactState",
+        "inputs":  [
+                       {
+                           "name":  "pactId",
+                           "type":  "bytes32",
+                           "internalType":  "bytes32"
+                       }
+                   ],
+        "outputs":  [
+                        {
+                            "name":  "",
+                            "type":  "tuple",
+                            "internalType":  "struct SynthekeContract.PactData",
+                            "components":  [
+                                               {
+                                                   "name":  "state",
+                                                   "type":  "uint8",
+                                                   "internalType":  "enum SynthekeContract.SynthekeState"
+                                               },
+                                               {
+                                                   "name":  "partyA",
+                                                   "type":  "address",
+                                                   "internalType":  "address"
+                                               },
+                                               {
+                                                   "name":  "partyB",
+                                                   "type":  "address",
+                                                   "internalType":  "address"
+                                               },
+                                               {
+                                                   "name":  "terms",
+                                                   "type":  "tuple",
+                                                   "internalType":  "struct SynthekeContract.PactTerms",
+                                                   "components":  [
+                                                                      {
+                                                                          "name":  "amount",
+                                                                          "type":  "uint256",
+                                                                          "internalType":  "uint256"
+                                                                      },
+                                                                      {
+                                                                          "name":  "settlementAsset",
+                                                                          "type":  "address",
+                                                                          "internalType":  "address"
+                                                                      },
+                                                                      {
+                                                                          "name":  "duration",
+                                                                          "type":  "uint256",
+                                                                          "internalType":  "uint256"
+                                                                      },
+                                                                      {
+                                                                          "name":  "collateralRatio",
+                                                                          "type":  "uint256",
+                                                                          "internalType":  "uint256"
+                                                                      },
+                                                                      {
+                                                                          "name":  "liquidationThreshold",
+                                                                          "type":  "uint256",
+                                                                          "internalType":  "uint256"
+                                                                      },
+                                                                      {
+                                                                          "name":  "interestRate",
+                                                                          "type":  "uint256",
+                                                                          "internalType":  "uint256"
+                                                                      },
+                                                                      {
+                                                                          "name":  "penaltyBps",
+                                                                          "type":  "uint256",
+                                                                          "internalType":  "uint256"
+                                                                      },
+                                                                      {
+                                                                          "name":  "breachGraceBlocks",
+                                                                          "type":  "uint256",
+                                                                          "internalType":  "uint256"
+                                                                      },
+                                                                      {
+                                                                          "name":  "renegotiationWindow",
+                                                                          "type":  "uint256",
+                                                                          "internalType":  "uint256"
+                                                                      },
+                                                                      {
+                                                                          "name":  "maxRenegotiationRounds",
+                                                                          "type":  "uint256",
+                                                                          "internalType":  "uint256"
+                                                                      },
+                                                                      {
+                                                                          "name":  "monitoredConditions",
+                                                                          "type":  "uint256",
+                                                                          "internalType":  "uint256"
+                                                                      }
+                                                                  ]
+                                               },
+                                               {
+                                                   "name":  "activationBlock",
+                                                   "type":  "uint256",
+                                                   "internalType":  "uint256"
+                                               },
+                                               {
+                                                   "name":  "degradationCounter",
+                                                   "type":  "uint256",
+                                                   "internalType":  "uint256"
+                                               },
+                                               {
+                                                   "name":  "consecutiveDegradation",
+                                                   "type":  "uint256",
+                                                   "internalType":  "uint256"
+                                               },
+                                               {
+                                                   "name":  "breachTier",
+                                                   "type":  "uint8",
+                                                   "internalType":  "enum SynthekeContract.BreachTier"
+                                               },
+                                               {
+                                                   "name":  "breachBlock",
+                                                   "type":  "uint256",
+                                                   "internalType":  "uint256"
+                                               },
+                                               {
+                                                   "name":  "cureDeadline",
+                                                   "type":  "uint256",
+                                                   "internalType":  "uint256"
+                                               },
+                                               {
+                                                   "name":  "renegotiationRound",
+                                                   "type":  "uint256",
+                                                   "internalType":  "uint256"
+                                               },
+                                               {
+                                                   "name":  "renegotiationDeadline",
+                                                   "type":  "uint256",
+                                                   "internalType":  "uint256"
+                                               },
+                                               {
+                                                   "name":  "lastAttestationHash",
+                                                   "type":  "bytes32",
+                                                   "internalType":  "bytes32"
+                                               },
+                                               {
+                                                   "name":  "attestationCount",
+                                                   "type":  "uint256",
+                                                   "internalType":  "uint256"
+                                               },
+                                               {
+                                                   "name":  "partyADeposited",
+                                                   "type":  "bool",
+                                                   "internalType":  "bool"
+                                               },
+                                               {
+                                                   "name":  "partyBDeposited",
+                                                   "type":  "bool",
+                                                   "internalType":  "bool"
+                                               },
+                                               {
+                                                   "name":  "closed",
+                                                   "type":  "bool",
+                                                   "internalType":  "bool"
+                                               }
+                                           ]
+                        }
+                    ],
+        "stateMutability":  "view"
+    },
+    {
+        "type":  "function",
+        "name":  "initiateRenegotiation",
+        "inputs":  [
+                       {
+                           "name":  "pactId",
+                           "type":  "bytes32",
+                           "internalType":  "bytes32"
+                       }
+                   ],
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "nonpayable"
+    },
+    {
+        "type":  "function",
+        "name":  "isActive",
+        "inputs":  [
+                       {
+                           "name":  "pactId",
+                           "type":  "bytes32",
+                           "internalType":  "bytes32"
+                       }
+                   ],
+        "outputs":  [
+                        {
+                            "name":  "",
+                            "type":  "bool",
+                            "internalType":  "bool"
+                        }
+                    ],
+        "stateMutability":  "view"
+    },
+    {
+        "type":  "function",
+        "name":  "joinDraft",
+        "inputs":  [
+                       {
+                           "name":  "pactId",
+                           "type":  "bytes32",
+                           "internalType":  "bytes32"
+                       }
+                   ],
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "nonpayable"
+    },
+    {
+        "type":  "function",
+        "name":  "monitorAgent",
+        "inputs":  [
+
+                   ],
+        "outputs":  [
+                        {
+                            "name":  "",
+                            "type":  "address",
+                            "internalType":  "address"
+                        }
+                    ],
+        "stateMutability":  "view"
+    },
+    {
+        "type":  "function",
+        "name":  "pactCount",
+        "inputs":  [
+
+                   ],
+        "outputs":  [
+                        {
+                            "name":  "",
+                            "type":  "uint256",
+                            "internalType":  "uint256"
+                        }
+                    ],
+        "stateMutability":  "view"
+    },
+    {
+        "type":  "function",
+        "name":  "pactIds",
+        "inputs":  [
+                       {
+                           "name":  "",
+                           "type":  "uint256",
+                           "internalType":  "uint256"
+                       }
+                   ],
+        "outputs":  [
+                        {
+                            "name":  "",
+                            "type":  "bytes32",
+                            "internalType":  "bytes32"
+                        }
+                    ],
+        "stateMutability":  "view"
+    },
+    {
+        "type":  "function",
+        "name":  "pacts",
+        "inputs":  [
+                       {
+                           "name":  "",
+                           "type":  "bytes32",
+                           "internalType":  "bytes32"
+                       }
+                   ],
+        "outputs":  [
+                        {
+                            "name":  "state",
+                            "type":  "uint8",
+                            "internalType":  "enum SynthekeContract.SynthekeState"
+                        },
+                        {
+                            "name":  "partyA",
+                            "type":  "address",
+                            "internalType":  "address"
+                        },
+                        {
+                            "name":  "partyB",
+                            "type":  "address",
+                            "internalType":  "address"
+                        },
+                        {
+                            "name":  "terms",
+                            "type":  "tuple",
+                            "internalType":  "struct SynthekeContract.PactTerms",
+                            "components":  [
+                                               {
+                                                   "name":  "amount",
+                                                   "type":  "uint256",
+                                                   "internalType":  "uint256"
+                                               },
+                                               {
+                                                   "name":  "settlementAsset",
+                                                   "type":  "address",
+                                                   "internalType":  "address"
+                                               },
+                                               {
+                                                   "name":  "duration",
+                                                   "type":  "uint256",
+                                                   "internalType":  "uint256"
+                                               },
+                                               {
+                                                   "name":  "collateralRatio",
+                                                   "type":  "uint256",
+                                                   "internalType":  "uint256"
+                                               },
+                                               {
+                                                   "name":  "liquidationThreshold",
+                                                   "type":  "uint256",
+                                                   "internalType":  "uint256"
+                                               },
+                                               {
+                                                   "name":  "interestRate",
+                                                   "type":  "uint256",
+                                                   "internalType":  "uint256"
+                                               },
+                                               {
+                                                   "name":  "penaltyBps",
+                                                   "type":  "uint256",
+                                                   "internalType":  "uint256"
+                                               },
+                                               {
+                                                   "name":  "breachGraceBlocks",
+                                                   "type":  "uint256",
+                                                   "internalType":  "uint256"
+                                               },
+                                               {
+                                                   "name":  "renegotiationWindow",
+                                                   "type":  "uint256",
+                                                   "internalType":  "uint256"
+                                               },
+                                               {
+                                                   "name":  "maxRenegotiationRounds",
+                                                   "type":  "uint256",
+                                                   "internalType":  "uint256"
+                                               },
+                                               {
+                                                   "name":  "monitoredConditions",
+                                                   "type":  "uint256",
+                                                   "internalType":  "uint256"
+                                               }
+                                           ]
+                        },
+                        {
+                            "name":  "activationBlock",
+                            "type":  "uint256",
+                            "internalType":  "uint256"
+                        },
+                        {
+                            "name":  "degradationCounter",
+                            "type":  "uint256",
+                            "internalType":  "uint256"
+                        },
+                        {
+                            "name":  "consecutiveDegradation",
+                            "type":  "uint256",
+                            "internalType":  "uint256"
+                        },
+                        {
+                            "name":  "breachTier",
+                            "type":  "uint8",
+                            "internalType":  "enum SynthekeContract.BreachTier"
+                        },
+                        {
+                            "name":  "breachBlock",
+                            "type":  "uint256",
+                            "internalType":  "uint256"
+                        },
+                        {
+                            "name":  "cureDeadline",
+                            "type":  "uint256",
+                            "internalType":  "uint256"
+                        },
+                        {
+                            "name":  "renegotiationRound",
+                            "type":  "uint256",
+                            "internalType":  "uint256"
+                        },
+                        {
+                            "name":  "renegotiationDeadline",
+                            "type":  "uint256",
+                            "internalType":  "uint256"
+                        },
+                        {
+                            "name":  "lastAttestationHash",
+                            "type":  "bytes32",
+                            "internalType":  "bytes32"
+                        },
+                        {
+                            "name":  "attestationCount",
+                            "type":  "uint256",
+                            "internalType":  "uint256"
+                        },
+                        {
+                            "name":  "partyADeposited",
+                            "type":  "bool",
+                            "internalType":  "bool"
+                        },
+                        {
+                            "name":  "partyBDeposited",
+                            "type":  "bool",
+                            "internalType":  "bool"
+                        },
+                        {
+                            "name":  "closed",
+                            "type":  "bool",
+                            "internalType":  "bool"
+                        }
+                    ],
+        "stateMutability":  "view"
+    },
+    {
+        "type":  "function",
+        "name":  "proposeTerms",
+        "inputs":  [
+                       {
+                           "name":  "pactId",
+                           "type":  "bytes32",
+                           "internalType":  "bytes32"
+                       },
+                       {
+                           "name":  "terms",
+                           "type":  "tuple",
+                           "internalType":  "struct SynthekeContract.PactTerms",
+                           "components":  [
+                                              {
+                                                  "name":  "amount",
+                                                  "type":  "uint256",
+                                                  "internalType":  "uint256"
+                                              },
+                                              {
+                                                  "name":  "settlementAsset",
+                                                  "type":  "address",
+                                                  "internalType":  "address"
+                                              },
+                                              {
+                                                  "name":  "duration",
+                                                  "type":  "uint256",
+                                                  "internalType":  "uint256"
+                                              },
+                                              {
+                                                  "name":  "collateralRatio",
+                                                  "type":  "uint256",
+                                                  "internalType":  "uint256"
+                                              },
+                                              {
+                                                  "name":  "liquidationThreshold",
+                                                  "type":  "uint256",
+                                                  "internalType":  "uint256"
+                                              },
+                                              {
+                                                  "name":  "interestRate",
+                                                  "type":  "uint256",
+                                                  "internalType":  "uint256"
+                                              },
+                                              {
+                                                  "name":  "penaltyBps",
+                                                  "type":  "uint256",
+                                                  "internalType":  "uint256"
+                                              },
+                                              {
+                                                  "name":  "breachGraceBlocks",
+                                                  "type":  "uint256",
+                                                  "internalType":  "uint256"
+                                              },
+                                              {
+                                                  "name":  "renegotiationWindow",
+                                                  "type":  "uint256",
+                                                  "internalType":  "uint256"
+                                              },
+                                              {
+                                                  "name":  "maxRenegotiationRounds",
+                                                  "type":  "uint256",
+                                                  "internalType":  "uint256"
+                                              },
+                                              {
+                                                  "name":  "monitoredConditions",
+                                                  "type":  "uint256",
+                                                  "internalType":  "uint256"
+                                              }
+                                          ]
+                       }
+                   ],
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "nonpayable"
+    },
+    {
+        "type":  "function",
+        "name":  "recordAttestation",
+        "inputs":  [
+                       {
+                           "name":  "pactId",
+                           "type":  "bytes32",
+                           "internalType":  "bytes32"
+                       },
+                       {
+                           "name":  "conditionBitmap",
+                           "type":  "uint256",
+                           "internalType":  "uint256"
+                       },
+                       {
+                           "name":  "recommendedState",
+                           "type":  "uint8",
+                           "internalType":  "enum SynthekeContract.SynthekeState"
+                       },
+                       {
+                           "name":  "dataHash",
+                           "type":  "bytes32",
+                           "internalType":  "bytes32"
+                       },
+                       {
+                           "name":  "reason",
+                           "type":  "string",
+                           "internalType":  "string"
+                       }
+                   ],
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "nonpayable"
+    },
+    {
+        "type":  "function",
+        "name":  "reputationRegistry",
+        "inputs":  [
+
+                   ],
+        "outputs":  [
+                        {
+                            "name":  "",
+                            "type":  "address",
+                            "internalType":  "address"
+                        }
+                    ],
+        "stateMutability":  "view"
+    },
+    {
+        "type":  "function",
+        "name":  "resolvePact",
+        "inputs":  [
+                       {
+                           "name":  "pactId",
+                           "type":  "bytes32",
+                           "internalType":  "bytes32"
+                       },
+                       {
+                           "name":  "settlementAmount",
+                           "type":  "uint256",
+                           "internalType":  "uint256"
+                       },
+                       {
+                           "name":  "partyAPayout",
+                           "type":  "uint256",
+                           "internalType":  "uint256"
+                       },
+                       {
+                           "name":  "partyBPayout",
+                           "type":  "uint256",
+                           "internalType":  "uint256"
+                       },
+                       {
+                           "name":  "reasoningHash",
+                           "type":  "bytes32",
+                           "internalType":  "bytes32"
+                       }
+                   ],
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "nonpayable"
+    },
+    {
+        "type":  "function",
+        "name":  "setMonitorAgent",
+        "inputs":  [
+                       {
+                           "name":  "_monitor",
+                           "type":  "address",
+                           "internalType":  "address"
+                       }
+                   ],
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "nonpayable"
+    },
+    {
+        "type":  "function",
+        "name":  "terminatePact",
+        "inputs":  [
+                       {
+                           "name":  "pactId",
+                           "type":  "bytes32",
+                           "internalType":  "bytes32"
+                       }
+                   ],
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "nonpayable"
+    },
+    {
+        "type":  "event",
+        "name":  "Activated",
+        "inputs":  [
+                       {
+                           "name":  "pactId",
+                           "type":  "bytes32",
+                           "indexed":  true,
+                           "internalType":  "bytes32"
+                       },
+                       {
+                           "name":  "amount",
+                           "type":  "uint256",
+                           "indexed":  false,
+                           "internalType":  "uint256"
+                       },
+                       {
+                           "name":  "duration",
+                           "type":  "uint256",
+                           "indexed":  false,
+                           "internalType":  "uint256"
+                       }
+                   ],
+        "anonymous":  false
+    },
+    {
+        "type":  "event",
+        "name":  "Amended",
+        "inputs":  [
+                       {
+                           "name":  "pactId",
+                           "type":  "bytes32",
+                           "indexed":  true,
+                           "internalType":  "bytes32"
+                       },
+                       {
+                           "name":  "amendmentHash",
+                           "type":  "bytes32",
+                           "indexed":  false,
+                           "internalType":  "bytes32"
+                       }
+                   ],
+        "anonymous":  false
+    },
+    {
+        "type":  "event",
+        "name":  "Arbitrating",
+        "inputs":  [
+                       {
+                           "name":  "pactId",
+                           "type":  "bytes32",
+                           "indexed":  true,
+                           "internalType":  "bytes32"
+                       }
+                   ],
+        "anonymous":  false
+    },
+    {
+        "type":  "event",
+        "name":  "AttestationRecorded",
+        "inputs":  [
+                       {
+                           "name":  "pactId",
+                           "type":  "bytes32",
+                           "indexed":  true,
+                           "internalType":  "bytes32"
+                       },
+                       {
+                           "name":  "cycleNumber",
+                           "type":  "uint256",
+                           "indexed":  false,
+                           "internalType":  "uint256"
+                       },
+                       {
+                           "name":  "bitmap",
+                           "type":  "uint256",
+                           "indexed":  false,
+                           "internalType":  "uint256"
+                       },
+                       {
+                           "name":  "state",
+                           "type":  "uint8",
+                           "indexed":  false,
+                           "internalType":  "enum SynthekeContract.SynthekeState"
+                       }
+                   ],
+        "anonymous":  false
+    },
+    {
+        "type":  "event",
+        "name":  "Breached",
+        "inputs":  [
+                       {
+                           "name":  "pactId",
+                           "type":  "bytes32",
+                           "indexed":  true,
+                           "internalType":  "bytes32"
+                       },
+                       {
+                           "name":  "tier",
+                           "type":  "uint8",
+                           "indexed":  false,
+                           "internalType":  "enum SynthekeContract.BreachTier"
+                       },
+                       {
+                           "name":  "reason",
+                           "type":  "string",
+                           "indexed":  false,
+                           "internalType":  "string"
+                       }
+                   ],
+        "anonymous":  false
+    },
+    {
+        "type":  "event",
+        "name":  "Closed",
+        "inputs":  [
+                       {
+                           "name":  "pactId",
+                           "type":  "bytes32",
+                           "indexed":  true,
+                           "internalType":  "bytes32"
+                       }
+                   ],
+        "anonymous":  false
+    },
+    {
+        "type":  "event",
+        "name":  "Committed",
+        "inputs":  [
+                       {
+                           "name":  "pactId",
+                           "type":  "bytes32",
+                           "indexed":  true,
+                           "internalType":  "bytes32"
+                       },
+                       {
+                           "name":  "totalEscrow",
+                           "type":  "uint256",
+                           "indexed":  false,
+                           "internalType":  "uint256"
+                       }
+                   ],
+        "anonymous":  false
+    },
+    {
+        "type":  "event",
+        "name":  "Curing",
+        "inputs":  [
+                       {
+                           "name":  "pactId",
+                           "type":  "bytes32",
+                           "indexed":  true,
+                           "internalType":  "bytes32"
+                       },
+                       {
+                           "name":  "deadline",
+                           "type":  "uint256",
+                           "indexed":  false,
+                           "internalType":  "uint256"
+                       }
+                   ],
+        "anonymous":  false
+    },
+    {
+        "type":  "event",
+        "name":  "Degrading",
+        "inputs":  [
+                       {
+                           "name":  "pactId",
+                           "type":  "bytes32",
+                           "indexed":  true,
+                           "internalType":  "bytes32"
+                       },
+                       {
+                           "name":  "bitmap",
+                           "type":  "uint256",
+                           "indexed":  false,
+                           "internalType":  "uint256"
+                       },
+                       {
+                           "name":  "reason",
+                           "type":  "string",
+                           "indexed":  false,
+                           "internalType":  "string"
+                       }
+                   ],
+        "anonymous":  false
+    },
+    {
+        "type":  "event",
+        "name":  "DraftCreated",
+        "inputs":  [
+                       {
+                           "name":  "pactId",
+                           "type":  "bytes32",
+                           "indexed":  true,
+                           "internalType":  "bytes32"
+                       },
+                       {
+                           "name":  "partyA",
+                           "type":  "address",
+                           "indexed":  true,
+                           "internalType":  "address"
+                       }
+                   ],
+        "anonymous":  false
+    },
+    {
+        "type":  "event",
+        "name":  "Expired",
+        "inputs":  [
+                       {
+                           "name":  "pactId",
+                           "type":  "bytes32",
+                           "indexed":  true,
+                           "internalType":  "bytes32"
+                       }
+                   ],
+        "anonymous":  false
+    },
+    {
+        "type":  "event",
+        "name":  "Negotiating",
+        "inputs":  [
+                       {
+                           "name":  "pactId",
+                           "type":  "bytes32",
+                           "indexed":  true,
+                           "internalType":  "bytes32"
+                       },
+                       {
+                           "name":  "partyB",
+                           "type":  "address",
+                           "indexed":  true,
+                           "internalType":  "address"
+                       },
+                       {
+                           "name":  "round",
+                           "type":  "uint256",
+                           "indexed":  false,
+                           "internalType":  "uint256"
+                       }
+                   ],
+        "anonymous":  false
+    },
+    {
+        "type":  "event",
+        "name":  "Proposed",
+        "inputs":  [
+                       {
+                           "name":  "pactId",
+                           "type":  "bytes32",
+                           "indexed":  true,
+                           "internalType":  "bytes32"
+                       },
+                       {
+                           "name":  "termsHash",
+                           "type":  "bytes32",
+                           "indexed":  false,
+                           "internalType":  "bytes32"
+                       }
+                   ],
+        "anonymous":  false
+    },
+    {
+        "type":  "event",
+        "name":  "Renegotiating",
+        "inputs":  [
+                       {
+                           "name":  "pactId",
+                           "type":  "bytes32",
+                           "indexed":  true,
+                           "internalType":  "bytes32"
+                       },
+                       {
+                           "name":  "round",
+                           "type":  "uint256",
+                           "indexed":  false,
+                           "internalType":  "uint256"
+                       }
+                   ],
+        "anonymous":  false
+    },
+    {
+        "type":  "event",
+        "name":  "Resolved",
+        "inputs":  [
+                       {
+                           "name":  "pactId",
+                           "type":  "bytes32",
+                           "indexed":  true,
+                           "internalType":  "bytes32"
+                       },
+                       {
+                           "name":  "settlementAmount",
+                           "type":  "uint256",
+                           "indexed":  false,
+                           "internalType":  "uint256"
+                       }
+                   ],
+        "anonymous":  false
+    },
+    {
+        "type":  "event",
+        "name":  "Settling",
+        "inputs":  [
+                       {
+                           "name":  "pactId",
+                           "type":  "bytes32",
+                           "indexed":  true,
+                           "internalType":  "bytes32"
+                       },
+                       {
+                           "name":  "partyAPayout",
+                           "type":  "uint256",
+                           "indexed":  false,
+                           "internalType":  "uint256"
+                       },
+                       {
+                           "name":  "partyBPayout",
+                           "type":  "uint256",
+                           "indexed":  false,
+                           "internalType":  "uint256"
+                       }
+                   ],
+        "anonymous":  false
+    },
+    {
+        "type":  "event",
+        "name":  "Terminated",
+        "inputs":  [
+                       {
+                           "name":  "pactId",
+                           "type":  "bytes32",
+                           "indexed":  true,
+                           "internalType":  "bytes32"
+                       },
+                       {
+                           "name":  "reason",
+                           "type":  "string",
+                           "indexed":  false,
+                           "internalType":  "string"
+                       }
+                   ],
+        "anonymous":  false
+    },
+    {
+        "type":  "error",
+        "name":  "AlreadyDeposited",
+        "inputs":  [
+
+                   ]
+    },
+    {
+        "type":  "error",
+        "name":  "CureDeadlineExceeded",
+        "inputs":  [
+
+                   ]
+    },
+    {
+        "type":  "error",
+        "name":  "InsufficientDeposit",
+        "inputs":  [
+
+                   ]
+    },
+    {
+        "type":  "error",
+        "name":  "InvalidState",
+        "inputs":  [
+                       {
+                           "name":  "current",
+                           "type":  "uint8",
+                           "internalType":  "enum SynthekeContract.SynthekeState"
+                       },
+                       {
+                           "name":  "required",
+                           "type":  "uint8",
+                           "internalType":  "enum SynthekeContract.SynthekeState"
+                       }
+                   ]
+    },
+    {
+        "type":  "error",
+        "name":  "InvalidTransition",
+        "inputs":  [
+                       {
+                           "name":  "from",
+                           "type":  "uint8",
+                           "internalType":  "enum SynthekeContract.SynthekeState"
+                       },
+                       {
+                           "name":  "to",
+                           "type":  "uint8",
+                           "internalType":  "enum SynthekeContract.SynthekeState"
+                       }
+                   ]
+    },
+    {
+        "type":  "error",
+        "name":  "MaxRenegotiationRounds",
+        "inputs":  [
+
+                   ]
+    },
+    {
+        "type":  "error",
+        "name":  "NotBreachingParty",
+        "inputs":  [
+
+                   ]
+    },
+    {
+        "type":  "error",
+        "name":  "NotMediator",
+        "inputs":  [
+
+                   ]
+    },
+    {
+        "type":  "error",
+        "name":  "NotMonitor",
+        "inputs":  [
+
+                   ]
+    },
+    {
+        "type":  "error",
+        "name":  "NotParty",
+        "inputs":  [
+
+                   ]
+    },
+    {
+        "type":  "error",
+        "name":  "PactClosed",
+        "inputs":  [
+
+                   ]
+    },
+    {
+        "type":  "error",
+        "name":  "RenegotiationDeadlineExceeded",
+        "inputs":  [
+
+                   ]
+    }
+]
