@@ -24,10 +24,15 @@ module.exports = {
         "accent-purple-hover": "#9B8FF7",
         "accent-cyan": "#22d3ee",
         "accent-cyan-glow": "rgba(34,211,238,0.12)",
+        // Kage-inspired — warm, lantern-light tones
+        amber: { DEFAULT: "#d4a574", glow: "rgba(212,165,116,0.08)" },
+        lantern: { DEFAULT: "#f5e6d3", glow: "rgba(245,230,211,0.03)" },
+        "border-hairline": "#ffffff0d",
       },
       fontFamily: {
         sans: ['"Inter"', "system-ui", "sans-serif"],
         mono: ['"JetBrains Mono"', "monospace"],
+        serif: ['"STIX Two Text"', '"Georgia"', "serif"],
       },
       fontSize: {
         "2xs": ["0.6875rem", { lineHeight: "0.875rem" }],

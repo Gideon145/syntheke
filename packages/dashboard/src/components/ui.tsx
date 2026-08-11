@@ -56,8 +56,8 @@ export function Navbar() {
     <nav className="sticky top-0 z-50 border-b border-border bg-bg/95 backdrop-blur-xl">
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
         <div className="flex items-center gap-10">
-          <a href="/" className="flex items-center gap-3 font-bold text-text-primary text-lg hover:opacity-80 transition-opacity group">
-            <span className="w-8 h-8 rounded-lg bg-okx flex items-center justify-center text-white text-base font-bold shadow-glow group-hover:shadow-glow transition-shadow">Σ</span>
+          <a href="/" className="flex items-center gap-3 font-bold text-text-primary text-lg hover:opacity-80 transition-opacity duration-500 group">
+            <img src="/synn.jpg" alt="Syntheke" className="w-8 h-8 rounded-lg object-cover group-hover:shadow-[0_0_20px_rgba(131,110,249,0.2)] transition-shadow duration-500" />
             <span className="tracking-tight">Syntheke</span>
           </a>
           <div className="hidden md:flex items-center gap-1">
