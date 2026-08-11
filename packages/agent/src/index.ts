@@ -148,6 +148,25 @@ function createServer(): http.Server {
         return;
       }
 
+      // GET /integrations — Phase 5: OKX Wallet + OnchainOS status
+      if (req.method === "GET" && url.pathname === "/integrations") {
+        const { onchainOS } = await import("./integrations/onchainos");
+        const { runSecurityChecklist } = await import("./integrations/verification");
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({
+          onchainos: onchainOS.isAvailable,
+          okxWallet: true,
+          security: runSecurityChecklist(),
+          contracts: {
+            syntheke: config.SYNTHEKE_CONTRACT,
+            agentRegistry: config.AGENT_REGISTRY,
+            escrowVault: config.ESCROW_VAULT,
+            reputationRegistry: config.REPUTATION_REGISTRY,
+          },
+        }));
+        return;
+      }
+
       // 404
       res.writeHead(404, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ error: "not found" }));
