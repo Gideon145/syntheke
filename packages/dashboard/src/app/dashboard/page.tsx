@@ -125,7 +125,7 @@ export default function DashboardPage() {
             { label: "EscrowVault", addr: "0x5535cEc5D9CcBe77EBF99e33BE88dCE00047e142" },
             { label: "Reputation", addr: "0x4256e57592aCB2120EAbC7f3E1eb82d9DddB855f" },
           ].map(c => (
-            <a key={c.label} href={`https://www.oklink.com/x-layer-testnet/address/${c.addr}`} target="_blank" rel="noopener"
+            <a key={c.label} href={`https://www.oklink.com/xlayer/address/${c.addr}`} target="_blank" rel="noopener"
               className="flex items-center justify-between p-3 rounded-lg bg-bg border border-border
                          hover:border-okx/30 hover:bg-okx/5 hover:shadow-glow transition-all duration-200 group">
               <span className="text-sm text-text-secondary group-hover:text-text-primary transition-colors truncate">{c.label}</span>

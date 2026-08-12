@@ -151,7 +151,7 @@ export default function PactDetailPage() {
           {pact.partyA && pact.partyA !== "0x0000000000000000000000000000000000000000" ? (
             <>
               <code className="text-sm font-mono text-text-primary">{shortAddress(pact.partyA)}</code>
-              <a href={`https://www.oklink.com/x-layer-testnet/address/${pact.partyA}`} target="_blank" rel="noopener"
+              <a href={`https://www.oklink.com/xlayer/address/${pact.partyA}`} target="_blank" rel="noopener"
                 className="text-amber text-xs hover:underline mt-1.5 inline-block">View on Explorer →</a>
             </>
           ) : (
@@ -163,7 +163,7 @@ export default function PactDetailPage() {
           {pact.partyB && pact.partyB !== "0x0000000000000000000000000000000000000000" ? (
             <>
               <code className="text-sm font-mono text-text-primary">{shortAddress(pact.partyB)}</code>
-              <a href={`https://www.oklink.com/x-layer-testnet/address/${pact.partyB}`} target="_blank" rel="noopener"
+              <a href={`https://www.oklink.com/xlayer/address/${pact.partyB}`} target="_blank" rel="noopener"
                 className="text-amber text-xs hover:underline mt-1.5 inline-block">View on Explorer →</a>
             </>
           ) : (
@@ -171,6 +171,31 @@ export default function PactDetailPage() {
           )}
         </div>
       </div>
+
+      {/* Invite Party B — shown for DRAFT pacts without Party B */}
+      {stateName === "DRAFT" && pact.partyB === "0x0000000000000000000000000000000000000000" && (
+        <div className="card-glow p-5 mb-10 border-dashed border border-amber/20 !cursor-default">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-sm">📨</span>
+            <span className="text-sm font-semibold text-text-primary">Invite Party B</span>
+          </div>
+          <p className="text-xs text-text-muted mb-3 leading-relaxed">
+            Share this with the counterparty. Their agent can join by calling the Syntheke endpoint:
+          </p>
+          <div className="bg-bg rounded-lg p-3 font-mono text-xs text-text-secondary break-all mb-3">
+            POST {AGENT_API}/pacts/join<br/>
+            {'{'} "pactId": "{pactId}" {'}'}
+          </div>
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(`Accept pact ${pactId} — join this autonomous treaty on Syntheke. Call POST /pacts/join with the pact ID.`).catch(() => {});
+            }}
+            className="text-xs text-amber hover:text-lantern transition-colors"
+          >
+            📋 Copy invite prompt
+          </button>
+        </div>
+      )}
 
       {/* Lifecycle Timeline */}
       <div className="card-glow p-6 mb-10">
@@ -210,7 +235,7 @@ export default function PactDetailPage() {
 
       {/* On-chain link */}
       <div className="text-center">
-        <a href={`https://www.oklink.com/x-layer-testnet/address/0xe465405380E2E0f625028447E85917662E71ad42`} target="_blank" rel="noopener"
+        <a href={`https://www.oklink.com/xlayer/address/0xe465405380E2E0f625028447E85917662E71ad42`} target="_blank" rel="noopener"
           className="text-text-muted text-xs hover:text-amber transition-colors">
           View SynthekeContract on X Layer Explorer →
         </a>

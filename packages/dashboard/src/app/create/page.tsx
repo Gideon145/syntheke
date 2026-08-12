@@ -169,7 +169,7 @@ export default function CreatePactPage() {
             <p className="text-sm text-text-secondary">
               State: <code className="text-text-primary font-mono">{result.state}</code> ·{" "}
               <a
-                href={`https://www.okx.com/web3/explorer/xlayer-testnet/address/${result.partyA}`}
+                href={`https://www.oklink.com/xlayer/address/${result.partyA}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-okx hover:underline"
@@ -238,6 +238,35 @@ export default function CreatePactPage() {
               View All Pacts →
             </a>
           </div>
+
+          {/* Invite Party B */}
+          {result.pactId && (
+            <div className="card-glow p-5 border-dashed border border-amber/20 !cursor-default">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-sm">📨</span>
+                <span className="text-sm font-semibold text-text-primary">Invite Party B</span>
+              </div>
+              <p className="text-xs text-text-muted mb-3 leading-relaxed">
+                Share this with the counterparty. Their agent can join by calling the Syntheke endpoint:
+              </p>
+              <div className="bg-bg rounded-lg p-3 font-mono text-xs text-text-secondary break-all mb-3">
+                POST /pacts/join<br/>
+                {'{'} "pactId": "{result.pactId}" {'}'}
+              </div>
+              <p className="text-xs text-text-muted leading-relaxed">
+                Or tell them: <span className="text-amber">"Accept pact {result.pactId?.slice(0, 14)}... — {description.slice(0, 80)}{description.length > 80 ? '...' : ''}"</span>
+              </p>
+              <button
+                onClick={() => {
+                  const prompt = `Accept pact ${result.pactId} — ${description}`;
+                  navigator.clipboard.writeText(prompt).catch(() => {});
+                }}
+                className="mt-3 text-xs text-amber hover:text-lantern transition-colors"
+              >
+                📋 Copy invite prompt
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
