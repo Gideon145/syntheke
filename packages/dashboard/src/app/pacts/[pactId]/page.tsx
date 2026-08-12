@@ -148,18 +148,26 @@ export default function PactDetailPage() {
       <div className="grid grid-cols-2 gap-4 mb-10">
         <div className="card-glow p-4">
           <div className="text-xs text-text-muted uppercase tracking-wider mb-2">Party A</div>
-          <code className="text-sm font-mono text-text-primary">{pact.partyA ? shortAddress(pact.partyA) : "—"}</code>
-          {pact.partyA && (
-            <a href={`https://www.oklink.com/x-layer-testnet/address/${pact.partyA}`} target="_blank" rel="noopener"
-              className="text-amber text-xs hover:underline mt-1.5 inline-block">View on Explorer →</a>
+          {pact.partyA && pact.partyA !== "0x0000000000000000000000000000000000000000" ? (
+            <>
+              <code className="text-sm font-mono text-text-primary">{shortAddress(pact.partyA)}</code>
+              <a href={`https://www.oklink.com/x-layer-testnet/address/${pact.partyA}`} target="_blank" rel="noopener"
+                className="text-amber text-xs hover:underline mt-1.5 inline-block">View on Explorer →</a>
+            </>
+          ) : (
+            <span className="text-sm text-text-muted">Not yet joined</span>
           )}
         </div>
         <div className="card-glow p-4">
           <div className="text-xs text-text-muted uppercase tracking-wider mb-2">Party B</div>
-          <code className="text-sm font-mono text-text-primary">{pact.partyB ? shortAddress(pact.partyB) : "—"}</code>
-          {pact.partyB && (
-            <a href={`https://www.oklink.com/x-layer-testnet/address/${pact.partyB}`} target="_blank" rel="noopener"
-              className="text-amber text-xs hover:underline mt-1.5 inline-block">View on Explorer →</a>
+          {pact.partyB && pact.partyB !== "0x0000000000000000000000000000000000000000" ? (
+            <>
+              <code className="text-sm font-mono text-text-primary">{shortAddress(pact.partyB)}</code>
+              <a href={`https://www.oklink.com/x-layer-testnet/address/${pact.partyB}`} target="_blank" rel="noopener"
+                className="text-amber text-xs hover:underline mt-1.5 inline-block">View on Explorer →</a>
+            </>
+          ) : (
+            <span className="text-sm text-text-muted">Not yet joined</span>
           )}
         </div>
       </div>

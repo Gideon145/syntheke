@@ -76,13 +76,45 @@ function createServer(): http.Server {
         return;
       }
 
-      // GET /pacts/:id
+      // GET /pacts/:id — enriched with on-chain data
       if (req.method === "GET" && url.pathname.startsWith("/pacts/")) {
         const pactId = url.pathname.slice(7);
         const state = getMonitorState();
         const tracker = state?.pactsMonitored.get(pactId);
+
+        // Try to enrich with on-chain data (parties, real attestation count)
+        let enriched: Record<string, unknown> = { ...tracker, pactId };
+        try {
+          const { getPactContractRead } = await import("./pact");
+          const contract = getPactContractRead();
+          const onChain = await contract.getPactState(pactId);
+          enriched = {
+            pactId,
+            lastState: Number(onChain.state),
+            degradationCount: tracker?.degradationCount ?? 0,
+            attestationCount: Number(onChain.attestationCount),
+            lastAttestationBlock: tracker?.lastAttestationBlock ?? 0,
+            partyA: onChain.partyA,
+            partyB: onChain.partyB,
+            activationBlock: Number(onChain.activationBlock),
+            breachTier: Number(onChain.breachTier),
+            closed: onChain.closed,
+          };
+        } catch (err) {
+          // Fall back to tracker-only data
+          if (tracker) {
+            enriched = {
+              pactId,
+              lastState: tracker.lastState,
+              degradationCount: tracker.degradationCount,
+              attestationCount: tracker.lastAttestationBlock > 0 ? 1 : 0,
+              lastAttestationBlock: tracker.lastAttestationBlock,
+            };
+          }
+        }
+
         res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify(tracker ?? { error: "not found" }));
+        res.end(JSON.stringify(enriched));
         return;
       }
 
