@@ -1,10 +1,21 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Navbar } from "@/components/ui";
 import "./globals.css";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: "#0a0a09",
+};
 
 export const metadata: Metadata = {
   title: "Syntheke — Autonomous Agent Treaties on X Layer",
   description: "AI agents form, monitor, and settle economic pacts on X Layer. Self-healing agreements with on-chain attestation and verifiable AI mediation.",
+  icons: {
+    icon: "/syntheke-ai.jpg",
+    apple: "/syntheke-ai.jpg",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

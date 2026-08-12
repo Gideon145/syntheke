@@ -1,5 +1,8 @@
-import { ArrowUpRight, Shield, Activity, FileText, AlertTriangle, CheckCircle, Clock, XCircle, RefreshCw, Plus } from "lucide-react";
+"use client";
+
+import { ArrowUpRight, Shield, Activity, FileText, AlertTriangle, CheckCircle, Clock, XCircle, RefreshCw, Plus, Menu, X } from "lucide-react";
 import { STATE_COLORS, stateLabel } from "@/lib/api";
+import { useState } from "react";
 
 export function StatusBadge({ state }: { state: string }) {
   const color = STATE_COLORS[state] ?? "text-text-muted";
@@ -52,42 +55,79 @@ export function PactCard({ id, state, partyA, partyB, attestations }: {
 }
 
 export function Navbar() {
+  const [open, setOpen] = useState(false);
+
+  const navLinks = [
+    ["Dashboard", "/dashboard"],
+    ["Pacts", "/pacts"],
+    ["Agents", "/agents"],
+  ];
+
   return (
     <nav className="sticky top-0 z-50 border-b border-border bg-bg/95 backdrop-blur-xl">
-      <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-10">
-          <a href="/" className="flex items-center gap-3 font-bold text-text-primary text-lg hover:opacity-80 transition-opacity duration-500 group">
-            <img src="/synn.png" alt="Syntheke" className="w-8 h-8 rounded-lg object-cover group-hover:shadow-[0_0_20px_rgba(212,165,116,0.15)] transition-shadow duration-500" />
-            <span className="tracking-tight">Syntheke</span>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+        {/* Logo */}
+        <a href="/" className="flex items-center gap-2 sm:gap-3 font-bold text-text-primary text-base sm:text-lg hover:opacity-80 transition-opacity duration-500 group shrink-0">
+          <img src="/syntheke-ai.jpg" alt="Syntheke" className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg object-cover" />
+          <span className="tracking-[0.12em] sm:tracking-[0.15em] text-amber font-bold text-sm sm:text-base">S Y N T H Ξ K Ξ</span>
+        </a>
+
+        {/* Desktop nav */}
+        <div className="hidden md:flex items-center gap-1">
+          {navLinks.map(([label, href]) => (
+            <a key={href} href={href}
+              className="px-3.5 py-2 rounded-lg text-sm font-medium text-text-secondary
+                         hover:text-text-primary hover:bg-bg-secondary transition-all duration-200">
+              {label}
+            </a>
+          ))}
+          <a href="/create"
+            className="ml-2 px-4 py-2 rounded-lg text-sm font-semibold
+                       bg-amber text-bg hover:bg-amber-soft hover:shadow-glow-amber
+                       transition-all duration-500 active:scale-95 flex items-center gap-1.5">
+            <Plus className="w-4 h-4" />
+            Create
           </a>
-          <div className="hidden md:flex items-center gap-1">
-            {[
-              ["Dashboard", "/dashboard"],
-              ["Pacts", "/pacts"],
-              ["Agents", "/agents"],
-            ].map(([label, href]) => (
-              <a key={href} href={href}
-                className="px-3.5 py-2 rounded-lg text-sm font-medium text-text-secondary
+        </div>
+
+        {/* Right side: chain badge + hamburger */}
+        <div className="flex items-center gap-3">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-full text-xs font-medium bg-amber/5 border border-amber/10 text-amber">
+            <div className="w-1.5 h-1.5 rounded-full bg-amber animate-lantern-pulse" />
+            <span className="hidden sm:inline">X Layer Testnet</span>
+            <span className="sm:hidden">Testnet</span>
+          </div>
+          {/* Hamburger */}
+          <button
+            onClick={() => setOpen(!open)}
+            className="md:hidden p-2 rounded-lg text-text-secondary hover:text-text-primary hover:bg-bg-secondary transition-colors"
+            aria-label="Toggle menu"
+          >
+            {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile menu */}
+      {open && (
+        <div className="md:hidden border-t border-border bg-bg/98 backdrop-blur-xl animate-fade-in-slow">
+          <div className="px-4 py-3 space-y-1">
+            {navLinks.map(([label, href]) => (
+              <a key={href} href={href} onClick={() => setOpen(false)}
+                className="block px-4 py-3 rounded-lg text-sm font-medium text-text-secondary
                            hover:text-text-primary hover:bg-bg-secondary transition-all duration-200">
                 {label}
               </a>
             ))}
-            <a href="/create"
-              className="ml-2 px-4 py-2 rounded-lg text-sm font-semibold
-                         bg-amber text-bg hover:bg-amber-soft hover:shadow-glow-amber
-                         transition-all duration-500 active:scale-95 flex items-center gap-1.5">
+            <a href="/create" onClick={() => setOpen(false)}
+              className="mt-2 flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-semibold
+                         bg-amber text-bg hover:bg-amber-soft transition-all duration-300">
               <Plus className="w-4 h-4" />
-              Create
+              Create a Pact
             </a>
           </div>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-amber/5 border border-amber/10 text-amber">
-            <div className="w-1.5 h-1.5 rounded-full bg-amber animate-lantern-pulse" />
-            <span>X Layer Testnet</span>
-          </div>
-        </div>
-      </div>
+      )}
     </nav>
   );
 }

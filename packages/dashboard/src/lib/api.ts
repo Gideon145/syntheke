@@ -12,6 +12,8 @@ export interface AgentStatus {
 
 export interface PactSummary {
   pactId: string;
+  name?: string;
+  subtitle?: string;
   lastState: number;
   degradationCount: number;
   attestationCount: number;

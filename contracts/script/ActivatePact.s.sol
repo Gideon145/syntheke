@@ -11,7 +11,7 @@ import {Script, console} from "forge-std/Script.sol";
 contract ActivatePact is Script {
     function run() external {
         address contractAddr = 0xe465405380E2E0f625028447E85917662E71ad42;
-        bytes32 pactId = 0x365dfc4c240cb79379fb9953af1ee5635ea6e392fc97830dcc27f077602a11e0;
+        bytes32 pactId = 0x59b06bfe7c7593a9965542627b3d55b7ada58db76b79487c7280d79268f46b50;
 
         uint256 deployerKey = vm.envUint("PRIVATE_KEY");
         uint256 partyBKey = uint256(vm.envBytes32("PARTY_B_KEY"));

@@ -61,6 +61,25 @@ const STATE_COLORS: Record<string, string> = {
   COMMITTED: "text-amber border-amber/30 bg-amber/5",
 };
 
+// Contextual explanations for each state transition
+const STATE_TRANSITIONS: Record<string, string> = {
+  DRAFT: "Pact proposal created by Party A — awaiting counterparty.",
+  NEGOTIATING: "Party B joined. Claude generating terms from natural language description.",
+  PROPOSED: "Terms finalized and hashed on-chain. Both parties must now commit escrow.",
+  COMMITTED: "Escrow deposited by both parties. Pact is locked and irreversible.",
+  ACTIVE: "Autonomous monitoring live — checking conditions every 15 seconds on X Layer.",
+  DEGRADING: "Soft conditions trending toward breach. Monitor watching closely for escalation.",
+  RENEGOTIATING: "AI proposed adaptive terms to restore pact health before hard breach triggers.",
+  BREACHED: "Hard condition violated. Oracle data confirms SLA failure. Escrow now at risk.",
+  CURING: "Grace period active — breaching party has limited blocks to restore compliance.",
+  ARBITRATING: "Cure deadline expired. AI mediator swarm (Themis·Athena·Solon) evaluating dispute.",
+  RESOLVING: "Mediation complete. Computing fair settlement distribution based on verdict.",
+  SETTLING: "Escrow being distributed on-chain per the resolution terms.",
+  CLOSED: "Pact lifecycle complete. Escrow settled, reputation scores updated on AgentRegistry.",
+  EXPIRED: "Pact timed out before activation — never reached COMMITTED state.",
+  TERMINATED: "Both parties mutually agreed to cancel this pact.",
+};
+
 export default function PactDetailPage() {
   const { pactId } = useParams<{ pactId: string }>();
   const [pact, setPact] = useState<PactDetail | null>(null);
@@ -112,25 +131,25 @@ export default function PactDetailPage() {
   }));
 
   return (
-    <div className="max-w-3xl mx-auto px-6 py-10 animate-fade-in-slow">
-      <a href="/pacts" className="text-text-muted text-sm hover:text-amber transition-colors mb-8 inline-block">← Back to pacts</a>
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-10 animate-fade-in-slow">
+      <a href="/pacts" className="text-text-muted text-sm hover:text-amber transition-colors mb-6 sm:mb-8 inline-block">← Back to pacts</a>
 
-      <div className="mb-10">
-        <h1 className="page-title mb-2">Pact Detail</h1>
-        <code className="text-sm text-text-muted font-mono break-all">{pactId}</code>
+      <div className="mb-8 sm:mb-10">
+        <h1 className="page-title mb-2 text-2xl sm:text-3xl">Pact Detail</h1>
+        <code className="text-xs sm:text-sm text-text-muted font-mono break-all">{pactId}</code>
       </div>
 
       {/* Current State */}
-      <div className={`card-glow p-6 mb-8 border-l-2 ${stateName === "ACTIVE" ? "border-l-success" : stateName === "BREACHED" ? "border-l-danger" : "border-l-amber"}`}>
-        <div className="flex items-center justify-between mb-4">
-          <span className="text-sm text-text-muted uppercase tracking-wider">Current State</span>
-          <span className={`px-3 py-1.5 rounded-md text-sm font-semibold border ${stateColor}`}>{stateName}</span>
+      <div className={`card-glow p-4 sm:p-6 mb-6 sm:mb-8 border-l-2 ${stateName === "ACTIVE" ? "border-l-success" : stateName === "BREACHED" ? "border-l-danger" : "border-l-amber"}`}>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-4">
+          <span className="text-xs sm:text-sm text-text-muted uppercase tracking-wider">Current State</span>
+          <span className={`self-start sm:self-auto px-3 py-1.5 rounded-md text-sm font-semibold border ${stateColor}`}>{stateName}</span>
         </div>
         <p className="text-text-secondary text-sm leading-relaxed">{stateDesc}</p>
       </div>
 
       {/* Metrics */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-10">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-8 sm:mb-10">
         {[
           { label: "Attestations", value: String(pact.attestationCount ?? 0) },
           { label: "Degradations", value: String(pact.degradationCount ?? 0) },
@@ -217,7 +236,7 @@ export default function PactDetailPage() {
                 )}
               </div>
               <div className="pb-5">
-                <span className={`text-sm font-medium ${
+                <span className={`text-base font-medium ${
                   step.current ? "text-amber" :
                   step.active ? "text-text-secondary" :
                   "text-text-muted"
@@ -226,6 +245,13 @@ export default function PactDetailPage() {
                 </span>
                 {step.current && (
                   <span className="ml-2 text-xs text-amber animate-pulse">◀ current</span>
+                )}
+                {step.active && STATE_TRANSITIONS[step.name] && (
+                  <p className={`text-sm mt-1 leading-relaxed max-w-md ${
+                    step.current ? "text-text-secondary" : "text-text-muted"
+                  }`}>
+                    {STATE_TRANSITIONS[step.name]}
+                  </p>
                 )}
               </div>
             </div>

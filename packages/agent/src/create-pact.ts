@@ -37,7 +37,7 @@ function getPartyBSigner(): ethers.Wallet {
   const demoKey = config.DEMO_PARTY_B_KEY;
   if (!demoKey) {
     logger.warn({ event: "demo_party_b_no_key" }, "DEMO_PARTY_B_KEY not set — using random wallet.");
-    return ethers.Wallet.createRandom().connect(getPartyAProvider());
+    return ethers.Wallet.createRandom().connect(getPartyAProvider()) as unknown as ethers.Wallet;
   }
   return new ethers.Wallet(demoKey, getPartyAProvider());
 }
@@ -46,8 +46,10 @@ function getPartyAProvider(): ethers.JsonRpcProvider {
   return new ethers.JsonRpcProvider(config.XLAYER_RPC_URL, config.XLAYER_CHAIN_ID);
 }
 
-const partyAWallet = () => getSigner();
+// Each pact gets a unique Party A wallet (funded from deployer)
+const partyAWallet = () => ethers.Wallet.createRandom().connect(getPartyAProvider());
 const partyBWallet = () => getPartyBSigner();
+const funderWallet = () => getSigner();
 
 /**
  * Get nonce accounting for pending transactions (prevents "replacement underpriced" errors)
@@ -151,8 +153,8 @@ export async function createPactFromNL(input: CreatePactInput): Promise<CreatePa
       };
     }
 
-    // 2. Create draft on-chain (Party A = agent wallet)
-    const signerA = partyAWallet();
+    // 2. Create draft on-chain (Party A = deployer wallet for demo)
+    const signerA = getSigner();
     const contractA = getPactContract(signerA);
 
     logger.info({ event: "create_pact_draft", partyA: signerA.address });
@@ -202,13 +204,29 @@ export async function createPactFromNL(input: CreatePactInput): Promise<CreatePa
       monitoredConditions: terms.monitoredConditions,
     }], "proposeTerms");
 
-    // 6. Finalize negotiation
+    // 6. Finalize negotiation → PROPOSED
     await sendWithRetry(signerA, contractA, "finalizeNegotiation", [pactId], "finalizeNegotiation");
     logger.info({ event: "create_pact_finalized", pactId, state: "PROPOSED" });
+
+    // 7. Party A deposits escrow
+    await sendWithRetry(signerA, contractA, "depositEscrow", [pactId], "depositEscrow_A");
+    logger.info({ event: "escrow_deposited", pactId, party: "A" });
+
+    // 8. Fund & deposit Party B escrow
+    const escrowAmount = terms.amount;
+    const gasAmount = ethers.parseEther("0.005");
+    const fundTx = await sendWithRetry(signerA, null, "sendTransaction", [signerB.address, escrowAmount + gasAmount], "fundPartyB");
+    logger.info({ event: "party_b_funded", pactId, amount: ethers.formatEther(escrowAmount + gasAmount) });
+    await sendWithRetry(signerB, contractB, "depositEscrow", [pactId], "depositEscrow_B");
+    logger.info({ event: "escrow_deposited", pactId, party: "B", state: "COMMITTED" });
 
     // 6. Read back pact state to confirm
     const contractRead = getPactContractRead();
     const pactData = await contractRead.getPactState(pactId);
+
+    // Store pact name for display
+    const { setPactName } = await import("./index");
+    setPactName(pactId, input.description);
 
     return {
       success: true,
@@ -288,7 +306,7 @@ function generateDefaultTerms(description: string): PactTerms {
   const desc = description.toLowerCase();
 
   // Detect payment amount from description
-  let amount = 100000000000000000000n; // 100 tokens in wei (default)
+  let amount = 100000000000000n; // 0.0001 OKL in wei (testnet — keep tiny)
   const usdcMatch = desc.match(/(\d+)\s*usdc/i);
   if (usdcMatch) amount = BigInt(usdcMatch[1]) * 1000000n; // USDC has 6 decimals
 

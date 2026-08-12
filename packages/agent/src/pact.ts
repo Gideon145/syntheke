@@ -33,6 +33,7 @@ export interface PactData {
   consecutiveDegradation: bigint;
   breachTier: number;
   breachBlock: bigint;
+  cureDeadline: bigint;
   attestationCount: bigint;
   partyADeposited: boolean;
   partyBDeposited: boolean;
@@ -95,6 +96,7 @@ export async function fetchPactState(pactId: string): Promise<PactData> {
     consecutiveDegradation: raw.consecutiveDegradation,
     breachTier: Number(raw.breachTier),
     breachBlock: raw.breachBlock,
+    cureDeadline: raw.cureDeadline,
     attestationCount: raw.attestationCount,
     partyADeposited: raw.partyADeposited,
     partyBDeposited: raw.partyBDeposited,

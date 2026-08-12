@@ -1,0 +1,14 @@
+# Syntheke — Railway Deploy Config
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "cd packages/agent && node --import tsx src/index.ts & sleep 2 && cd packages/dashboard && npx next start --port 3000"
+healthcheckPath = "/health"
+healthcheckTimeout = 15
+restartPolicyType = "always"
+
+# Build the dashboard first
+[build.nixpacks]
+buildCommand = "cd packages/dashboard && npm install && npm run build"
+installCommand = "cd packages/agent && npm install && cd ../dashboard && npm install"

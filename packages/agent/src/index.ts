@@ -5,6 +5,82 @@ import { negotiationEngine } from "./negotiator";
 import type { DisputeEvidence } from "./ai/mediator";
 import { logger } from "./logger";
 
+// ──── Activity Log (ring buffer, last 30 events) ─────────
+
+interface ActivityEntry {
+  timestamp: number;
+  event: string;
+  detail: string;
+  pactId?: string;
+  txHash?: string;
+}
+
+const activityLog: ActivityEntry[] = [];
+const MAX_ACTIVITY = 30;
+
+export function logActivity(event: string, detail: string, pactId?: string, txHash?: string): void {
+  activityLog.push({ timestamp: Date.now(), event, detail, pactId, txHash });
+  if (activityLog.length > MAX_ACTIVITY) activityLog.shift();
+}
+
+// ──── Cached Pact List (refreshed every 30s) ──────────────
+
+interface CachedPact {
+  pactId: string;
+  name: string;
+  subtitle?: string;
+  lastState: number;
+  degradationCount: number;
+  attestationCount: number;
+  partyA?: string;
+  partyB?: string;
+}
+
+// In-memory pact name registry (set during creation)
+const pactNames = new Map<string, string>();
+
+export function setPactName(pactId: string, description: string): void {
+  const short = description.length > 55 ? description.slice(0, 52) + "..." : description;
+  pactNames.set(pactId, short);
+}
+
+let cachedPacts: CachedPact[] = [];
+let lastPactRefresh = 0;
+
+async function refreshPactCache(): Promise<void> {
+  try {
+    const { getPactContractRead } = await import("./pact");
+    const contract = getPactContractRead();
+    const ids: string[] = await contract.getPactIds();
+    const list: CachedPact[] = [];
+    for (const id of ids) {
+      try {
+        const onChain = await contract.getPactState(id);
+        const savedName = pactNames.get(id);
+        // Derive treaty number from position in the reversed list (newest = highest #)
+        const treatyNum = ids.length - list.length;
+        const title = `Treaty #${treatyNum}`;
+        list.push({
+          pactId: id,
+          name: title,
+          subtitle: savedName || undefined,
+          lastState: Number(onChain.state),
+          degradationCount: Number(onChain.consecutiveDegradation),
+          attestationCount: Number(onChain.attestationCount),
+          partyA: onChain.partyA,
+          partyB: onChain.partyB,
+        });
+      } catch { /* skip corrupted */ }
+    }
+    cachedPacts = list.reverse(); // newest first
+    lastPactRefresh = Date.now();
+  } catch { /* keep old cache */ }
+}
+// Initial load
+refreshPactCache();
+// Refresh every 30s
+setInterval(refreshPactCache, 30_000);
+
 /**
  * Syntheke Agent — Main Entry Point
  *
@@ -62,17 +138,28 @@ function createServer(): http.Server {
         return;
       }
 
-      // GET /pacts
-      if (req.method === "GET" && url.pathname === "/pacts") {
-        const state = getMonitorState();
-        const pactsList: Array<{ pactId: string; lastState: number; degradationCount: number; partyA?: string; partyB?: string; attestationCount?: number }> = [];
-        if (state) {
-          for (const [id, tracker] of state.pactsMonitored) {
-            pactsList.push({ pactId: id, lastState: tracker.lastState, degradationCount: tracker.degradationCount, attestationCount: tracker.lastAttestationBlock > 0 ? 1 : 0 });
-          }
-        }
+      // GET /activity — recent agent events
+      if (req.method === "GET" && url.pathname === "/activity") {
         res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ pacts: pactsList, total: pactsList.length }));
+        res.end(JSON.stringify({ events: activityLog.slice(-20), total: activityLog.length }));
+        return;
+      }
+
+      // GET /notifications — A2A notification history
+      if (req.method === "GET" && url.pathname === "/notifications") {
+        const { getRecentNotifications } = await import("./notify");
+        const notifs = getRecentNotifications(20);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ notifications: notifs, total: notifs.length }));
+        return;
+      }
+
+      // GET /pacts — return from cache (refreshed every 30s)
+      if (req.method === "GET" && url.pathname === "/pacts") {
+        // Trigger async refresh if cache is stale
+        if (Date.now() - lastPactRefresh > 15_000) refreshPactCache();
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ pacts: cachedPacts, total: cachedPacts.length }));
         return;
       }
 
@@ -91,12 +178,12 @@ function createServer(): http.Server {
           enriched = {
             pactId,
             lastState: Number(onChain.state),
-            degradationCount: tracker?.degradationCount ?? 0,
+            degradationCount: Number(onChain.consecutiveDegradation),
             attestationCount: Number(onChain.attestationCount),
-            lastAttestationBlock: tracker?.lastAttestationBlock ?? 0,
+            lastAttestationBlock: tracker?.lastAttestationBlock || Number(onChain.breachBlock) || 0,
             partyA: onChain.partyA,
             partyB: onChain.partyB,
-            activationBlock: Number(onChain.activationBlock),
+            activationBlock: Number(onChain.activationBlock) || Number(onChain.breachBlock) || 0,
             breachTier: Number(onChain.breachTier),
             closed: onChain.closed,
           };
@@ -234,6 +321,23 @@ function createServer(): http.Server {
         const result = await joinExistingPact(pactId);
         res.writeHead(result.success ? 200 : 400, { "Content-Type": "application/json" });
         res.end(JSON.stringify(result));
+        return;
+      }
+
+      // POST /notifications/test — simulate an A2A ping for testing
+      if (req.method === "POST" && url.pathname === "/notifications/test") {
+        const { notifyParties } = await import("./notify");
+        const testPactId = "0x" + "aa".repeat(32);
+        const partyA = "0xCAadA93b4A4D8632d77435A8ee51E5C3D497fD03";
+        const partyB = "0x" + "bb".repeat(20);
+        const results = [
+          notifyParties(testPactId, "DEGRADING", partyA, partyB, "Payment timeliness at 72% — 3 consecutive cycles below threshold"),
+          notifyParties(testPactId, "BREACHED", partyA, partyB, "Liquidation monitoring SLA violated — 0/8 conditions passing"),
+          notifyParties(testPactId, "ARBITRATING", partyA, partyB, "100-block cure window expired — escalating to AI mediators"),
+          notifyParties(testPactId, "CLOSED", partyA, partyB, "50/50 split — escrow distributed, reputation updated on-chain"),
+        ];
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ sent: results.flat().length, states: ["DEGRADING", "BREACHED", "ARBITRATING", "CLOSED"] }));
         return;
       }
 

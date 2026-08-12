@@ -9,11 +9,13 @@ export default function PactsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let firstLoad = true;
     const load = async () => {
       try {
         const p = await fetchPacts();
-        setPacts(p);
-      } catch { /* agent may be offline */ }
+        if (p.length > 0 || firstLoad) setPacts(p);
+        firstLoad = false;
+      } catch { /* keep existing data, don't clear */ }
       setLoading(false);
     };
     load();
@@ -24,9 +26,9 @@ export default function PactsPage() {
   const stateMap: Record<string,string> = {"0":"DRAFT","1":"NEGOTIATING","2":"PROPOSED","3":"COMMITTED","4":"ACTIVE","5":"DEGRADING","6":"RENEGOTIATING","7":"BREACHED","8":"CURING","9":"ARBITRATING","10":"RESOLVING","11":"SETTLING","12":"CLOSED"};
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-10 animate-fade-in">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-10 animate-fade-in">
       <h1 className="page-title mb-1">Pacts</h1>
-      <p className="page-subtitle mb-10">
+      <p className="page-subtitle mb-8 sm:mb-10 text-sm sm:text-base">
         Autonomous economic treaties on X Layer · <span className="text-okx font-semibold">{pacts.length}</span> found
       </p>
       {loading ? (
@@ -55,9 +57,13 @@ export default function PactsPage() {
             const stateColors: Record<string,string> = {ACTIVE:"border-l-success",BREACHED:"border-l-danger",DEGRADING:"border-l-warning",ARBITRATING:"border-l-danger",CURING:"border-l-warning",CLOSED:"border-l-text-muted"};
             const sc = stateColors[stateName] ?? "border-l-text-muted";
             return (
-              <div key={pid} className={`card-glow p-5 border-l-2 ${sc} cursor-pointer`} onClick={() => window.location.href = `/pacts/${encodeURIComponent(pid)}`}>
-                <div className="flex items-center justify-between mb-3">
-                  <code className="text-sm font-mono text-text-secondary group-hover:text-text-primary transition-colors">{pid.slice(0, 34)}...</code>
+              <div key={pid} className={`card-glow p-4 sm:p-5 border-l-2 ${sc} cursor-pointer`} onClick={() => window.location.href = `/pacts/${encodeURIComponent(pid)}`}>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-3">
+                  <div className="min-w-0">
+                    <span className="text-sm font-bold text-text-primary truncate block">{p.name || "Untitled"}</span>
+                    {p.subtitle && <p className="text-xs text-text-muted mt-0.5 leading-relaxed line-clamp-1">{p.subtitle}</p>}
+                    <code className="text-xs font-mono text-text-muted break-all">{pid.slice(0, 14)}...</code>
+                  </div>
                   <span className="text-xs text-text-muted tabular-nums">{attCount} on-chain attestations</span>
                 </div>
                 <div className="flex items-center justify-end">

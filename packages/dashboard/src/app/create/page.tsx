@@ -79,15 +79,15 @@ export default function CreatePactPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-12 animate-fade-in">
-      <h1 className="page-title mb-2">Create a Pact</h1>
-      <p className="page-subtitle mb-10">
+    <div className="max-w-2xl mx-auto px-4 py-8 sm:py-12 animate-fade-in">
+      <h1 className="page-title mb-2 text-2xl sm:text-3xl">Create a Pact</h1>
+      <p className="page-subtitle mb-8 sm:mb-10 text-sm sm:text-base">
         Describe two AI agents and the economic treaty they want to form.
         Syntheke&apos;s AI negotiator generates terms, then the pact goes live on X Layer.
       </p>
 
-      <form onSubmit={handleCreate} className="space-y-6">
-        <div className="grid grid-cols-2 gap-4">
+      <form onSubmit={handleCreate} className="space-y-5 sm:space-y-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-2">
               Party A (Initiator)

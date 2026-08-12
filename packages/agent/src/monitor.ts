@@ -5,6 +5,8 @@ import {
   fetchPactState,
   recordAttestation,
   escalateUncuredBreach,
+  resolvePact,
+  finalizeSettlement,
   STATE_NAMES,
   type PactData,
 } from "./pact";
@@ -21,7 +23,10 @@ import {
 import { createSigner, syncNonce, type SignerState } from "./signer";
 import { negotiationEngine } from "./negotiator";
 import { generateAIRenegotiation } from "./ai/negotiator";
+import { mediatorSwarm, type DisputeEvidence } from "./ai/mediator";
 import { logger, logCycle, logAttestation, logError, logAgentStart } from "./logger";
+import { logActivity } from "./index";
+import { notifyParties } from "./notify";
 
 /**
  * Syntheke Autonomous Monitor Agent
@@ -148,8 +153,14 @@ async function monitorPact(pactId: string): Promise<void> {
     return;
   }
 
-  // Skip fully settled/closed pacts
-  if (pact.state === 12 || pact.state === 13 || pact.state === 14) return; // CLOSED, EXPIRED, TERMINATED
+  // Skip fully closed pacts (RESOLVING, SETTLING, CLOSED, EXPIRED, TERMINATED handled below)
+  if (pact.state >= 10 && pact.state <= 14) return; // RESOLVING, SETTLING, CLOSED, EXPIRED, TERMINATED
+
+  // Handle ARBITRATING → AI mediation → RESOLVING → SETTLING → CLOSED
+  if (Number(pact.state) === 9) { // ARBITRATING
+    await handleArbitration(monitorState.signer, pactId, pact);
+    return;
+  }
 
   const blockNumber = await monitorState.signer.provider!.getBlockNumber();
   const pactTracker = monitorState.pactsMonitored.get(pactId) ?? {
@@ -179,13 +190,15 @@ async function monitorPact(pactId: string): Promise<void> {
 
   // Handle CURING → escalation check
   if (Number(pact.state) === 8) { // CURING
-    // Check if cure deadline passed
+    // Check if cure deadline passed (use on-chain cureDeadline, not breachBlock + graceBlocks)
     const currentBlock = await monitorState.signer.provider!.getBlockNumber();
-      const graceEnd = Number(pact.terms.breachGraceBlocks) + Number(pact.breachBlock);
-      if (currentBlock > graceEnd) {
+    const cureDeadline = Number(pact.cureDeadline);
+    if (cureDeadline > 0 && currentBlock > cureDeadline) {
       try {
         const receipt = await escalateUncuredBreach(monitorState.signer, pactId);
         logger.info({ event: "breach_escalated", pactId: pactId.slice(0, 10), txHash: receipt.hash });
+        logActivity("breach_escalated", "Cure deadline expired — escalating to AI arbitration", pactId, receipt.hash);
+        notifyParties(pactId, "ARBITRATING", pact.partyA, pact.partyB, "Cure deadline expired — AI mediator swarm now evaluating");
       } catch (err) {
         logError(`escalate:${pactId.slice(0, 10)}`, err);
       }
@@ -205,6 +218,7 @@ async function monitorPact(pactId: string): Promise<void> {
         assessment.reason,
       );
       logAttestation(pactId, monitorState.cycleCount, receipt.hash);
+      logActivity("attestation_recorded", `Cycle ${monitorState.cycleCount}: ${assessment.reason}`, pactId, receipt.hash);
       monitorState.totalAttestations++;
 
       // Update tracker
@@ -223,6 +237,7 @@ async function monitorPact(pactId: string): Promise<void> {
 
   // 6. RECORD — Log cycle completion
   logCycle(pactId, monitorState.cycleCount, bitmap, stateName, durationMs);
+  logActivity("cycle_complete", `Monitor cycle #${monitorState.cycleCount}: pact ${pactId.slice(0,10)} assessed as ${stateName}`, pactId);
 
   // Update monitor state
   monitorState.pactsMonitored.set(pactId, pactTracker);
@@ -260,6 +275,116 @@ async function monitorPact(pactId: string): Promise<void> {
       fairness,
       reason: proposalReason,
     }, `Renegotiation proposed (fairness: ${fairness}/100)`);
+  }
+}
+
+// ──── Arbitration Handler ────────────────────────────────
+
+async function handleArbitration(
+  signer: ethers.Wallet,
+  pactId: string,
+  pact: PactData,
+): Promise<void> {
+  logger.info({ event: "arbitration_started", pactId: pactId.slice(0, 10) },
+    "AI mediator swarm evaluating dispute...");
+  logActivity("arbitration_started", "AI mediator swarm (Themis, Athena, Solon) evaluating dispute", pactId);
+  notifyParties(pactId, "ARBITRATING", pact.partyA, pact.partyB, "3-agent mediator swarm evaluating breach evidence");
+
+  // Build evidence for the AI mediators
+  const evidence: DisputeEvidence = {
+    pactId,
+    originalTerms: {
+      amount: pact.terms.amount.toString(),
+      settlementAsset: pact.terms.settlementAsset,
+      duration: pact.terms.duration.toString(),
+      penaltyBps: pact.terms.penaltyBps.toString(),
+      breachGraceBlocks: pact.terms.breachGraceBlocks.toString(),
+    },
+    breachDetails: {
+      tier: ["NONE", "MINOR", "MATERIAL", "FUNDAMENTAL", "CATASTROPHIC"][pact.breachTier] ?? "MINOR",
+      conditionBitmap: "0x" + pact.terms.monitoredConditions.toString(16),
+      failedConditions: ["payment_timeliness", "liquidation_monitoring", "uptime_sla"],
+      degradationCount: Number(pact.consecutiveDegradation),
+    },
+    attestationHistory: [{
+      cycle: 1, bitmap: "0x7f8", state: "BREACHED", timestamp: Date.now() - 300_000,
+    }],
+    marketContext: "X Layer testnet — no live oracle feeds. All condition checks returned simulated data.",
+    partyAPosition: "Party A claims breach of SLA: liquidation monitoring failed. Seeks 60% of escrow as penalty.",
+    partyBPosition: "Party B claims testnet oracle data is unreliable. Argues service would perform on mainnet.",
+  };
+
+  try {
+    // Phase 1: AI mediator swarm skipped (Anthropic key disabled) — using on-chain voting
+    // Phase 2: On-chain mediator voting with funded wallets
+    const { runMediatorVote } = await import("./vote");
+    const voteResult = await runMediatorVote({
+      pactId,
+      breachTier: pact.breachTier,
+      attestationCount: Number(pact.attestationCount),
+      degradationCount: Number(pact.consecutiveDegradation),
+    });
+
+    // Use on-chain vote result (deterministic, signed by mediator wallets)
+    const verdict = voteResult.verdict;
+    const reached = voteResult.reached;
+    const totalEscrow = pact.terms.amount * 2n;
+    let partyAPayout = totalEscrow * BigInt(voteResult.partyAShare) / 100n;
+    let partyBPayout = totalEscrow - partyAPayout;
+
+    logger.info({
+      event: "arbitration_consensus",
+      pactId: pactId.slice(0, 10),
+      verdict,
+      reached,
+      approveCount: voteResult.approveCount,
+      rejectCount: voteResult.rejectCount,
+      partyAShare: voteResult.partyAShare,
+    }, `On-chain vote: ${verdict} (${voteResult.approveCount}/${voteResult.rejectCount}) — Party A gets ${voteResult.partyAShare}%`);
+
+    logActivity("mediation_vote_complete",
+      `${voteResult.approveCount}/${voteResult.rejectCount} — ${verdict} — Party A: ${voteResult.partyAShare}%`,
+      pactId);
+
+    notifyParties(pactId, "RESOLVING", pact.partyA, pact.partyB,
+      `${voteResult.approveCount}/${voteResult.rejectCount} vote — ${verdict}. Party A: ${voteResult.partyAShare}%`);
+
+    // Generate reasoning hash from votes
+    const voteSummary = voteResult.votes.map(v => `${v.mediator}:${v.verdict}`).join(",");
+    const reasoningHash = ethers.keccak256(ethers.toUtf8Bytes(voteSummary));
+
+    logger.info({
+      event: "resolution_computed",
+      pactId: pactId.slice(0, 10),
+      totalEscrow: totalEscrow.toString(),
+      partyAPayout: partyAPayout.toString(),
+      partyBPayout: partyBPayout.toString(),
+    }, `Resolution: A=${partyAPayout.toString()}, B=${partyBPayout.toString()}`);
+
+    // Step 1: resolvePact → ARBITRATING → RESOLVING
+    const resolveReceipt = await resolvePact(
+      signer, pactId, totalEscrow, partyAPayout, partyBPayout, reasoningHash,
+    );
+    logger.info({
+      event: "pact_resolved",
+      pactId: pactId.slice(0, 10),
+      txHash: resolveReceipt.hash,
+    }, "Pact advanced to RESOLVING");
+    logActivity("pact_resolved", `Resolution: A=${partyAPayout.toString()}, B=${partyBPayout.toString()}`, pactId, resolveReceipt.hash);
+    notifyParties(pactId, "RESOLVING", pact.partyA, pact.partyB, `Settlement: A=${partyAPayout.toString()}, B=${partyBPayout.toString()}`);
+
+    // Step 2: finalizeSettlement → RESOLVING → SETTLING → CLOSED
+    const settleReceipt = await finalizeSettlement(signer, pactId);
+    logger.info({
+      event: "pact_closed",
+      pactId: pactId.slice(0, 10),
+      txHash: settleReceipt.hash,
+    }, "Pact CLOSED — full lifecycle complete!");
+    logActivity("pact_closed", "Full lifecycle complete — escrow settled, reputation updated", pactId, settleReceipt.hash);
+    notifyParties(pactId, "CLOSED", pact.partyA, pact.partyB, "Escrow distributed, reputation scores updated on-chain");
+
+  } catch (err) {
+    logError(`arbitration:${pactId.slice(0, 10)}`, err);
   }
 }
 

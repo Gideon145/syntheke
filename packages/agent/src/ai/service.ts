@@ -188,18 +188,18 @@ export class AIService {
       const latencyMs = Date.now() - startTime;
       logger.info({
         event: "ai_query_complete",
-        model: json.model,
+        model: modelUsed,
         confidence,
         latencyMs,
         commitmentHash: commitmentHash.slice(0, 18),
-      }, `AI query: ${json.model} in ${latencyMs}ms (confidence: ${confidence})`);
+      }, `AI query: ${modelUsed} in ${latencyMs}ms (confidence: ${confidence})`);
 
       return {
         data,
         reasoning: data.reasoning ?? "",
         confidence,
         commitmentHash,
-        model: json.model,
+        model: modelUsed,
         latencyMs,
       };
     } catch (err) {

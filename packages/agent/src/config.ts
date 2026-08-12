@@ -11,6 +11,14 @@ const configSchema = z.object({
   AGENT_ADDRESS: z.string().optional(),
   DEMO_PARTY_B_KEY: z.string().optional(), // Demo wallet for Party B in create-pact flow
 
+  // Mediator wallets (funded on testnet for on-chain voting)
+  THEMIS_PRIVATE_KEY: z.string().optional(),
+  THEMIS_ADDRESS: z.string().optional(),
+  ATHENA_PRIVATE_KEY: z.string().optional(),
+  ATHENA_ADDRESS: z.string().optional(),
+  SOLON_PRIVATE_KEY: z.string().optional(),
+  SOLON_ADDRESS: z.string().optional(),
+
   // Syntheke contracts (Phase 1 deployed addresses)
   SYNTHEKE_CONTRACT: z.string().default("0xe465405380E2E0f625028447E85917662E71ad42"),
   AGENT_REGISTRY: z.string().default("0x0101Ed240dA20FFDD95bca8E7408DAa889aE217B"),

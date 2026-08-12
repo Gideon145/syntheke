@@ -166,3 +166,36 @@
 
 /* Selection */
 ::selection { background: rgba(201,162,74,0.06); color: #fafafa; }
+
+/* ──── Mobile-friendly tweaks ─────────────────────────── */
+
+/* Larger touch targets on mobile */
+@media (max-width: 640px) {
+  .pact-row {
+    @apply p-3;
+  }
+  .card-glow {
+    @apply rounded-lg;
+  }
+  input, textarea, select, button {
+    font-size: 16px !important; /* prevent iOS zoom on focus */
+  }
+  /* Stack flex rows that don't need side-by-side on mobile */
+  .metric-card .metric-value {
+    @apply text-xl;
+  }
+}
+
+/* Line clamp utility */
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
