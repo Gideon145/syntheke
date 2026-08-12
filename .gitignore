@@ -26,3 +26,5 @@ contracts/broadcast/
 # Next.js build
 packages/dashboard/.next/
 
+.vercel
+.env*.local
