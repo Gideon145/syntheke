@@ -51,8 +51,13 @@ export class AIService {
     return this.apiKey.length > 0;
   }
 
+  private get isAnthropic(): boolean {
+    return this.apiKey.startsWith("sk-ant") || this.baseUrl.includes("anthropic");
+  }
+
   /**
    * Send a structured request to the AI model.
+   * Supports both OpenAI and Anthropic APIs.
    * Returns null if AI is unavailable — caller MUST fall back to heuristic.
    */
   async query<T>(request: AIRequest): Promise<AIResponse<T> | null> {
@@ -64,41 +69,84 @@ export class AIService {
     const startTime = Date.now();
 
     try {
-      const response = await fetch(`${this.baseUrl}/chat/completions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${this.apiKey}`,
-        },
-        body: JSON.stringify({
-          model: this.model,
-          messages: [
-            { role: "system", content: request.systemPrompt },
-            { role: "user", content: request.userPrompt },
-          ],
-          temperature: request.temperature ?? 0.3,
-          max_tokens: request.maxTokens ?? 2000,
-          response_format: { type: "json_object" },
-        }),
-        signal: AbortSignal.timeout(30_000),
-      });
+      let rawContent: string;
+      let modelUsed: string;
 
-      if (!response.ok) {
-        const errText = await response.text().catch(() => "unknown");
-        logger.error({ event: "ai_api_error", status: response.status, body: errText.slice(0, 200) });
-        return null;
+      if (this.isAnthropic) {
+        // Anthropic Claude API
+        const response = await fetch(`${this.baseUrl}/messages`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": this.apiKey,
+            "anthropic-version": "2023-06-01",
+          },
+          body: JSON.stringify({
+            model: this.model,
+            max_tokens: request.maxTokens ?? 2000,
+            system: request.systemPrompt,
+            messages: [
+              { role: "user", content: request.userPrompt + "\n\nRespond with valid JSON only, no markdown formatting." },
+            ],
+            temperature: request.temperature ?? 0.3,
+          }),
+          signal: AbortSignal.timeout(30_000),
+        });
+
+        if (!response.ok) {
+          const errText = await response.text().catch(() => "unknown");
+          logger.error({ event: "ai_api_error", provider: "anthropic", status: response.status, body: errText.slice(0, 200) });
+          return null;
+        }
+
+        const json = await response.json() as {
+          content: Array<{ type: string; text: string }>;
+          model: string;
+        };
+        rawContent = json.content?.[0]?.text ?? "";
+        modelUsed = json.model;
+      } else {
+        // OpenAI API
+        const response = await fetch(`${this.baseUrl}/chat/completions`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${this.apiKey}`,
+          },
+          body: JSON.stringify({
+            model: this.model,
+            messages: [
+              { role: "system", content: request.systemPrompt },
+              { role: "user", content: request.userPrompt },
+            ],
+            temperature: request.temperature ?? 0.3,
+            max_tokens: request.maxTokens ?? 2000,
+            response_format: { type: "json_object" },
+          }),
+          signal: AbortSignal.timeout(30_000),
+        });
+
+        if (!response.ok) {
+          const errText = await response.text().catch(() => "unknown");
+          logger.error({ event: "ai_api_error", provider: "openai", status: response.status, body: errText.slice(0, 200) });
+          return null;
+        }
+
+        const json = await response.json() as {
+          choices: Array<{ message: { content: string } }>;
+          model: string;
+        };
+        rawContent = json.choices[0]?.message?.content ?? "";
+        modelUsed = json.model;
       }
 
-      const json = await response.json() as {
-        choices: Array<{ message: { content: string } }>;
-        model: string;
-      };
-
-      const rawContent = json.choices[0]?.message?.content;
       if (!rawContent) {
         logger.error({ event: "ai_empty_response" });
         return null;
       }
+
+      // Strip markdown code fences if present (Claude sometimes wraps in ```json)
+      rawContent = rawContent.replace(/^```(?:json)?\s*\n?/i, "").replace(/\n?```\s*$/, "").trim();
 
       // Parse JSON from AI response
       let parsed: unknown;

@@ -246,8 +246,17 @@ export async function createPactFromNL(input: CreatePactInput): Promise<CreatePa
  */
 export async function joinExistingPact(pactId: string): Promise<CreatePactResult> {
   try {
+    const signerA = partyAWallet();
     const signerB = partyBWallet();
     const contractB = getPactContract(signerB);
+
+    // Auto-fund Party B from Party A for gas
+    const gasTransfer = await signerA.sendTransaction({
+      to: signerB.address,
+      value: ethers.parseEther("0.01"),
+    });
+    await gasTransfer.wait();
+    logger.info({ event: "join_pact_funded_party_b", partyB: signerB.address });
 
     const txJoin = await contractB.joinDraft(pactId);
     await txJoin.wait();
