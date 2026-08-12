@@ -5,7 +5,7 @@ export default function Home() {
       <div className="mb-32 space-y-8">
         <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-lantern-glow border border-lantern-glow text-amber text-sm animate-fade-in-slow animate-lantern">
           <div className="w-1.5 h-1.5 rounded-full bg-amber animate-pulse" />
-          AI Season 2026 · Live on X Layer Testnet
+          Live on X Layer Testnet
         </div>
 
         <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-text-primary leading-[1.08] animate-fade-up">
@@ -68,10 +68,10 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Footer — Kage-style: quiet, respectful */}
+      {/* Footer */}
       <div className="hr-hairline pt-10 flex justify-between text-sm text-text-muted">
-        <span>Syntheke Protocol · Built on X Layer · AI Season 2026</span>
-        <a href="https://github.com/Gideon145/syntheke" className="hover:text-amber transition-colors duration-500">GitHub →</a>
+        <span>Syntheke Protocol · Built on X Layer</span>
+        <span>συνθήκη — autonomous treaties</span>
       </div>
     </div>
   );

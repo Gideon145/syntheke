@@ -83,7 +83,7 @@ export default function DashboardPage() {
             const stateName = stateMap[st] ?? "ACTIVE";
             const attCount = p.attestationCount ?? 0;
             return (
-            <div key={pid} className="pact-row group">
+            <div key={pid} className="pact-row group cursor-pointer" onClick={() => window.location.href = `/pacts/${encodeURIComponent(pid)}`}>
               <div className="flex items-center gap-4">
                 <div className={`w-2.5 h-2.5 rounded-full ${stateColor(stateName)} group-hover:shadow-glow transition-shadow`} />
                 <div>

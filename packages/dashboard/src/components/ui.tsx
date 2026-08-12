@@ -82,10 +82,6 @@ export function Navbar() {
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <a href="https://github.com/Gideon145/syntheke" target="_blank" rel="noopener"
-            className="text-sm text-text-muted hover:text-amber transition-colors duration-500">
-            GitHub
-          </a>
           <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-amber/5 border border-amber/10 text-amber">
             <div className="w-1.5 h-1.5 rounded-full bg-amber animate-lantern-pulse" />
             <span>X Layer Testnet</span>

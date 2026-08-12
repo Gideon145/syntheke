@@ -55,7 +55,7 @@ export default function PactsPage() {
             const stateColors: Record<string,string> = {ACTIVE:"border-l-success",BREACHED:"border-l-danger",DEGRADING:"border-l-warning",ARBITRATING:"border-l-danger",CURING:"border-l-warning",CLOSED:"border-l-text-muted"};
             const sc = stateColors[stateName] ?? "border-l-text-muted";
             return (
-              <div key={pid} className={`card-glow p-5 border-l-2 ${sc}`}>
+              <div key={pid} className={`card-glow p-5 border-l-2 ${sc} cursor-pointer`} onClick={() => window.location.href = `/pacts/${encodeURIComponent(pid)}`}>
                 <div className="flex items-center justify-between mb-3">
                   <code className="text-sm font-mono text-text-secondary group-hover:text-text-primary transition-colors">{pid.slice(0, 34)}...</code>
                   <span className="text-xs text-text-muted tabular-nums">{attCount} on-chain attestations</span>
