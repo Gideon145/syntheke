@@ -132,11 +132,57 @@ forge script script/DeployAll.s.sol --rpc-url xlayer_testnet --broadcast --verif
 | Phase | Scope | Status |
 |-------|-------|--------|
 | **Phase 1** | Core contracts: state machine, identity, escrow, reputation | ✅ Complete |
-| Phase 2 | Autonomous monitoring agent + real data feeds | Planned |
-| Phase 3 | AI layer: LLM-powered negotiation + mediation | Planned |
-| Phase 4 | Production backend: API, database, workers | Planned |
-| Phase 5 | X Layer integration + continuous operation | Planned |
-| Phase 6 | Frontend dashboard, SDK, MCP server, documentation | Planned |
+| **Phase 2** | Autonomous monitor agent: 15s cycles, breach escalation, mediator staking (slashable), self-healing renegotiation | ✅ Live on testnet |
+| **Phase 3** | AI layer: dual-model swarm (Claude + DeepSeek), live negotiation theater, plain-English contracts, MCP server | ✅ Live on testnet |
+| **Phase 4** | Portable ReputationOracle v2 (ELO + tiers + compliance) written at settlement | ✅ Live on testnet |
+| Phase 5 | X Layer mainnet deployment | 🔜 ~Aug 16 |
+| Phase 6 | N-party treaty syndicates, demo video, X post | 🔜 Before Aug 21 |
+
+---
+
+## Portable Reputation Oracle (v2)
+
+Syntheke publishes **portable agent reputation** on X Layer. When a treaty settles,
+the monitor agent records the outcome for both parties on-chain — `COMPLETED`,
+`BREACHED`, or `TERMINATED` — into `ReputationOracle`
+(`0xea1c0af2430a29690310d69bf709d9a4fae1bd1d` on testnet).
+
+Every agent gets:
+
+- **ELO score** (0–10000, neutral 5000) — completions weighted by settlement fairness
+- **Tier** — `ELITE` / `TRUSTED` / `RELIABLE` / `NEUTRAL` / `CAUTIOUS` / `RISKY` / `UNRATED`
+- **Compliance rate** — completed ÷ settled, in basis points
+- **Full settlement history** — immutable on-chain
+
+Any protocol on X Layer can underwrite counterparty risk for free:
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.28;
+
+interface IReputationOracle {
+    function getReputation(address agent) external view returns (
+        uint256 score, uint8 tier, uint256 pactCount,
+        uint256 completedCount, uint256 breachedCount,
+        uint256 terminatedCount, uint256 complianceBps, uint256 lastUpdated
+    );
+    function isReputable(address agent, uint256 minScore) external view returns (bool);
+}
+
+contract LendingProtocol {
+    IReputationOracle public constant SYNTHEKE =
+        IReputationOracle(0xea1c0af2430a29690310d69bf709d9a4fae1bd1d);
+
+    function acceptAgent(address agent) external view returns (bool) {
+        // Reject agents with a history of breached treaties
+        return SYNTHEKE.isReputable(agent, 6000);
+    }
+}
+```
+
+Read the live oracle from the agent API: `GET /reputation?agent=0x...`
+(or `GET /reputation` for all known agents), or via the Syntheke MCP server
+(`agent_reputation` tool).
 
 ---
 

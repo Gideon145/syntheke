@@ -1,0 +1,536 @@
+[
+  {
+    "type": "constructor",
+    "inputs": [
+      {
+        "name": "_monitorAgent",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "_registryV1",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "K_FACTOR",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "MAX_SCORE",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "NEUTRAL_SCORE",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "complianceScore",
+    "inputs": [
+      {
+        "name": "agent",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getHistory",
+    "inputs": [
+      {
+        "name": "agent",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple[]",
+        "internalType": "struct ReputationOracle.OutcomeEvent[]",
+        "components": [
+          {
+            "name": "agent",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "pactId",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "outcome",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "delta",
+            "type": "int256",
+            "internalType": "int256"
+          },
+          {
+            "name": "newScore",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "timestamp",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getHistoryLength",
+    "inputs": [
+      {
+        "name": "agent",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getReputation",
+    "inputs": [
+      {
+        "name": "agent",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "r",
+        "type": "tuple",
+        "internalType": "struct ReputationOracle.Reputation",
+        "components": [
+          {
+            "name": "score",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "tier",
+            "type": "uint8",
+            "internalType": "enum ReputationOracle.Tier"
+          },
+          {
+            "name": "pactCount",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "completedCount",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "breachedCount",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "terminatedCount",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "complianceBps",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "lastUpdated",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getScore",
+    "inputs": [
+      {
+        "name": "agent",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getTier",
+    "inputs": [
+      {
+        "name": "agent",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint8",
+        "internalType": "enum ReputationOracle.Tier"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "history",
+    "inputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "agent",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "pactId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "outcome",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "delta",
+        "type": "int256",
+        "internalType": "int256"
+      },
+      {
+        "name": "newScore",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "timestamp",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "isReputable",
+    "inputs": [
+      {
+        "name": "agent",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "minScore",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "monitorAgent",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "oracleInfo",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "version",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "kFactor",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "owner",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "recordOutcome",
+    "inputs": [
+      {
+        "name": "pactId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "agent",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "outcome",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "fairnessBps",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "newScore",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "records",
+    "inputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "score",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "tier",
+        "type": "uint8",
+        "internalType": "enum ReputationOracle.Tier"
+      },
+      {
+        "name": "pactCount",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "completedCount",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "breachedCount",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "terminatedCount",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "complianceBps",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "lastUpdated",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "registryV1",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract IReputationRegistryV1"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "setMonitorAgent",
+    "inputs": [
+      {
+        "name": "_m",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setRegistryV1",
+    "inputs": [
+      {
+        "name": "_r",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "event",
+    "name": "OutcomeRecorded",
+    "inputs": [
+      {
+        "name": "agent",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "pactId",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "outcome",
+        "type": "string",
+        "indexed": false,
+        "internalType": "string"
+      },
+      {
+        "name": "delta",
+        "type": "int256",
+        "indexed": false,
+        "internalType": "int256"
+      },
+      {
+        "name": "newScore",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "error",
+    "name": "InvalidOutcome",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NotMonitor",
+    "inputs": []
+  }
+]

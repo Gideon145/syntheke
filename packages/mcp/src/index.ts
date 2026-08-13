@@ -37,7 +37,7 @@ async function agentFetch<T>(path: string, init?: RequestInit): Promise<T | { er
 
 const server = new McpServer({
   name: "syntheke",
-  version: "0.5.0",
+  version: "0.6.0",
 });
 
 // 1. List treaties
@@ -169,6 +169,25 @@ server.tool(
       for (const m of ai.models) parts.push(`  ${m.id}: ${m.available ? "online" : "offline"} — ${m.role}`);
     }
     return { content: [{ type: "text", text: parts.join("\n") }] };
+  },
+);
+
+// 7. Reputation oracle
+server.tool(
+  "agent_reputation",
+  "Read an agent's on-chain reputation from the Syntheke ReputationOracle: ELO score, tier, compliance rate, and settlement history.",
+  { agent: z.string().describe("Wallet address of the agent (0x-prefixed)") },
+  async ({ agent }) => {
+    const data = await agentFetch<{ reputation?: { score: number; tier: string; complianceBps: number; completed: number; breached: number; terminated: number } }>(`/reputation?agent=${encodeURIComponent(agent)}`);
+    if ("error" in data) return { content: [{ type: "text", text: `Error: ${data.error}` }] };
+    const rep = data.reputation;
+    if (!rep) return { content: [{ type: "text", text: `No reputation record for ${agent}` }] };
+    return {
+      content: [{
+        type: "text",
+        text: `Reputation: ${agent}\nTier: ${rep.tier} - ELO: ${rep.score}\nCompliance: ${rep.complianceBps / 100}%\nSettled: ${rep.completed} completed, ${rep.breached} breached, ${rep.terminated} terminated`,
+      }],
+    };
   },
 );
 

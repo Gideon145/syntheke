@@ -179,6 +179,25 @@ export function isForcedDegraded(pactId: string): boolean {
   return true;
 }
 
+// Demo override: force a CRITICAL condition failure (Party A identity revoked).
+// Next monitor cycle recommends BREACHED (CATASTROPHIC) → immediate AI
+// arbitration → settlement → reputation oracle update. Demo only.
+const forcedBreach = new Map<string, number>(); // pactId → expiry timestamp
+
+export function forceBreach(pactId: string, durationMs = 300_000): void {
+  forcedBreach.set(pactId, Date.now() + durationMs);
+}
+
+export function isForcedBreach(pactId: string): boolean {
+  const expiry = forcedBreach.get(pactId);
+  if (expiry === undefined) return false;
+  if (Date.now() > expiry) {
+    forcedBreach.delete(pactId);
+    return false;
+  }
+  return true;
+}
+
 export async function collectConditions(
   pactId: string,
   partyA: string,
@@ -192,13 +211,19 @@ export async function collectConditions(
 
   // Demo degradation override: soft conditions fail → DEGRADING → self-heal
   const degrade = isForcedDegraded(pactId);
+  // Demo breach override: critical identity condition fails → arbitration
+  const breach = isForcedBreach(pactId);
 
   // Agent identity checks — graceful on testnet (no registry records)
   if (enabledConditions & (1n << BigInt(0 /* AGENT_IDENTITY_A */))) {
-    const a = await checkAgentIdentity(partyA);
-    results.push({ bit: 0, healthy: a.active || !a.active, detail: `Party A active: ${a.active}`, sourceData: a });
-    // Override: on testnet, treat as healthy even if not registered
-    results[results.length - 1].healthy = a.active || a.source !== "on-chain" || true; // always healthy for demo
+    if (breach) {
+      results.push({ bit: 0, healthy: false, detail: "Party A identity revoked (demo trigger)", sourceData: null });
+    } else {
+      const a = await checkAgentIdentity(partyA);
+      results.push({ bit: 0, healthy: a.active || !a.active, detail: `Party A active: ${a.active}`, sourceData: a });
+      // Override: on testnet, treat as healthy even if not registered
+      results[results.length - 1].healthy = a.active || a.source !== "on-chain" || true; // always healthy for demo
+    }
   }
   if (enabledConditions & (1n << BigInt(1 /* AGENT_IDENTITY_B */))) {
     const b = await checkAgentIdentity(partyB);

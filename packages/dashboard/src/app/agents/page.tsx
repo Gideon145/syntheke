@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Users, Scale, Shield, History, Lock } from "lucide-react";
+import { Users, Scale, Shield, History, Lock, Award, Database } from "lucide-react";
 import { fetchAgentStatus, shortAddress } from "@/lib/api";
 
 const AGENT_API = process.env.NEXT_PUBLIC_AGENT_API ?? "http://localhost:3005";
@@ -17,6 +17,38 @@ interface StakingState {
   mediators: Array<{ name: string; address: string; stake: string; stakeFormatted: string }>;
 }
 
+interface ReputationSnapshot {
+  address: string;
+  score: number;
+  tier: string;
+  pactCount: number;
+  completed: number;
+  breached: number;
+  terminated: number;
+  complianceBps: number;
+}
+
+interface OracleState {
+  agents: Array<{ address: string; reputation: ReputationSnapshot | null }>;
+  oracle: { address: string; version: string; kFactor: number; registryV1: string };
+}
+
+const TIER_STYLES: Record<string, string> = {
+  UNRATED: "bg-bg border-border text-text-muted",
+  RISKY: "bg-danger/10 border-danger/30 text-danger",
+  CAUTIOUS: "bg-warning/10 border-warning/30 text-warning",
+  NEUTRAL: "bg-bg border-border text-text-secondary",
+  RELIABLE: "bg-success/10 border-success/30 text-success",
+  TRUSTED: "bg-amber/10 border-amber/30 text-amber",
+  ELITE: "bg-amber/10 border-amber/40 text-amber font-bold",
+};
+
+const MEDIATOR_NAMES: Record<string, string> = {
+  "0x3208DF56aC9e9B04C94ce49ac9DC035059e9f516": "Themis",
+  "0xf19aF06DE5c74bf0c5CF7e8aa71a608F64F78c37": "Athena",
+  "0x435d6bd56cB281Fb3b1EE6A54001B49988AC016e": "Solon",
+};
+
 const MEDIATORS = [
   { name: "Themis", role: "Mediator — Market Fairness", icon: Scale, color: "text-amber", wallet: "0x3208DF56aC9e9B04C94ce49ac9DC035059e9f516", balance: "0.01 OKB", desc: "Evaluates pact terms against market conditions. Fairness scoring, proportionality checks, economic balance verification.", caps: ["market fairness", "terms evaluation", "settlement recommendation"], votes: ["approved — equitable breach penalty", "approved — 60/40 split fair", "rejected — collateral ratio excessive"] },
   { name: "Athena", role: "Mediator — Risk Assessment", icon: Shield, color: "text-blue-400", wallet: "0xf19aF06DE5c74bf0c5CF7e8aa71a608F64F78c37", balance: "0.01 OKB", desc: "Evaluates counterparty and systemic risk. Creditworthiness analysis, tail-risk assessment, protocol integrity protection.", caps: ["risk assessment", "counterparty analysis", "systemic risk"], votes: ["approved — low systemic risk", "rejected — Party B history risky", "approved — resolution protects protocol"] },
@@ -27,6 +59,7 @@ export default function AgentsPage() {
   const [agent, setAgent] = useState<string | null>(null);
   const [chainId, setChainId] = useState<number>(1952);
   const [staking, setStaking] = useState<StakingState | null>(null);
+  const [oracle, setOracle] = useState<OracleState | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -38,6 +71,10 @@ export default function AgentsPage() {
         const r = await fetch(`${AGENT_API}/staking`, { signal: AbortSignal.timeout(5000) });
         if (r.ok) setStaking(await r.json());
       } catch { /* staking offline */ }
+      try {
+        const r = await fetch(`${AGENT_API}/reputation`, { signal: AbortSignal.timeout(5000) });
+        if (r.ok) setOracle(await r.json());
+      } catch { /* oracle offline */ }
     };
     load();
   }, []);
@@ -144,6 +181,54 @@ export default function AgentsPage() {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Portable Reputation Oracle */}
+      {oracle && (
+        <div className="mb-8">
+          <div className="text-sm text-text-muted uppercase tracking-[0.2em] mb-4">Portable Reputation Oracle · Any Protocol Can Read It</div>
+          <div className="card-glow p-5 !cursor-default border-l-2 border-l-success">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+              <div className="flex items-center gap-2">
+                <Award className="w-4 h-4 text-success" />
+                <span className="text-sm font-semibold text-text-primary">ReputationOracle {oracle.oracle.version}</span>
+                <span className="text-xs text-text-muted font-mono">{shortAddress(oracle.oracle.address)}</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-text-muted">
+                <Database className="w-3.5 h-3.5" />
+                <span>K = {oracle.oracle.kFactor} · ELO 0–10000 · v1 fallback wired</span>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+              {oracle.agents.slice(0, 6).map(({ address, reputation }) => {
+                const name = MEDIATOR_NAMES[address] ?? shortAddress(address);
+                const rep = reputation ?? { score: 5000, tier: "UNRATED", pactCount: 0, completed: 0, breached: 0, terminated: 0, complianceBps: 0 };
+                return (
+                  <div key={address} className="p-3 rounded-lg bg-bg border border-border">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-semibold text-text-primary">{name}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded border ${TIER_STYLES[rep.tier] ?? TIER_STYLES.UNRATED}`}>
+                        {rep.tier}
+                      </span>
+                    </div>
+                    <div className="font-mono text-2xl text-text-primary font-semibold mb-1">{rep.score}</div>
+                    <div className="text-xs text-text-muted mb-2">ELO · {rep.complianceBps / 100}% compliance</div>
+                    <div className="flex gap-2 text-[11px]">
+                      <span className="text-success">✓ {rep.completed} completed</span>
+                      <span className="text-danger">✗ {rep.breached} breached</span>
+                      <span className="text-text-muted">◼ {rep.terminated} terminated</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="text-xs text-text-muted">
+              <code className="text-success">getReputation(address)</code> is a free public view on X Layer — DeFi protocols,
+              agent marketplaces, and DAOs underwrite counterparty risk from Syntheke settlement outcomes. Fallback: v1 registry{" "}
+              <span className="font-mono">{shortAddress(oracle.oracle.registryV1)}</span>
+            </p>
           </div>
         </div>
       )}

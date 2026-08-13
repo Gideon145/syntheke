@@ -387,6 +387,20 @@ async function handleArbitration(
     logActivity("pact_closed", "Full lifecycle complete — escrow settled, reputation updated", pactId, settleReceipt.hash);
     notifyParties(pactId, "CLOSED", pact.partyA, pact.partyB, "Escrow distributed, reputation scores updated on-chain");
 
+    // Step 3: PORTABLE REPUTATION ORACLE — record settlement outcomes for both parties (Phase 4a)
+    try {
+      const { recordSettlementReputation } = await import("./reputation");
+      await recordSettlementReputation(signer, {
+        pactId,
+        partyA: pact.partyA,
+        partyB: pact.partyB,
+        verdict,
+        partyAShare: voteResult.partyAShare,
+      });
+    } catch (err) {
+      logError(`reputation:${pactId.slice(0, 10)}`, err);
+    }
+
   } catch (err) {
     logError(`arbitration:${pactId.slice(0, 10)}`, err);
   }

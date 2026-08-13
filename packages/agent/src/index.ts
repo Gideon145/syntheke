@@ -243,6 +243,36 @@ function createServer(): http.Server {
         return;
       }
 
+      // GET /reputation — portable reputation oracle (Phase 4a)
+      if (req.method === "GET" && url.pathname === "/reputation") {
+        const { getReputationSnapshot, getOracleInfo } = await import("./reputation");
+        const target = url.searchParams.get("agent");
+        if (target) {
+          const snapshot = await getReputationSnapshot(target);
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ address: target, reputation: snapshot, oracle: await getOracleInfo() }));
+          return;
+        }
+        // Default: all known agents — pact parties (from cache) + mediator swarm
+        const addresses = new Set<string>();
+        for (const p of cachedPacts) {
+          if (p.partyA) addresses.add(p.partyA);
+          if (p.partyB) addresses.add(p.partyB);
+        }
+        for (const a of [config.THEMIS_ADDRESS, config.ATHENA_ADDRESS, config.SOLON_ADDRESS]) {
+          if (a) addresses.add(a);
+        }
+        const snapshots = await Promise.all([...addresses].map(async addr => {
+          const reputation = await getReputationSnapshot(addr);
+          return { address: addr, reputation };
+        }));
+        // Rated agents first (descending score), then unrated
+        snapshots.sort((a, b) => (b.reputation?.score ?? -1) - (a.reputation?.score ?? -1));
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ agents: snapshots, oracle: await getOracleInfo() }));
+        return;
+      }
+
       // POST /demo/degrade/:pactId — force soft-condition degradation (demo only)
       if (req.method === "POST" && url.pathname.startsWith("/demo/degrade/")) {
         const pactId = url.pathname.slice("/demo/degrade/".length);
@@ -252,6 +282,18 @@ function createServer(): http.Server {
         logActivity("demo_degrade", "Demo trigger: forcing soft-condition degradation (self-heal incoming)", pactId);
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ status: "degrading", pactId, windowMs: 300_000 }));
+        return;
+      }
+
+      // POST /demo/breach/:pactId — force critical breach → AI arbitration (demo only)
+      if (req.method === "POST" && url.pathname.startsWith("/demo/breach/")) {
+        const pactId = url.pathname.slice("/demo/breach/".length);
+        const { forceBreach } = await import("./oracles");
+        forceBreach(pactId);
+        logger.info({ event: "demo_breach", pactId: pactId.slice(0, 10) }, "Demo breach forced — arbitration incoming");
+        logActivity("demo_breach", "Demo trigger: critical condition failure — AI arbitration + reputation update incoming", pactId);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ status: "breaching", pactId, windowMs: 300_000 }));
         return;
       }
 
