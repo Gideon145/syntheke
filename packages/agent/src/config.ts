@@ -34,10 +34,13 @@ const configSchema = z.object({
   PYTH_ENDPOINT: z.string().default("https://hermes.pyth.network"),
   ONCHAINOS_ENABLED: z.coerce.boolean().default(false),
 
-  // AI (Phase 3)
+  // AI (Phase 3) — dual-model swarm: Claude (Themis) + DeepSeek (Athena/Solon)
   AI_API_KEY: z.string().optional(),
   AI_MODEL: z.string().default("gpt-4o"),
   AI_BASE_URL: z.string().default("https://api.openai.com/v1"),
+  DEEPSEEK_API_KEY: z.string().optional(),
+  DEEPSEEK_MODEL: z.string().default("deepseek-chat"),
+  DEEPSEEK_BASE_URL: z.string().default("https://api.deepseek.com"),
 
   // Database
   DATABASE_URL: z.string().default("postgres://syntheke:syntheke@localhost:5432/syntheke"),

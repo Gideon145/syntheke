@@ -1,4 +1,4 @@
-import { aiService, computeCommitment } from "./service";
+import { aiService, deepseekService, computeCommitment, type AIService } from "./service";
 import { MediationVerdictSchema, type MediationVerdict } from "./schemas";
 import { validateEvidenceInputs } from "./guard";
 import { logger } from "../logger";
@@ -24,12 +24,14 @@ interface MediatorProfile {
   name: string;
   specialty: string;
   systemPrompt: string;
+  model: "claude" | "deepseek";
 }
 
 const MEDIATORS: MediatorProfile[] = [
   {
     name: "Themis",
     specialty: "market_fairness",
+    model: "claude",
     systemPrompt: `You are Themis, a Syntheke Mediator specializing in Market Fairness.
 
 Your role is to evaluate whether pact terms, breaches, and renegotiation proposals are fair given current market conditions. You focus on:
@@ -45,6 +47,7 @@ Output ONLY valid JSON with your verdict, fairness score (0-100), settlement rec
   {
     name: "Athena",
     specialty: "risk_assessment",
+    model: "deepseek",
     systemPrompt: `You are Athena, a Syntheke Mediator specializing in Risk Assessment.
 
 Your role is to evaluate the risk profile of pact participants and the systemic risk of proposed resolutions. You focus on:
@@ -60,6 +63,7 @@ Output ONLY valid JSON with your verdict, fairness score (0-100), settlement rec
   {
     name: "Solon",
     specialty: "historical_analysis",
+    model: "deepseek",
     systemPrompt: `You are Solon, a Syntheke Mediator specializing in Historical Analysis.
 
 Your role is to evaluate pact disputes against historical precedent and established patterns. You focus on:
@@ -180,19 +184,38 @@ export class MediatorSwarm {
   }
 
   /**
-   * Query a single mediator AI agent.
+   * Query a single mediator AI agent with its assigned model.
+   * Themis → Claude, Athena → DeepSeek, Solon → DeepSeek.
+   * If the assigned provider fails, tries the other provider (swarm resilience).
    */
   private async _queryMediator(
     mediator: MediatorProfile,
     evidencePrompt: string,
   ): Promise<MediatorVote | null> {
-    const result = await aiService.query<MediationVerdict>({
+    const primary = mediator.model === "claude" ? aiService : deepseekService;
+    const fallback = mediator.model === "claude" ? deepseekService : aiService;
+
+    const request = {
       systemPrompt: mediator.systemPrompt,
       userPrompt: evidencePrompt,
       responseSchema: MediationVerdictSchema,
       temperature: 0.2,
       requireConfidence: true,
-    });
+    };
+
+    let result = await primary.query<MediationVerdict>(request);
+    let modelProvider: string = mediator.model;
+
+    if (!result && fallback.isAvailable && fallback !== primary) {
+      logger.warn({
+        event: "mediator_model_fallback",
+        mediator: mediator.name,
+        from: mediator.model,
+        to: fallback.providerName,
+      }, `${mediator.name}: ${mediator.model} unavailable — falling back to ${fallback.providerName}`);
+      result = await fallback.query<MediationVerdict>(request);
+      modelProvider = fallback.providerName;
+    }
 
     if (!result) {
       logger.warn({
@@ -206,10 +229,11 @@ export class MediatorSwarm {
       event: "mediator_vote_cast",
       mediator: mediator.name,
       specialty: mediator.specialty,
+      model: modelProvider,
       verdict: result.data.verdict,
       fairnessScore: result.data.fairnessScore,
       confidence: result.confidence,
-    }, `${mediator.name} (${mediator.specialty}): ${result.data.verdict} (fairness: ${result.data.fairnessScore}/100, confidence: ${result.confidence})`);
+    }, `${mediator.name} [${modelProvider}] (${mediator.specialty}): ${result.data.verdict} (fairness: ${result.data.fairnessScore}/100, confidence: ${result.confidence})`);
 
     return {
       mediator: mediator.name,

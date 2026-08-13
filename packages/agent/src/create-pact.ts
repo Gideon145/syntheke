@@ -2,6 +2,7 @@ import { ethers } from "ethers";
 import { config } from "./config";
 import { getSigner, getPactContract, getPactContractRead, type PactTerms } from "./pact";
 import { nlToPactTerms } from "./ai/negotiator";
+import { negotiationTheater } from "./ai/theater";
 import { logger } from "./logger";
 
 /**
@@ -31,6 +32,64 @@ interface CreatePactResult {
   txHash?: string;
   reasoning?: string;
   error?: string;
+  negotiation?: {
+    status: string;
+    rounds: number;
+    models: Record<string, string>;
+    transcript: Array<{
+      round: number;
+      speaker: string;
+      model: string;
+      action: string;
+      message: string;
+      reasoning?: string;
+    }>;
+  };
+}
+
+/** Convert PactTerms to a string-keyed record for the theater. */
+function termsToRecord(terms: PactTerms): Record<string, string> {
+  return {
+    amount: terms.amount.toString(),
+    settlementAsset: terms.settlementAsset,
+    duration: terms.duration.toString(),
+    collateralRatio: terms.collateralRatio.toString(),
+    liquidationThreshold: terms.liquidationThreshold.toString(),
+    interestRate: terms.interestRate.toString(),
+    penaltyBps: terms.penaltyBps.toString(),
+    breachGraceBlocks: terms.breachGraceBlocks.toString(),
+    renegotiationWindow: terms.renegotiationWindow.toString(),
+    maxRenegotiationRounds: terms.maxRenegotiationRounds.toString(),
+    monitoredConditions: terms.monitoredConditions.toString(),
+  };
+}
+
+/** Convert theater record back to PactTerms, falling back to original for invalid patches. */
+function recordToTerms(record: Record<string, string>, fallback: PactTerms): PactTerms {
+  const bigintField = (key: keyof PactTerms): bigint => {
+    const raw = record[String(key)];
+    if (raw === undefined) return fallback[key] as bigint;
+    try {
+      const v = BigInt(raw);
+      if (v <= 0n) return fallback[key] as bigint; // never accept non-positive patches
+      return v;
+    } catch {
+      return fallback[key] as bigint;
+    }
+  };
+  return {
+    amount: bigintField("amount"),
+    settlementAsset: record.settlementAsset ?? fallback.settlementAsset,
+    duration: bigintField("duration"),
+    collateralRatio: bigintField("collateralRatio"),
+    liquidationThreshold: bigintField("liquidationThreshold"),
+    interestRate: bigintField("interestRate"),
+    penaltyBps: bigintField("penaltyBps"),
+    breachGraceBlocks: bigintField("breachGraceBlocks"),
+    renegotiationWindow: bigintField("renegotiationWindow"),
+    maxRenegotiationRounds: bigintField("maxRenegotiationRounds"),
+    monitoredConditions: bigintField("monitoredConditions"),
+  };
 }
 
 function getPartyBSigner(): ethers.Wallet {
@@ -77,7 +136,7 @@ async function sendWithRetry(
   args: unknown[],
   label: string,
 ): Promise<ethers.TransactionReceipt> {
-  const MAX_RETRIES = 3;
+  const MAX_RETRIES = 6;
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
@@ -110,7 +169,11 @@ async function sendWithRetry(
       return receipt;
     } catch (err) {
       const msg = (err as Error).message ?? "";
-      if (msg.includes("REPLACEMENT_UNDERPRICED") || msg.includes("replacement")) {
+      if (
+        msg.includes("REPLACEMENT_UNDERPRICED") || msg.includes("replacement") ||
+        msg.includes("NONCE_EXPIRED") || msg.includes("nonce too low") ||
+        msg.includes("nonce has already been used")
+      ) {
         logger.warn({ event: "tx_retry", label, attempt, err: msg.substring(0, 120) });
         await new Promise(r => setTimeout(r, 4000));
         continue;
@@ -173,6 +236,47 @@ export async function createPactFromNL(input: CreatePactInput): Promise<CreatePa
     }
     const pactId = draftEvent.args.pactId as string;
     logger.info({ event: "create_pact_draft_created", pactId });
+
+    // 2.5 LIVE AI NEGOTIATION THEATER — Claude (Party A) vs DeepSeek (Party B)
+    // Both AIs bargain over the AI-generated terms before they go on-chain.
+    let negotiation: CreatePactResult["negotiation"] | undefined;
+    let termsRecord = termsToRecord(terms);
+    try {
+      logger.info({ event: "theater_start", pactId: pactId.slice(0, 10) }, "Starting live AI negotiation theater...");
+      const session = await negotiationTheater.negotiate({
+        pactId,
+        description,
+        initialTerms: termsRecord,
+        partyADesc,
+        partyBDesc,
+        maxRounds: 2,
+      });
+      termsRecord = session.finalTerms ?? termsRecord;
+      terms = recordToTerms(termsRecord, terms);
+      const models: Record<string, string> = {};
+      for (const m of session.transcript) models[m.speaker] = m.model;
+      negotiation = {
+        status: session.status,
+        rounds: session.round,
+        models,
+        transcript: session.transcript.map(t => ({
+          round: t.round,
+          speaker: t.speaker,
+          model: t.model,
+          action: t.action,
+          message: t.message,
+          reasoning: t.reasoning,
+        })),
+      };
+      logger.info({
+        event: "theater_complete",
+        pactId: pactId.slice(0, 10),
+        status: session.status,
+        moves: session.transcript.length,
+      }, `Negotiation theater: ${session.status} after ${session.transcript.length} moves`);
+    } catch (err) {
+      logger.warn({ event: "theater_fallback", err }, "Theater failed — using AI-generated terms as-is");
+    }
 
     // 3. Fund Party B wallet from Party A
     const signerB = partyBWallet();
@@ -248,7 +352,11 @@ export async function createPactFromNL(input: CreatePactInput): Promise<CreatePa
       partyB: signerB.address,
       state: "PROPOSED",
       txHash: receiptDraft.hash,
-      reasoning: aiResult.reasoning || "Terms generated from description heuristics (AI unavailable — deterministic fallback)",
+      reasoning: aiResult.reasoning
+        || (negotiation && negotiation.transcript.length > 1
+          ? "Baseline terms generated by protocol heuristics, then refined live by two AI agents negotiating with each other."
+          : "Terms generated from description heuristics (AI unavailable — deterministic fallback)"),
+      negotiation,
     };
   } catch (err) {
     logger.error({ err }, "createPactFromNL failed");

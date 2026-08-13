@@ -15,6 +15,19 @@ interface PactResult {
   txHash?: string;
   reasoning?: string;
   error?: string;
+  negotiation?: {
+    status: string;
+    rounds: number;
+    models: Record<string, string>;
+    transcript: Array<{
+      round: number;
+      speaker: string;
+      model: string;
+      action: string;
+      message: string;
+      reasoning?: string;
+    }>;
+  };
 }
 
 export default function CreatePactPage() {
@@ -203,6 +216,56 @@ export default function CreatePactPage() {
             <div className="text-xs text-text-muted uppercase tracking-wider mb-2">Pact ID</div>
             <code className="text-sm font-mono break-all text-text-secondary">{result.pactId}</code>
           </div>
+
+          {/* LIVE AI NEGOTIATION THEATER */}
+          {result.negotiation && result.negotiation.transcript.length > 0 && (
+            <div className="card-glow overflow-hidden !cursor-default border-l-2 border-l-amber">
+              <div className="px-5 py-4 border-b border-border flex flex-wrap items-center justify-between gap-2">
+                <div className="text-sm font-semibold text-text-primary">
+                  🤖 Live AI Negotiation
+                  <span className={`ml-2 text-xs font-mono px-2 py-0.5 rounded ${result.negotiation.status === "accepted" ? "bg-success/10 text-success" : result.negotiation.status === "failed" ? "bg-danger/10 text-danger" : "bg-warning/10 text-warning"}`}>
+                    {result.negotiation.status.toUpperCase()}
+                  </span>
+                </div>
+                <span className="text-xs text-text-muted font-mono">
+                  {result.negotiation.rounds} rounds · {result.negotiation.transcript.length} moves
+                </span>
+              </div>
+              <div className="divide-y divide-border">
+                {result.negotiation.transcript.map((m, i) => (
+                  <div key={i} className={`px-5 py-4 ${m.speaker === "A" ? "bg-amber/[0.02]" : ""}`}>
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                      <span className={`text-sm font-bold ${m.speaker === "A" ? "text-amber" : "text-lantern"}`}>
+                        {m.speaker === "A" ? "🧠 Agent Alpha" : "🤖 Agent Beta"}
+                      </span>
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-bg border border-border text-text-muted">
+                        {m.model}
+                      </span>
+                      <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded uppercase ${m.action === "accept" ? "bg-success/10 text-success" : m.action === "reject" ? "bg-danger/10 text-danger" : m.action === "error" ? "bg-danger/10 text-danger" : "bg-warning/10 text-warning"}`}>
+                        {m.action}
+                      </span>
+                      <span className="text-[10px] text-text-muted">round {m.round}</span>
+                    </div>
+                    <p className="text-sm text-text-secondary leading-relaxed">{m.message}</p>
+                    {m.reasoning && (
+                      <details className="mt-2">
+                        <summary className="text-xs text-text-muted cursor-pointer hover:text-amber transition-colors">View reasoning</summary>
+                        <p className="text-xs text-text-muted mt-1.5 leading-relaxed border-l border-border pl-3">{m.reasoning}</p>
+                      </details>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div className="px-5 py-3 bg-bg/50 border-t border-border">
+                <p className="text-xs text-text-muted">
+                  🔏 Every message is hashed (SHA-256 reasoning commitment) and tied to the pact on X Layer.{" "}
+                  {result.negotiation.models["A"] && result.negotiation.models["B"] && result.negotiation.models["A"] !== result.negotiation.models["B"] && (
+                    <span className="text-amber">Cross-model negotiation: {result.negotiation.models["A"]} × {result.negotiation.models["B"]}</span>
+                  )}
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* AI Reasoning */}
           {result.reasoning && (

@@ -205,11 +205,28 @@ function createServer(): http.Server {
         return;
       }
 
-      // GET /negotiations
+      // GET /negotiations — live AI negotiation theater sessions
       if (req.method === "GET" && url.pathname === "/negotiations") {
-        const sessions = negotiationEngine.getActiveSessions();
+        const { negotiationTheater } = await import("./ai/theater");
+        const theaterSessions = negotiationTheater.listSessions();
+        const engineSessions = negotiationEngine.getActiveSessions();
         res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ sessions, total: sessions.length }));
+        res.end(JSON.stringify({ sessions: theaterSessions, engineSessions: engineSessions.length, total: theaterSessions.length }));
+        return;
+      }
+
+      // GET /negotiations/:pactId — full negotiation transcript
+      if (req.method === "GET" && url.pathname.startsWith("/negotiations/")) {
+        const pactId = url.pathname.slice("/negotiations/".length);
+        const { negotiationTheater } = await import("./ai/theater");
+        const session = negotiationTheater.getSession(pactId);
+        if (!session) {
+          res.writeHead(404, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "No negotiation session found for this pact" }));
+          return;
+        }
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(session));
         return;
       }
 
@@ -236,13 +253,28 @@ function createServer(): http.Server {
         return;
       }
 
-      // GET /ai/status — AI service health
+      // GET /ai/status — dual-model AI service health
       if (req.method === "GET" && url.pathname === "/ai/status") {
-        const { aiService } = await import("./ai/service");
+        const { aiService, deepseekService } = await import("./ai/service");
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({
-          available: aiService.isAvailable,
-          model: config.AI_MODEL,
+          models: [
+            {
+              id: "claude",
+              provider: "anthropic",
+              available: aiService.isAvailable,
+              model: config.AI_MODEL,
+              role: "Themis · negotiation Party A",
+            },
+            {
+              id: "deepseek",
+              provider: "deepseek",
+              available: deepseekService.isAvailable,
+              model: config.DEEPSEEK_MODEL,
+              role: "Athena · Solon · negotiation Party B",
+            },
+          ],
+          swarmHealthy: [aiService.isAvailable, deepseekService.isAvailable].filter(Boolean).length >= 1,
         }));
         return;
       }

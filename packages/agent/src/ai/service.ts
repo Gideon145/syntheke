@@ -36,43 +36,61 @@ export interface AIResponse<T> {
 
 // ──── Core Service ────────────────────────────────────────
 
+export type AIProvider = "anthropic" | "openai" | "deepseek";
+
+export interface AIServiceOptions {
+  provider?: AIProvider;
+  apiKey?: string;
+  model?: string;
+  baseUrl?: string;
+}
+
 export class AIService {
   private apiKey: string;
   private model: string;
   private baseUrl: string;
+  private provider: AIProvider;
 
-  constructor() {
-    this.apiKey = config.AI_API_KEY ?? "";
-    this.model = config.AI_MODEL;
-    this.baseUrl = config.AI_BASE_URL ?? "https://api.openai.com/v1";
+  constructor(options: AIServiceOptions = {}) {
+    this.apiKey = options.apiKey ?? config.AI_API_KEY ?? "";
+    this.model = options.model ?? config.AI_MODEL;
+    this.baseUrl = options.baseUrl ?? config.AI_BASE_URL ?? "https://api.openai.com/v1";
+    this.provider = options.provider ?? this.detectProvider(this.apiKey, this.baseUrl);
+  }
+
+  private detectProvider(key: string, baseUrl: string): AIProvider {
+    if (key.startsWith("sk-ant") || baseUrl.includes("anthropic")) return "anthropic";
+    if (baseUrl.includes("deepseek")) return "deepseek";
+    return "openai";
   }
 
   get isAvailable(): boolean {
     return this.apiKey.length > 0;
   }
 
-  private get isAnthropic(): boolean {
-    return this.apiKey.startsWith("sk-ant") || this.baseUrl.includes("anthropic");
+  get providerName(): AIProvider {
+    return this.provider;
   }
 
   /**
    * Send a structured request to the AI model.
-   * Supports both OpenAI and Anthropic APIs.
+   * Supports Anthropic Claude, OpenAI, and DeepSeek (OpenAI-compatible) APIs.
    * Returns null if AI is unavailable — caller MUST fall back to heuristic.
    */
-  async query<T>(request: AIRequest): Promise<AIResponse<T> | null> {
+  async query<T>(request: AIRequest & { timeoutMs?: number }): Promise<AIResponse<T> | null> {
     if (!this.isAvailable) {
-      logger.warn({ event: "ai_unavailable" }, "AI service not configured — no API key");
+      logger.warn({ event: "ai_unavailable", provider: this.provider }, `AI service (${this.provider}) not configured — no API key`);
       return null;
     }
 
+    const timeoutMs = request.timeoutMs ?? 30_000;
     const startTime = Date.now();
 
     try {
       let rawContent: string;
       let modelUsed: string;
 
-      if (this.isAnthropic) {
+      if (this.provider === "anthropic") {
         // Anthropic Claude API
         const response = await fetch(`${this.baseUrl}/messages`, {
           method: "POST",
@@ -90,7 +108,7 @@ export class AIService {
             ],
             temperature: request.temperature ?? 0.3,
           }),
-          signal: AbortSignal.timeout(30_000),
+          signal: AbortSignal.timeout(timeoutMs),
         });
 
         if (!response.ok) {
@@ -123,12 +141,12 @@ export class AIService {
             max_tokens: request.maxTokens ?? 2000,
             response_format: { type: "json_object" },
           }),
-          signal: AbortSignal.timeout(30_000),
+          signal: AbortSignal.timeout(timeoutMs),
         });
 
         if (!response.ok) {
           const errText = await response.text().catch(() => "unknown");
-          logger.error({ event: "ai_api_error", provider: "openai", status: response.status, body: errText.slice(0, 200) });
+          logger.error({ event: "ai_api_error", provider: this.provider, status: response.status, body: errText.slice(0, 200) });
           return null;
         }
 
@@ -217,8 +235,20 @@ export class AIService {
   }
 }
 
-// Singleton
+// Singletons — dual-model swarm
+// Claude: primary reasoning model (Themis, negotiation Party A)
 export const aiService = new AIService();
+
+// DeepSeek: second model family (Athena, Solon, negotiation Party B)
+export const deepseekService = new AIService({
+  provider: "deepseek",
+  apiKey: config.DEEPSEEK_API_KEY ?? "",
+  model: config.DEEPSEEK_MODEL,
+  baseUrl: config.DEEPSEEK_BASE_URL ?? "https://api.deepseek.com",
+});
+
+/** All configured model services in priority order. */
+export const modelServices: AIService[] = [aiService, deepseekService].filter(s => s.isAvailable);
 
 /**
  * Compute a commitment hash for any AI interaction.

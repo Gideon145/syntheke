@@ -18,6 +18,21 @@ interface PactDetail {
   error?: string;
 }
 
+interface NegotiationTranscript {
+  status: string;
+  round: number;
+  partyAPersona: string;
+  partyBPersona: string;
+  transcript: Array<{
+    round: number;
+    speaker: string;
+    model: string;
+    action: string;
+    message: string;
+    reasoning?: string;
+  }>;
+}
+
 const STATE_NAMES: Record<number, string> = {
   0: "DRAFT", 1: "NEGOTIATING", 2: "PROPOSED", 3: "COMMITTED",
   4: "ACTIVE", 5: "DEGRADING", 6: "RENEGOTIATING", 7: "BREACHED",
@@ -83,6 +98,7 @@ const STATE_TRANSITIONS: Record<string, string> = {
 export default function PactDetailPage() {
   const { pactId } = useParams<{ pactId: string }>();
   const [pact, setPact] = useState<PactDetail | null>(null);
+  const [negotiation, setNegotiation] = useState<NegotiationTranscript | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -93,6 +109,12 @@ export default function PactDetailPage() {
         });
         if (r.ok) setPact(await r.json());
       } catch { /* agent offline */ }
+      try {
+        const r = await fetch(`${AGENT_API}/negotiations/${pactId}`, {
+          signal: AbortSignal.timeout(5000),
+        });
+        if (r.ok) setNegotiation(await r.json());
+      } catch { /* no negotiation session */ }
       setLoading(false);
     };
     if (pactId) load();
@@ -147,6 +169,48 @@ export default function PactDetailPage() {
         </div>
         <p className="text-text-secondary text-sm leading-relaxed">{stateDesc}</p>
       </div>
+
+      {/* Live AI Negotiation Transcript */}
+      {negotiation && negotiation.transcript.length > 0 && (
+        <div className="card-glow overflow-hidden !cursor-default border-l-2 border-l-amber mb-8">
+          <div className="px-5 py-4 border-b border-border flex flex-wrap items-center justify-between gap-2">
+            <div className="text-sm font-semibold text-text-primary">
+              🤖 Live AI Negotiation
+              <span className={`ml-2 text-xs font-mono px-2 py-0.5 rounded ${negotiation.status === "accepted" ? "bg-success/10 text-success" : negotiation.status === "failed" ? "bg-danger/10 text-danger" : "bg-warning/10 text-warning"}`}>
+                {negotiation.status.toUpperCase()}
+              </span>
+            </div>
+            <span className="text-xs text-text-muted font-mono">
+              {negotiation.round} rounds · {negotiation.transcript.length} moves
+            </span>
+          </div>
+          <div className="divide-y divide-border">
+            {negotiation.transcript.map((m, i) => (
+              <div key={i} className={`px-5 py-4 ${m.speaker === "A" ? "bg-amber/[0.02]" : ""}`}>
+                <div className="flex flex-wrap items-center gap-2 mb-2">
+                  <span className={`text-sm font-bold ${m.speaker === "A" ? "text-amber" : "text-lantern"}`}>
+                    {m.speaker === "A" ? `🧠 ${negotiation.partyAPersona}` : `🤖 ${negotiation.partyBPersona}`}
+                  </span>
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-bg border border-border text-text-muted">
+                    {m.model}
+                  </span>
+                  <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded uppercase ${m.action === "accept" ? "bg-success/10 text-success" : m.action === "reject" ? "bg-danger/10 text-danger" : m.action === "error" ? "bg-danger/10 text-danger" : "bg-warning/10 text-warning"}`}>
+                    {m.action}
+                  </span>
+                  <span className="text-[10px] text-text-muted">round {m.round}</span>
+                </div>
+                <p className="text-sm text-text-secondary leading-relaxed">{m.message}</p>
+                {m.reasoning && (
+                  <details className="mt-2">
+                    <summary className="text-xs text-text-muted cursor-pointer hover:text-amber transition-colors">View reasoning</summary>
+                    <p className="text-xs text-text-muted mt-1.5 leading-relaxed border-l border-border pl-3">{m.reasoning}</p>
+                  </details>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Metrics */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-8 sm:mb-10">
