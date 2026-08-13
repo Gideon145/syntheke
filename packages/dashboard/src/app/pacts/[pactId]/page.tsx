@@ -33,6 +33,15 @@ interface NegotiationTranscript {
   }>;
 }
 
+interface PactContract {
+  title: string;
+  preamble: string;
+  summary: string;
+  sections: Array<{ heading: string; body: string }>;
+  version: number;
+  model: string;
+}
+
 const STATE_NAMES: Record<number, string> = {
   0: "DRAFT", 1: "NEGOTIATING", 2: "PROPOSED", 3: "COMMITTED",
   4: "ACTIVE", 5: "DEGRADING", 6: "RENEGOTIATING", 7: "BREACHED",
@@ -99,6 +108,7 @@ export default function PactDetailPage() {
   const { pactId } = useParams<{ pactId: string }>();
   const [pact, setPact] = useState<PactDetail | null>(null);
   const [negotiation, setNegotiation] = useState<NegotiationTranscript | null>(null);
+  const [contract, setContract] = useState<PactContract | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -115,6 +125,12 @@ export default function PactDetailPage() {
         });
         if (r.ok) setNegotiation(await r.json());
       } catch { /* no negotiation session */ }
+      try {
+        const r = await fetch(`${AGENT_API}/contracts/${pactId}`, {
+          signal: AbortSignal.timeout(5000),
+        });
+        if (r.ok) setContract(await r.json());
+      } catch { /* no contract */ }
       setLoading(false);
     };
     if (pactId) load();
@@ -169,6 +185,36 @@ export default function PactDetailPage() {
         </div>
         <p className="text-text-secondary text-sm leading-relaxed">{stateDesc}</p>
       </div>
+
+      {/* Plain-English Contract */}
+      {contract && (
+        <div className="card-glow overflow-hidden !cursor-default border-l-2 border-l-lantern mb-8">
+          <div className="px-5 py-4 border-b border-border flex flex-wrap items-center justify-between gap-2">
+            <div className="text-sm font-semibold text-text-primary">
+              📜 The Contract
+              {contract.version > 1 && (
+                <span className="ml-2 text-[10px] font-mono px-1.5 py-0.5 rounded bg-bg border border-border text-text-muted">v{contract.version}</span>
+              )}
+            </div>
+            <span className="text-[10px] font-mono text-text-muted">written by {contract.model}</span>
+          </div>
+          <div className="p-5">
+            <h3 className="text-base font-serif font-semibold text-lantern mb-2">{contract.title}</h3>
+            <p className="text-xs text-text-muted italic mb-4 leading-relaxed">{contract.preamble}</p>
+            <div className="space-y-3">
+              {contract.sections.map((s, i) => (
+                <div key={i} className="p-3 rounded-lg bg-bg/60 border border-border">
+                  <div className="text-xs font-semibold text-amber uppercase tracking-wider mb-1">{s.heading}</div>
+                  <p className="text-sm text-text-secondary leading-relaxed">{s.body}</p>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-text-muted mt-4 border-t border-border pt-3">
+              🔏 Contract commitment: SHA-256 hashed and tied to on-chain terms.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Live AI Negotiation Transcript */}
       {negotiation && negotiation.transcript.length > 0 && (

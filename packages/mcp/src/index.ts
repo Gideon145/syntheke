@@ -1,186 +1,186 @@
-import express from "express";
-
 /**
- * Syntheke MCP Server — AI-accessible protocol tools.
+ * Syntheke MCP Server — AI-accessible protocol tools (Phase 3b)
  *
- * Exposes Syntheke protocol state as MCP-compatible tools so AI assistants
- * can query pact state, agent reputation, attestation history, and protocol
- * statistics without needing to understand the smart contract ABI.
+ * A Model Context Protocol server over stdio. Connect ChatGPT Desktop,
+ * Claude Desktop, or any MCP client to ask questions about live treaties:
  *
- * Tools:
- *   get_pact_state      — Query any pact's current state + condition health
- *   list_active_pacts   — All active pacts for an agent
- *   get_agent_reputation — Reputation score + history
- *   get_attestation_chain — Full attestation history for a pact
- *   simulate_settlement  — Preview settlement outcome given resolution params
- *   discover_agents      — Search agents by capability/reputation
- *   get_protocol_stats   — Aggregate protocol statistics
+ *   "What treaties are active on Syntheke right now?"
+ *   "Create a treaty between a yield agent and a monitoring agent"
+ *   "How much has the Syntheke treasury collected?"
+ *
+ * Tools proxy the live Syntheke agent API (Railway).
  */
 
-const app = express();
-app.use(express.json());
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { z } from "zod";
 
-// ──── Tool Definitions ───────────────────────────────────
+const AGENT_URL = process.env.SYNTHEKE_AGENT_URL ?? "https://agent-production-507e.up.railway.app";
 
-const TOOLS = {
-  get_pact_state: {
-    description: "Get the current state, terms, and condition health of any pact on X Layer",
-    parameters: {
-      pactId: { type: "string", description: "The pact ID (bytes32 hex)" },
-    },
-  },
-  list_active_pacts: {
-    description: "List all active pacts for a given agent address",
-    parameters: {
-      agentAddress: { type: "string", description: "The agent's Ethereum address" },
-    },
-  },
-  get_agent_reputation: {
-    description: "Get reputation score, pact count, and history for an agent",
-    parameters: {
-      agentAddress: { type: "string", description: "The agent's Ethereum address" },
-    },
-  },
-  get_attestation_chain: {
-    description: "Get the full attestation history (monitoring cycles) for a pact",
-    parameters: {
-      pactId: { type: "string", description: "The pact ID (bytes32 hex)" },
-      limit: { type: "number", description: "Max attestations to return (default 50)" },
-    },
-  },
-  simulate_settlement: {
-    description: "Preview the settlement outcome for a pact given resolution parameters",
-    parameters: {
-      pactId: { type: "string" },
-      settlementAmount: { type: "string", description: "Settlement amount in wei" },
-      partyAPayout: { type: "string", description: "Party A payout in wei" },
-      partyBPayout: { type: "string", description: "Party B payout in wei" },
-    },
-  },
-  discover_agents: {
-    description: "Search for agents by capability, minimum reputation, or tier",
-    parameters: {
-      capability: { type: "string", description: "Filter by capability (e.g. 'yield_optimization')" },
-      minReputation: { type: "number", description: "Minimum reputation score (0-10000)" },
-      limit: { type: "number", description: "Max results (default 20)" },
-    },
-  },
-  get_protocol_stats: {
-    description: "Get aggregate Syntheke protocol statistics",
-    parameters: {},
-  },
-};
+// ──── Agent API helper ───────────────────────────────────
 
-// ──── Tool Handlers ──────────────────────────────────────
-
-async function handleTool(toolName: string, params: Record<string, unknown>): Promise<unknown> {
-  switch (toolName) {
-    case "get_pact_state":
-      return {
-        pactId: params.pactId,
-        state: "UNKNOWN",
-        partyA: null,
-        partyB: null,
-        terms: null,
-        attestationCount: 0,
-        message: "Connect to X Layer for live data. Phase 5 will add direct chain reads.",
-      };
-
-    case "list_active_pacts":
-      return {
-        agent: params.agentAddress,
-        pacts: [],
-        total: 0,
-        message: "Active pacts queried from X Layer event indexer.",
-      };
-
-    case "get_agent_reputation":
-      return {
-        agent: params.agentAddress,
-        score: 5000,
-        pactCount: 0,
-        completedCount: 0,
-        breachedCount: 0,
-        message: "Reputation read from ReputationRegistry on X Layer.",
-      };
-
-    case "get_attestation_chain":
-      return {
-        pactId: params.pactId,
-        attestations: [],
-        total: 0,
-      };
-
-    case "simulate_settlement": {
-      const total = BigInt(params.settlementAmount as string || "0");
-      const a = BigInt(params.partyAPayout as string || "0");
-      const b = BigInt(params.partyBPayout as string || "0");
-      return {
-        settlementAmount: total.toString(),
-        partyAPayout: a.toString(),
-        partyBPayout: b.toString(),
-        balanced: total === a + b,
-      };
-    }
-
-    case "discover_agents":
-      return {
-        agents: [],
-        total: 0,
-        filters: {
-          capability: params.capability,
-          minReputation: params.minReputation ?? 0,
-        },
-      };
-
-    case "get_protocol_stats":
-      return {
-        totalPacts: 0,
-        activePacts: 0,
-        totalAgents: 0,
-        totalValueLocked: "0",
-        disputesResolved: 0,
-        chainId: 1952,
-      };
-
-    default:
-      return { error: `Unknown tool: ${toolName}` };
+async function agentFetch<T>(path: string, init?: RequestInit): Promise<T | { error: string }> {
+  try {
+    const r = await fetch(`${AGENT_URL}${path}`, {
+      ...init,
+      signal: AbortSignal.timeout(30_000),
+      headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
+    });
+    if (!r.ok) return { error: `Agent API ${r.status}: ${await r.text().catch(() => "unknown")}` };
+    return (await r.json()) as T;
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : String(err) };
   }
 }
 
-// ──── MCP Endpoints ──────────────────────────────────────
+// ──── Server ─────────────────────────────────────────────
 
-// GET /mcp/tools — List available tools
-app.get("/mcp/tools", (_req, res) => {
-  res.json({ tools: TOOLS });
+const server = new McpServer({
+  name: "syntheke",
+  version: "0.5.0",
 });
 
-// POST /mcp/call/:toolName — Execute a tool
-app.post("/mcp/call/:toolName", async (req, res) => {
-  const { toolName } = req.params;
-  if (!TOOLS[toolName as keyof typeof TOOLS]) {
-    res.status(404).json({ error: `Unknown tool: ${toolName}` });
-    return;
-  }
-  try {
-    const result = await handleTool(toolName, req.body ?? {});
-    res.json({ result });
-  } catch (err) {
-    res.status(500).json({ error: err instanceof Error ? err.message : "Tool execution failed" });
-  }
+// 1. List treaties
+server.tool(
+  "list_treaties",
+  "List all economic treaties between AI agents on Syntheke (X Layer). Each treaty has an ID, state, and on-chain attestation count.",
+  {},
+  async () => {
+    const data = await agentFetch<{ pacts?: Array<Record<string, unknown>> }>("/pacts");
+    if ("error" in data) return { content: [{ type: "text", text: `Error: ${data.error}` }] };
+    const pacts = data.pacts ?? [];
+    if (pacts.length === 0) return { content: [{ type: "text", text: "No treaties found." }] };
+    const lines = pacts.map((p, i) =>
+      `${i + 1}. ${p.name ?? "Untitled"} — state=${p.lastState} · ${p.attestationCount ?? 0} attestations · ID: ${String(p.pactId).slice(0, 18)}...`
+    );
+    return { content: [{ type: "text", text: `${pacts.length} treaties on X Layer:\n\n${lines.join("\n")}` }] };
+  },
+);
+
+// 2. Get a treaty
+server.tool(
+  "get_treaty",
+  "Get full details of one treaty: on-chain state, parties, terms, AI negotiation transcript, and plain-English contract.",
+  { pactId: z.string().describe("The 64-character pact ID (hex, 0x-prefixed)") },
+  async ({ pactId }) => {
+    const [pact, negotiation, contract] = await Promise.all([
+      agentFetch<Record<string, unknown>>(`/pacts/${pactId}`),
+      agentFetch<{ transcript?: Array<{ speaker: string; action: string; message: string; model: string }> }>(`/negotiations/${pactId}`),
+      agentFetch<{ title?: string; sections?: Array<{ heading: string; body: string }> }>(`/contracts/${pactId}`),
+    ]);
+
+    const parts: string[] = [];
+    if ("error" in pact) parts.push(`On-chain: ${pact.error}`);
+    else parts.push(`On-chain: state=${pact.lastState}, partyA=${pact.partyA}, partyB=${pact.partyB}, attestations=${pact.attestationCount}`);
+
+    if (!("error" in negotiation) && negotiation.transcript?.length) {
+      parts.push(`\nAI negotiation (${negotiation.transcript.length} moves):`);
+      for (const m of negotiation.transcript.slice(-6)) {
+        parts.push(`  [${m.speaker === "A" ? "Alpha" : "Beta"}/${m.model}] ${m.action}: ${m.message.slice(0, 120)}`);
+      }
+    }
+
+    if (!("error" in contract) && contract.title) {
+      parts.push(`\nContract: ${contract.title}`);
+      for (const s of contract.sections ?? []) parts.push(`  - ${s.heading}: ${s.body.slice(0, 100)}`);
+    }
+
+    return { content: [{ type: "text", text: parts.join("\n") }] };
+  },
+);
+
+// 3. Create a treaty
+server.tool(
+  "create_treaty",
+  "Create a new economic treaty between two AI agents. Two AIs (Claude + DeepSeek) negotiate terms live, then the treaty goes on-chain with escrow.",
+  {
+    partyADesc: z.string().describe("Description of Party A (initiator), e.g. 'DeFi yield optimizer agent'"),
+    partyBDesc: z.string().describe("Description of Party B (counterparty), e.g. 'Liquidation monitoring service agent'"),
+    description: z.string().min(10).describe("What the treaty is for, e.g. 'Alpha pays 100 USDC monthly to Beta for liquidation monitoring'"),
+  },
+  async ({ partyADesc, partyBDesc, description }) => {
+    const data = await agentFetch<Record<string, unknown>>("/pacts/create", {
+      method: "POST",
+      body: JSON.stringify({ partyADesc, partyBDesc, description }),
+    });
+    if ("error" in data) return { content: [{ type: "text", text: `Error: ${data.error}` }] };
+    if (!data.success) return { content: [{ type: "text", text: `Creation failed: ${data.error ?? "unknown"}` }] };
+    const neg = data.negotiation as { status?: string; transcript?: Array<{ speaker: string; action: string; message: string }> } | undefined;
+    const moves = neg?.transcript?.map(m => `  [${m.speaker === "A" ? "Alpha" : "Beta"}] ${m.action}: ${m.message.slice(0, 100)}`).join("\n") ?? "";
+    return {
+      content: [{
+        type: "text",
+        text: `Treaty created!\n\nPact ID: ${data.pactId}\nState: ${data.state}\nNegotiation: ${neg?.status ?? "n/a"}\n${moves}\n\nView live: https://www.syntheke.xyz/pacts/${data.pactId}`,
+      }],
+    };
+  },
+);
+
+// 4. Treasury
+server.tool(
+  "treasury_status",
+  "Get the Syntheke protocol treasury: total fees collected, fee count, and balance on X Layer.",
+  {},
+  async () => {
+    const data = await agentFetch<Record<string, unknown>>("/treasury");
+    if ("error" in data) return { content: [{ type: "text", text: `Error: ${data.error}` }] };
+    return {
+      content: [{
+        type: "text",
+        text: `Syntheke Treasury (${data.address})\nTotal collected: ${data.totalCollectedFormatted} OKL\nFees paid: ${data.feeCount}\nCurrent balance: ${data.balanceFormatted} OKL\nCreation fee: ${data.feeAmountFormatted} OKL per treaty`,
+      }],
+    };
+  },
+);
+
+// 5. Mediator stakes
+server.tool(
+  "mediator_stakes",
+  "Get mediator economic stakes: Themis, Athena, and Solon staked amounts, total slashed, and verdict count.",
+  {},
+  async () => {
+    const data = await agentFetch<{ mediators?: Array<{ name: string; stakeFormatted: string }>; totalStakedFormatted?: string; totalSlashedFormatted?: string; verdictCount?: number; slashPercent?: number }>("/staking");
+    if ("error" in data) return { content: [{ type: "text", text: `Error: ${data.error}` }] };
+    const lines = (data.mediators ?? []).map(m => `  ${m.name}: ${m.stakeFormatted} OKL staked`);
+    return {
+      content: [{
+        type: "text",
+        text: `Mediator Stakes\nTotal: ${data.totalStakedFormatted} OKL - Slashed: ${data.totalSlashedFormatted} OKL - Verdicts: ${data.verdictCount}\nSlash rate: ${(data.slashPercent ?? 0) / 100}% per wrong verdict\n${lines.join("\n")}`,
+      }],
+    };
+  },
+);
+
+// 6. Agent status
+server.tool(
+  "agent_status",
+  "Get the Syntheke monitor agent status and dual-model AI health (Claude + DeepSeek).",
+  {},
+  async () => {
+    const [status, ai] = await Promise.all([
+      agentFetch<Record<string, unknown>>("/status"),
+      agentFetch<{ models?: Array<{ id: string; available: boolean; role: string }> }>("/ai/status"),
+    ]);
+    const parts: string[] = [];
+    if ("error" in status) parts.push(`Status: ${status.error}`);
+    else parts.push(`Agent: ${status.agent}\nChain: ${status.chainId} - Cycles: ${status.cycles} - Attestations: ${status.attestations} - Pacts: ${status.pactsMonitored} - Running: ${status.running}`);
+    if (!("error" in ai) && ai.models) {
+      parts.push(`\nAI swarm:`);
+      for (const m of ai.models) parts.push(`  ${m.id}: ${m.available ? "online" : "offline"} — ${m.role}`);
+    }
+    return { content: [{ type: "text", text: parts.join("\n") }] };
+  },
+);
+
+// ──── Boot ───────────────────────────────────────────────
+
+async function main() {
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+  console.error(`Syntheke MCP server ready — agent API: ${AGENT_URL}`);
+}
+
+main().catch(err => {
+  console.error("MCP server failed:", err);
+  process.exit(1);
 });
-
-// GET /health
-app.get("/health", (_req, res) => {
-  res.json({ status: "ok", name: "syntheke-mcp" });
-});
-
-// ──── Start ──────────────────────────────────────────────
-
-const PORT = process.env.MCP_PORT ?? 3003;
-app.listen(PORT, () => {
-  console.log(`🔧 Syntheke MCP server on http://localhost:${PORT}`);
-  console.log(`   Tools: ${Object.keys(TOOLS).length} available`);
-});
-
-export default app;

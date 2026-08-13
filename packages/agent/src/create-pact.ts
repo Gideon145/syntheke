@@ -3,6 +3,7 @@ import { config } from "./config";
 import { getSigner, getPactContract, getPactContractRead, type PactTerms } from "./pact";
 import { nlToPactTerms } from "./ai/negotiator";
 import { negotiationTheater } from "./ai/theater";
+import type { PactContract } from "./ai/contract-writer";
 import { logger } from "./logger";
 
 /**
@@ -36,6 +37,14 @@ interface CreatePactResult {
     amount: string;
     txHash: string;
     totalCollected: string;
+  };
+  contract?: {
+    title: string;
+    preamble: string;
+    summary: string;
+    sections: Array<{ heading: string; body: string }>;
+    version: number;
+    model: string;
   };
   negotiation?: {
     status: string;
@@ -315,6 +324,25 @@ export async function createPactFromNL(input: CreatePactInput): Promise<CreatePa
       logger.warn({ event: "theater_fallback", err }, "Theater failed — using AI-generated terms as-is");
     }
 
+    // 2.6 PLAIN-ENGLISH CONTRACT — Claude renders the treaty in human prose
+    let contract: Awaited<ReturnType<typeof import("./ai/contract-writer")["writeContract"]>>;
+    try {
+      const { writeContract } = await import("./ai/contract-writer");
+      contract = await writeContract({
+        pactId,
+        description,
+        terms: termsRecord,
+        partyADesc,
+        partyBDesc,
+      });
+      if (contract) {
+        logger.info({ event: "contract_written", pactId: pactId.slice(0, 10) }, `Plain-English contract written (${contract.sections.length} sections)`);
+      }
+    } catch (err) {
+      logger.warn({ event: "contract_write_fallback", err }, "Contract writing failed — proceeding without prose");
+      contract = null;
+    }
+
     // 3. Fund Party B wallet from Party A
     const signerB = partyBWallet();
     const contractB = getPactContract(signerB);
@@ -395,6 +423,14 @@ export async function createPactFromNL(input: CreatePactInput): Promise<CreatePa
           : "Terms generated from description heuristics (AI unavailable — deterministic fallback)"),
       negotiation,
       treasuryFee,
+      contract: contract ? {
+        title: contract.title,
+        preamble: contract.preamble,
+        summary: contract.summary,
+        sections: contract.sections,
+        version: contract.version,
+        model: contract.model,
+      } : undefined,
     };
   } catch (err) {
     logger.error({ err }, "createPactFromNL failed");

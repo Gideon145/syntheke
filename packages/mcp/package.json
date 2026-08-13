@@ -6,10 +6,13 @@
   "scripts": {
     "dev": "tsx src/index.ts",
     "build": "tsc",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "start": "node dist/index.js"
   },
   "dependencies": {
-    "express": "^5.0"
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "express": "^5.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/express": "^5.0",

@@ -20,6 +20,14 @@ interface PactResult {
     txHash: string;
     totalCollected: string;
   };
+  contract?: {
+    title: string;
+    preamble: string;
+    summary: string;
+    sections: Array<{ heading: string; body: string }>;
+    version: number;
+    model: string;
+  };
   negotiation?: {
     status: string;
     rounds: number;
@@ -273,6 +281,28 @@ export default function CreatePactPage() {
                     <span className="text-amber">Cross-model negotiation: {result.negotiation.models["A"]} × {result.negotiation.models["B"]}</span>
                   )}
                 </p>
+              </div>
+            </div>
+          )}
+
+          {/* PLAIN-ENGLISH CONTRACT */}
+          {result.contract && (
+            <div className="card-glow overflow-hidden !cursor-default border-l-2 border-l-lantern">
+              <div className="px-5 py-4 border-b border-border flex flex-wrap items-center justify-between gap-2">
+                <div className="text-sm font-semibold text-text-primary">📜 The Contract</div>
+                <span className="text-[10px] font-mono text-text-muted">written by {result.contract.model}</span>
+              </div>
+              <div className="p-5">
+                <h3 className="text-base font-serif font-semibold text-lantern mb-2">{result.contract.title}</h3>
+                <p className="text-xs text-text-muted italic mb-4 leading-relaxed">{result.contract.preamble}</p>
+                <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                  {result.contract.sections.map((s, i) => (
+                    <div key={i} className="p-3 rounded-lg bg-bg/60 border border-border">
+                      <div className="text-xs font-semibold text-amber uppercase tracking-wider mb-1">{s.heading}</div>
+                      <p className="text-sm text-text-secondary leading-relaxed">{s.body}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}

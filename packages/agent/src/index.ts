@@ -255,6 +255,21 @@ function createServer(): http.Server {
         return;
       }
 
+      // GET /contracts/:pactId — plain-English contract for a treaty
+      if (req.method === "GET" && url.pathname.startsWith("/contracts/")) {
+        const pactId = url.pathname.slice("/contracts/".length);
+        const { getContract } = await import("./ai/contract-writer");
+        const contract = getContract(pactId);
+        if (!contract) {
+          res.writeHead(404, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "No contract found for this pact" }));
+          return;
+        }
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(contract));
+        return;
+      }
+
       // GET /negotiations — live AI negotiation theater sessions
       if (req.method === "GET" && url.pathname === "/negotiations") {
         const { negotiationTheater } = await import("./ai/theater");

@@ -87,6 +87,37 @@ export async function selfHealPact(
     logger.info({ event: "selfheal_complete", pactId: pactId.slice(0, 10), tx: tx2.hash, fairness }, `Pact self-healed — new terms ACTIVE (fairness ${fairness}/100)`);
     logActivity("selfheal_complete", `✅ Pact self-healed — amended terms restored ACTIVE state (${reason})`, pactId, tx2.hash);
 
+    // Rewrite the plain-English contract to match the amended terms
+    try {
+      const { writeContract } = await import("./ai/contract-writer");
+      const { getContract } = await import("./ai/contract-writer");
+      const existing = getContract(pactId);
+      const termsRecord: Record<string, string> = {
+        amount: newTerms.amount.toString(),
+        settlementAsset: newTerms.settlementAsset,
+        duration: newTerms.duration.toString(),
+        collateralRatio: newTerms.collateralRatio.toString(),
+        liquidationThreshold: newTerms.liquidationThreshold.toString(),
+        interestRate: newTerms.interestRate.toString(),
+        penaltyBps: newTerms.penaltyBps.toString(),
+        breachGraceBlocks: newTerms.breachGraceBlocks.toString(),
+        renegotiationWindow: newTerms.renegotiationWindow.toString(),
+        maxRenegotiationRounds: newTerms.maxRenegotiationRounds.toString(),
+        monitoredConditions: newTerms.monitoredConditions.toString(),
+      };
+      await writeContract({
+        pactId,
+        description: "Autonomously amended treaty (self-healed after degradation)",
+        terms: termsRecord,
+        partyADesc: "Party A",
+        partyBDesc: "Party B",
+        version: (existing?.version ?? 1) + 1,
+      });
+      logActivity("contract_amended", "📜 Contract rewritten to reflect self-healed terms", pactId);
+    } catch (err) {
+      logger.warn({ event: "contract_rewrite_failed", err }, "Contract rewrite after self-heal failed");
+    }
+
     return {
       healed: true,
       reason,
