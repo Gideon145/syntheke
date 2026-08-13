@@ -1,8 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { stateLabel, STATE_COLORS, shortAddress } from "@/lib/api";
+import Link from "next/link";
 
 const AGENT_API = process.env.NEXT_PUBLIC_AGENT_API ?? "http://localhost:3005";
+
+const STATE_NUM_TO_NAME: Record<number, string> = {
+  0: "DRAFT", 1: "NEGOTIATING", 2: "PROPOSED", 3: "COMMITTED", 4: "ACTIVE",
+  5: "DEGRADING", 6: "RENEGOTIATING", 7: "BREACHED", 8: "CURING", 9: "ARBITRATING",
+  10: "RESOLVING", 11: "SETTLING", 12: "CLOSED", 13: "EXPIRED", 14: "TERMINATED",
+};
 
 interface LiveStats {
   pacts: number;
@@ -12,8 +20,19 @@ interface LiveStats {
   syndicates: number;
 }
 
+interface PactSummary {
+  pactId: string;
+  name?: string;
+  subtitle?: string;
+  lastState: number;
+  attestationCount: number;
+  partyA?: string;
+  partyB?: string;
+}
+
 export default function Home() {
   const [stats, setStats] = useState<LiveStats | null>(null);
+  const [recent, setRecent] = useState<PactSummary[]>([]);
 
   useEffect(() => {
     const load = async () => {
@@ -31,6 +50,8 @@ export default function Home() {
           treasury: treasury?.totalCollectedFormatted ?? "0",
           syndicates: syndicates?.total ?? 0,
         });
+        // Newest first (agent returns newest-first) — show recent activity
+        setRecent(pactList.slice(0, 6));
       } catch { /* agent offline — keep static values */ }
     };
     load();
@@ -129,6 +150,49 @@ export default function Home() {
             )}
           </p>
         </div>
+      </div>
+
+      {/* Recent Treaties — live social proof */}
+      <div className="mb-20 sm:mb-32 space-y-1">
+        <div className="flex items-center justify-between mb-8 sm:mb-10">
+          <div className="text-xs text-text-muted uppercase tracking-[0.2em] animate-fade-in-slow">
+            Recent Treaties <span className="inline-block w-1.5 h-1.5 rounded-full bg-success animate-pulse ml-2 align-middle" />
+          </div>
+          <Link href="/dashboard" className="text-xs text-amber hover:text-amber-soft transition-colors">
+            View all →
+          </Link>
+        </div>
+        {recent.length === 0 ? (
+          <div className="bg-bg-secondary rounded-xl p-8 text-center text-sm text-text-muted">Connecting to X Layer…</div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-border-hairline rounded-xl overflow-hidden">
+            {recent.map((p, i) => {
+              const stateName = STATE_NUM_TO_NAME[p.lastState] ?? "UNKNOWN";
+              const label = stateLabel(stateName);
+              return (
+                <Link
+                  key={p.pactId}
+                  href={`/pacts/${p.pactId}`}
+                  className={`bg-bg-secondary p-5 sm:p-6 group transition-colors duration-500 hover:bg-bg-raised animate-fade-up stagger-${(i % 4) + 1} block`}
+                >
+                  <div className="flex items-center justify-between gap-3 mb-3">
+                    <span className="text-sm font-semibold text-text-primary truncate">{p.name ?? `Treaty ${p.pactId.slice(0, 8)}`}</span>
+                    <span className={`shrink-0 text-[10px] px-2 py-0.5 rounded-full font-medium ${STATE_COLORS[stateName] ?? "bg-muted"} text-text-primary/90`}>
+                      {label}
+                    </span>
+                  </div>
+                  {p.subtitle && <div className="text-xs text-text-muted mb-2 truncate">{p.subtitle}</div>}
+                  <div className="flex items-center justify-between text-xs text-text-muted">
+                    <span className="font-mono">
+                      {shortAddress(p.partyA ?? "")} ⇄ {shortAddress(p.partyB ?? "pending")}
+                    </span>
+                    <span className="tabular-nums">{p.attestationCount} attestations</span>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Footer */}
