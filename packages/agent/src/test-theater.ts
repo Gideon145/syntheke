@@ -30,7 +30,7 @@ async function main() {
     },
     partyADesc: "DeFi yield optimizer agent",
     partyBDesc: "Liquidation monitoring service agent",
-    maxRounds: 2,
+    maxRounds: 1,
   });
 
   console.log(`\n=== Theater done in ${Date.now() - t0}ms ===`);

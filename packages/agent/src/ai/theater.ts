@@ -187,13 +187,13 @@ export class NegotiationTheater {
         timeoutMs: 20_000,
       };
       let result = await primary.query<NegotiationMove>(request);
-      if (result) return { move: result.data, model: primary.providerName };
+      if (result) return { move: result.data, model: primary.providerName === "anthropic" ? "claude" : primary.providerName };
 
       // Fall back to the other model family so the theater never dies
       if (fallback && fallback.isAvailable && fallback !== primary) {
         logger.warn({ event: "theater_model_fallback", speaker, from: primary.providerName, to: fallback.providerName }, `Party ${speaker}: ${primary.providerName} unavailable — using ${fallback.providerName}`);
         const fb = await fallback.query<NegotiationMove>(request);
-        return { move: fb?.data ?? null, model: fb ? fallback.providerName : primary.providerName };
+        return { move: fb?.data ?? null, model: fb ? (fallback.providerName === "anthropic" ? "claude" : fallback.providerName) : primary.providerName };
       }
       return { move: null, model: primary.providerName };
     };
