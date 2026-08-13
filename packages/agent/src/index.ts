@@ -297,6 +297,86 @@ function createServer(): http.Server {
         return;
       }
 
+      // GET /syndicates — N-party treaty syndicates (Phase 4b)
+      if (req.method === "GET" && url.pathname === "/syndicates") {
+        const { listCreatedSyndicates, getSyndicateSnapshot } = await import("./syndicate");
+        const created = listCreatedSyndicates();
+        const snapshots = await Promise.all(created.map(c => getSyndicateSnapshot(c.syndicateId)));
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({
+          contract: config.TREATY_SYNDICATE,
+          syndicates: snapshots.filter(Boolean),
+          total: created.length,
+        }));
+        return;
+      }
+
+      // POST /syndicates/create — form a new N-party syndicate
+      if (req.method === "POST" && url.pathname === "/syndicates/create") {
+        const body = await readBody(req);
+        const { createSyndicate } = await import("./syndicate");
+        const { ethers: ethersMod } = await import("ethers");
+        const roles = Array.isArray(body.members) ? body.members : ["agent", "Themis", "Athena"];
+        const memberRoles: string[] = roles.map((r: unknown) => String(r));
+        const { resolveMemberAddresses } = await import("./syndicate");
+        const stakeEach = String(body.stakeEach ?? "0.003");
+        const members = memberRoles
+          .map(role => ({ role, address: resolveMemberAddresses(role) }))
+          .filter(m => m.address);
+        const stakesWei = members.map(() => ethersMod.parseEther(stakeEach));
+        const result = await createSyndicate(
+          String(body.name ?? "Agent Syndicate"),
+          String(body.charter ?? "Autonomous agent syndicate charter."),
+          members,
+          stakesWei,
+        );
+        res.writeHead(result.success ? 200 : 400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(result));
+        return;
+      }
+
+      // POST /syndicates/:id/propose — member proposes a motion
+      if (req.method === "POST" && url.pathname.startsWith("/syndicates/") && url.pathname.endsWith("/propose")) {
+        const syndicateId = url.pathname.slice("/syndicates/".length, -"/propose".length);
+        const body = await readBody(req);
+        const { propose } = await import("./syndicate");
+        const { ethers: ethersMod } = await import("ethers");
+        const as = String(body.as ?? "agent");
+        const kind = String(body.kind ?? "RENEGOTIATE");
+        const target = String(body.target ?? ethersMod.ZeroAddress);
+        const payouts = Array.isArray(body.payouts) ? body.payouts.map((p: unknown) => BigInt(String(p))) : [];
+        const newCharter = String(body.newCharter ?? "");
+        const result = await propose(syndicateId, as, kind as "RENEGOTIATE" | "BREACH" | "SETTLE", target, payouts, newCharter);
+        res.writeHead(result.success ? 200 : 400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ syndicateId, ...result }));
+        return;
+      }
+
+      // POST /syndicates/:id/vote — member votes on a proposal
+      if (req.method === "POST" && url.pathname.startsWith("/syndicates/") && url.pathname.endsWith("/vote")) {
+        const syndicateId = url.pathname.slice("/syndicates/".length, -"/vote".length);
+        const body = await readBody(req);
+        const { vote } = await import("./syndicate");
+        const result = await vote(
+          syndicateId,
+          Number(body.proposalId),
+          String(body.as ?? "agent"),
+          Boolean(body.support),
+        );
+        res.writeHead(result.success ? 200 : 400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ syndicateId, ...result }));
+        return;
+      }
+
+      // POST /syndicates/demo — full automated syndicate demo (create → amend → breach → slash)
+      if (req.method === "POST" && url.pathname === "/syndicates/demo") {
+        const { runSyndicateDemo } = await import("./syndicate");
+        const result = await runSyndicateDemo();
+        res.writeHead(result.success ? 200 : 400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(result));
+        return;
+      }
+
       // GET /contracts/:pactId — plain-English contract for a treaty
       if (req.method === "GET" && url.pathname.startsWith("/contracts/")) {
         const pactId = url.pathname.slice("/contracts/".length);

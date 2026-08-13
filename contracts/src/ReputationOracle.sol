@@ -70,6 +70,7 @@ contract ReputationOracle {
     address public owner;
     address public monitorAgent;
     IReputationRegistryV1 public registryV1;
+    mapping(address => bool) public extraWriters; // e.g. TreatySyndicate contract
 
     mapping(address => Reputation) public records;
     mapping(address => OutcomeEvent[]) public history;
@@ -88,7 +89,7 @@ contract ReputationOracle {
     // ──── MODIFIERS ─────────────────────────────────────────
 
     modifier onlyMonitor() {
-        if (msg.sender != monitorAgent) revert NotMonitor();
+        if (msg.sender != monitorAgent && !extraWriters[msg.sender]) revert NotMonitor();
         _;
     }
 
@@ -107,6 +108,21 @@ contract ReputationOracle {
 
     function setMonitorAgent(address _m) external onlyOwner {
         monitorAgent = _m;
+    }
+
+    function setExtraWriter(address writer, bool allowed) external onlyOwner {
+        extraWriters[writer] = allowed;
+    }
+
+    /// @notice One-time migration from a previous oracle deployment (owner-only).
+    function migrateRecord(address agent, Reputation calldata r, OutcomeEvent[] calldata events)
+        external
+        onlyOwner
+    {
+        records[agent] = r;
+        for (uint256 i = 0; i < events.length; i++) {
+            history[agent].push(events[i]);
+        }
     }
 
     function setRegistryV1(address _r) external onlyOwner {

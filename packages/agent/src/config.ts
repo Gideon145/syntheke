@@ -26,7 +26,8 @@ const configSchema = z.object({
   REPUTATION_REGISTRY: z.string().default("0x4256e57592aCB2120EAbC7f3E1eb82d9DddB855f"),
   TREASURY_VAULT: z.string().default("0xe23721edbf637e080a2ec70d89faa2f5956943d7"),
   MEDIATOR_STAKING: z.string().default("0xc3387efd100cc22b94ad7f68b55039daf0cf9caa"),
-  REPUTATION_ORACLE: z.string().default("0xea1c0af2430a29690310d69bf709d9a4fae1bd1d"),
+  REPUTATION_ORACLE: z.string().default("0xfd61828f15fc98e1dcfe0dd6498abee6e003c1cf"),
+  TREATY_SYNDICATE: z.string().default("0xdd615c92a588ac67d209bf21e08b8ef1537922cd"),
   MEDIATOR_STAKE_AMOUNT: z.string().default("0.003"), // OKB per mediator
 
   // Monitoring

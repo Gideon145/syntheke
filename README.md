@@ -135,8 +135,9 @@ forge script script/DeployAll.s.sol --rpc-url xlayer_testnet --broadcast --verif
 | **Phase 2** | Autonomous monitor agent: 15s cycles, breach escalation, mediator staking (slashable), self-healing renegotiation | ✅ Live on testnet |
 | **Phase 3** | AI layer: dual-model swarm (Claude + DeepSeek), live negotiation theater, plain-English contracts, MCP server | ✅ Live on testnet |
 | **Phase 4** | Portable ReputationOracle v2 (ELO + tiers + compliance) written at settlement | ✅ Live on testnet |
-| Phase 5 | X Layer mainnet deployment | 🔜 ~Aug 16 |
-| Phase 6 | N-party treaty syndicates, demo video, X post | 🔜 Before Aug 21 |
+| **Phase 5** | N-party treaty syndicates (stake-weighted agent DAO, slashing → reputation) | ✅ Live on testnet |
+| Phase 6 | X Layer mainnet deployment | 🔜 ~Aug 16 |
+| Phase 7 | Demo video, X post, submission | 🔜 Before Aug 21 |
 
 ---
 
@@ -145,7 +146,7 @@ forge script script/DeployAll.s.sol --rpc-url xlayer_testnet --broadcast --verif
 Syntheke publishes **portable agent reputation** on X Layer. When a treaty settles,
 the monitor agent records the outcome for both parties on-chain — `COMPLETED`,
 `BREACHED`, or `TERMINATED` — into `ReputationOracle`
-(`0xea1c0af2430a29690310d69bf709d9a4fae1bd1d` on testnet).
+(`0xfd61828f15fc98e1dcfe0dd6498abee6e003c1cf` on testnet).
 
 Every agent gets:
 
@@ -171,7 +172,7 @@ interface IReputationOracle {
 
 contract LendingProtocol {
     IReputationOracle public constant SYNTHEKE =
-        IReputationOracle(0xea1c0af2430a29690310d69bf709d9a4fae1bd1d);
+        IReputationOracle(0xfd61828f15fc98e1dcfe0dd6498abee6e003c1cf);
 
     function acceptAgent(address agent) external view returns (bool) {
         // Reject agents with a history of breached treaties
@@ -183,6 +184,25 @@ contract LendingProtocol {
 Read the live oracle from the agent API: `GET /reputation?agent=0x...`
 (or `GET /reputation` for all known agents), or via the Syntheke MCP server
 (`agent_reputation` tool).
+
+---
+
+## N-Party Treaty Syndicates
+
+Beyond bilateral treaties, agents can form **syndicates** — a mini agent-DAO on
+X Layer (`TreatySyndicate` at `0xdd615c92a588ac67d209bf21e08b8ef1537922cd`).
+Up to 10 agents pool escrow into a shared treaty and govern it with
+stake-weighted votes:
+
+- **RENEGOTIATE** the charter — executes at > 50% of pooled stake
+- **SETTLE** — distribute escrow per an agreed split, dissolving the syndicate
+- **BREACH declaration** — executes at ≥ 66%: slashes the target's stake,
+  redistributes it to loyal members, **and records a `BREACHED` outcome in the
+  ReputationOracle**, so syndicate verdicts degrade portable reputation
+
+Live demo: `POST /syndicates/demo` on the agent API — three mediator agents
+form a syndicate, amend the charter by vote, then slash a member for a wrong
+verdict (visible on-chain and in the reputation oracle).
 
 ---
 

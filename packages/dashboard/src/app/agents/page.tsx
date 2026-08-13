@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Users, Scale, Shield, History, Lock, Award, Database } from "lucide-react";
+import { Users, Scale, Shield, History, Lock, Award, Database, Landmark } from "lucide-react";
 import { fetchAgentStatus, shortAddress } from "@/lib/api";
 
 const AGENT_API = process.env.NEXT_PUBLIC_AGENT_API ?? "http://localhost:3005";
@@ -33,6 +33,37 @@ interface OracleState {
   oracle: { address: string; version: string; kFactor: number; registryV1: string };
 }
 
+interface SyndicateMember {
+  address: string;
+  stakeFormatted: string;
+  weightBps: number;
+}
+
+interface SyndicateProposal {
+  proposalId: number;
+  kind: string;
+  target: string;
+  supportWeight: string;
+  againstWeight: string;
+  executed: boolean;
+}
+
+interface SyndicateSnapshot {
+  syndicateId: string;
+  name: string;
+  charter: string;
+  members: SyndicateMember[];
+  totalStakeFormatted: string;
+  dissolved: boolean;
+  proposals: SyndicateProposal[];
+}
+
+interface SyndicatesState {
+  contract: string;
+  syndicates: SyndicateSnapshot[];
+  total: number;
+}
+
 const TIER_STYLES: Record<string, string> = {
   UNRATED: "bg-bg border-border text-text-muted",
   RISKY: "bg-danger/10 border-danger/30 text-danger",
@@ -60,6 +91,7 @@ export default function AgentsPage() {
   const [chainId, setChainId] = useState<number>(1952);
   const [staking, setStaking] = useState<StakingState | null>(null);
   const [oracle, setOracle] = useState<OracleState | null>(null);
+  const [syndicates, setSyndicates] = useState<SyndicatesState | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -75,6 +107,10 @@ export default function AgentsPage() {
         const r = await fetch(`${AGENT_API}/reputation`, { signal: AbortSignal.timeout(5000) });
         if (r.ok) setOracle(await r.json());
       } catch { /* oracle offline */ }
+      try {
+        const r = await fetch(`${AGENT_API}/syndicates`, { signal: AbortSignal.timeout(5000) });
+        if (r.ok) setSyndicates(await r.json());
+      } catch { /* syndicates offline */ }
     };
     load();
   }, []);
@@ -229,6 +265,51 @@ export default function AgentsPage() {
               agent marketplaces, and DAOs underwrite counterparty risk from Syntheke settlement outcomes. Fallback: v1 registry{" "}
               <span className="font-mono">{shortAddress(oracle.oracle.registryV1)}</span>
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* N-Party Treaty Syndicates */}
+      {syndicates && syndicates.syndicates.length > 0 && (
+        <div className="mb-8">
+          <div className="text-sm text-text-muted uppercase tracking-[0.2em] mb-4">N-Party Treaty Syndicates · Stake-Weighted Governance</div>
+          <div className="space-y-4">
+            {syndicates.syndicates.map(s => (
+              <div key={s.syndicateId} className="card-glow p-5 !cursor-default border-l-2 border-l-blue-400">
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                  <div className="flex items-center gap-2">
+                    <Landmark className="w-4 h-4 text-blue-400" />
+                    <span className="text-sm font-semibold text-text-primary">{s.name}</span>
+                    <span className="text-xs text-text-muted font-mono">{shortAddress(s.syndicateId)}</span>
+                  </div>
+                  <div className="text-xs text-text-muted">
+                    <span className="font-mono text-amber">{s.totalStakeFormatted} OKB</span> pooled · {s.members.length} members ·{" "}
+                    <span className="text-text-secondary">quorum 50% / breach 66%</span>
+                  </div>
+                </div>
+                <p className="text-xs text-text-muted italic mb-3">“{s.charter.slice(0, 120)}{s.charter.length > 120 ? "…" : ""}”</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    {s.members.map(m => (
+                      <div key={m.address} className="flex items-center justify-between text-xs p-2 rounded bg-bg border border-border">
+                        <span className="font-mono text-text-secondary">{shortAddress(m.address)}</span>
+                        <span className="text-text-muted">
+                          {m.stakeFormatted} OKB · <span className="text-text-primary">{m.weightBps / 100}% weight</span>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="space-y-1.5">
+                    {s.proposals.map(p => (
+                      <div key={p.proposalId} className={`text-xs p-2 rounded border ${p.executed ? "bg-success/5 border-success/20" : "bg-bg border-border"}`}>
+                        <span className="font-semibold text-text-primary">#{p.proposalId} {p.kind}</span>
+                        <span className="text-text-muted"> — {p.executed ? "✓ executed" : `support ${p.supportWeight} / against ${p.againstWeight}`}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}

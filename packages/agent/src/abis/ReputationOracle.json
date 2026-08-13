@@ -75,6 +75,25 @@
   },
   {
     "type": "function",
+    "name": "extraWriters",
+    "inputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "getHistory",
     "inputs": [
       {
@@ -317,6 +336,103 @@
   },
   {
     "type": "function",
+    "name": "migrateRecord",
+    "inputs": [
+      {
+        "name": "agent",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "r",
+        "type": "tuple",
+        "internalType": "struct ReputationOracle.Reputation",
+        "components": [
+          {
+            "name": "score",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "tier",
+            "type": "uint8",
+            "internalType": "enum ReputationOracle.Tier"
+          },
+          {
+            "name": "pactCount",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "completedCount",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "breachedCount",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "terminatedCount",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "complianceBps",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "lastUpdated",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      },
+      {
+        "name": "events",
+        "type": "tuple[]",
+        "internalType": "struct ReputationOracle.OutcomeEvent[]",
+        "components": [
+          {
+            "name": "agent",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "pactId",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "outcome",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "delta",
+            "type": "int256",
+            "internalType": "int256"
+          },
+          {
+            "name": "newScore",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "timestamp",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "monitorAgent",
     "inputs": [],
     "outputs": [
@@ -459,6 +575,24 @@
       }
     ],
     "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "setExtraWriter",
+    "inputs": [
+      {
+        "name": "writer",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "allowed",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
     "type": "function",
