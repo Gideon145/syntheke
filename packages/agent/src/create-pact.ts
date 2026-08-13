@@ -119,9 +119,10 @@ function getPartyAProvider(): ethers.JsonRpcProvider {
   return new ethers.JsonRpcProvider(config.XLAYER_RPC_URL, config.XLAYER_CHAIN_ID);
 }
 
-// Each pact gets a unique Party A wallet (funded from deployer)
-const partyAWallet = () => ethers.Wallet.createRandom().connect(getPartyAProvider());
-const partyBWallet = () => getPartyBSigner();
+// Each pact gets UNIQUE Party A and Party B wallets (funded from the agent
+// deployer wallet) — so every treaty looks like two distinct users on-chain.
+const partyAWallet = (): ethers.Wallet => new ethers.Wallet(ethers.Wallet.createRandom().privateKey, getPartyAProvider());
+const partyBWallet = (): ethers.Wallet => new ethers.Wallet(ethers.Wallet.createRandom().privateKey, getPartyAProvider());
 const funderWallet = () => getSigner();
 
 /**
@@ -232,9 +233,18 @@ export async function createPactFromNL(input: CreatePactInput): Promise<CreatePa
       };
     }
 
-    // 2. Create draft on-chain (Party A = deployer wallet for demo)
-    const signerA = getSigner();
+    // 2. Create draft on-chain — Party A is a UNIQUE wallet per pact
+    //    (funded by the agent wallet), so every treaty has 2 distinct users.
+    const signerA = partyAWallet();
     const contractA = getPactContract(signerA);
+    const funder = funderWallet();
+
+    // Fund Party A for gas + treasury fee
+    await sendWithRetry(funder, null, "sendTransaction", [
+      signerA.address,
+      ethers.parseEther("0.015"),
+    ], "fundPartyA");
+    logger.info({ event: "create_pact_funded_party_a", partyA: signerA.address });
 
     logger.info({ event: "create_pact_draft", partyA: signerA.address });
     const receiptDraft = await sendWithRetry(signerA, contractA, "createDraft", [], "createDraft");
@@ -343,11 +353,11 @@ export async function createPactFromNL(input: CreatePactInput): Promise<CreatePa
       contract = null;
     }
 
-    // 3. Fund Party B wallet from Party A
+    // 3. Fund Party B wallet from the agent wallet
     const signerB = partyBWallet();
     const contractB = getPactContract(signerB);
 
-    await sendWithRetry(signerA, null, "sendTransaction", [
+    await sendWithRetry(funder, null, "sendTransaction", [
       signerB.address,
       ethers.parseEther("0.01"),
     ], "fundPartyB");
@@ -381,10 +391,10 @@ export async function createPactFromNL(input: CreatePactInput): Promise<CreatePa
     await sendWithRetry(signerA, contractA, "depositEscrow", [pactId], "depositEscrow_A");
     logger.info({ event: "escrow_deposited", pactId, party: "A" });
 
-    // 8. Fund & deposit Party B escrow
+    // 8. Fund & deposit Party B escrow (from agent wallet)
     const escrowAmount = terms.amount;
     const gasAmount = ethers.parseEther("0.005");
-    const fundTx = await sendWithRetry(signerA, null, "sendTransaction", [signerB.address, escrowAmount + gasAmount], "fundPartyB");
+    const fundTx = await sendWithRetry(funder, null, "sendTransaction", [signerB.address, escrowAmount + gasAmount], "fundPartyB");
     logger.info({ event: "party_b_funded", pactId, amount: ethers.formatEther(escrowAmount + gasAmount) });
     await sendWithRetry(signerB, contractB, "depositEscrow", [pactId], "depositEscrow_B");
     logger.info({ event: "escrow_deposited", pactId, party: "B", state: "COMMITTED" });
