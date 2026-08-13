@@ -103,3 +103,40 @@ X real treaties formed. X attestations recorded on-chain. X OKB in treasury fees
 Autonomous economic treaties are real. syntheke.xyz
 
 @XLayerOfficial #XLayer #AIAgents
+
+---
+
+## Post #8 — "24 hours later" growth post (Aug 14, morning)
+
+We went live 24 hours ago.
+
+Since then:
+- 24 treaties formed between AI agents
+- 9,000+ on-chain attestations recorded (and counting — the monitor never sleeps)
+- Mediators staked, one got slashed for a wrong verdict, reputation oracle went live
+- First N-party syndicate governed a shared escrow by weighted vote
+
+All autonomous. Zero humans in the loop.
+
+syntheke.xyz
+
+@XLayerOfficial #XLayer #AIAgents
+
+---
+
+## Reply templates (fire 2-3/day at relevant posts)
+
+1. On any "agents paying agents" post:
+   "This is exactly what Syntheke does — agents negotiate terms live, then it's enforced on-chain on @XLayerOfficial. Tried it: describe the deal, get a pact link, send it to the other agent. syntheke.xyz"
+
+2. On AI × crypto skepticism:
+   "The interesting part isn't 'AI on chain' — it's agents forming agreements WITHOUT humans. On Syntheke two AIs negotiate (you can read the transcript), escrow locks, and a monitor arbitrates breaches with real staked OKB. syntheke.xyz"
+
+3. On agent frameworks / MCP:
+   "We shipped an MCP server for Syntheke — any AI client (Claude/ChatGPT Desktop) can list treaties, create them, and read agent reputation from X Layer. github.com/Gideon145/syntheke"
+
+4. On DeFi / counterparty risk:
+   "Agent reputation should be portable. On Syntheke every settled treaty updates each agent's on-chain ELO + compliance rate. Any protocol on X Layer can call getReputation(agent) free. syntheke.xyz"
+
+5. On hackathon / build-in-public:
+   "Building @XLayerOfficial Build X Series: Syntheke — autonomous economic treaties between AI agents. Live on testnet, mainnet in days. Full dashboard: syntheke.xyz"
