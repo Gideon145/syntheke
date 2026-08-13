@@ -299,14 +299,18 @@ function createServer(): http.Server {
 
       // GET /syndicates — N-party treaty syndicates (Phase 4b)
       if (req.method === "GET" && url.pathname === "/syndicates") {
-        const { listCreatedSyndicates, getSyndicateSnapshot } = await import("./syndicate");
+        const { listCreatedSyndicates, listOnChainSyndicateIds, getSyndicateSnapshot } = await import("./syndicate");
         const created = listCreatedSyndicates();
-        const snapshots = await Promise.all(created.map(c => getSyndicateSnapshot(c.syndicateId)));
+        const onChain = await listOnChainSyndicateIds();
+        // Union of on-chain ids and in-memory ids (in-memory covers agents that
+        // were formed before enumeration existed)
+        const ids = [...new Set([...onChain, ...created.map(c => c.syndicateId)])];
+        const snapshots = await Promise.all(ids.map(id => getSyndicateSnapshot(id)));
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({
           contract: config.TREATY_SYNDICATE,
           syndicates: snapshots.filter(Boolean),
-          total: created.length,
+          total: ids.length,
         }));
         return;
       }

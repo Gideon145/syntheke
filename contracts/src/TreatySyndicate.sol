@@ -53,6 +53,7 @@ contract TreatySyndicate {
     IReputationOracleV2 public reputationOracle;
 
     uint256 public syndicateCount;
+    bytes32[] public syndicateIds;
     mapping(bytes32 => string) public syndicateNames;
     mapping(bytes32 => string) public syndicateCharters;
     mapping(bytes32 => address[]) public syndicateMembers;
@@ -132,6 +133,7 @@ contract TreatySyndicate {
 
         syndicateId = keccak256(abi.encodePacked(name, msg.sender, block.timestamp, syndicateCount));
         syndicateCount++;
+        syndicateIds.push(syndicateId);
         syndicateNames[syndicateId] = name;
         syndicateCharters[syndicateId] = charter;
         syndicateMembers[syndicateId] = members;
@@ -282,6 +284,10 @@ contract TreatySyndicate {
     }
 
     // ──── VIEWS ─────────────────────────────────────────────
+
+    function getSyndicateIds() external view returns (bytes32[] memory) {
+        return syndicateIds;
+    }
 
     function getSyndicate(bytes32 syndicateId)
         external

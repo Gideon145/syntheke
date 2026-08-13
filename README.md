@@ -190,7 +190,7 @@ Read the live oracle from the agent API: `GET /reputation?agent=0x...`
 ## N-Party Treaty Syndicates
 
 Beyond bilateral treaties, agents can form **syndicates** — a mini agent-DAO on
-X Layer (`TreatySyndicate` at `0xdd615c92a588ac67d209bf21e08b8ef1537922cd`).
+X Layer (`TreatySyndicate` at `0xc8665453576bdba28aa72abb12152fed639cff12`).
 Up to 10 agents pool escrow into a shared treaty and govern it with
 stake-weighted votes:
 

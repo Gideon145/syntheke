@@ -42,6 +42,19 @@ export function resolveMemberAddresses(role: string): string {
   return MEMBER_WALLETS[role]?.address ?? "";
 }
 
+/** List every syndicate id that exists on-chain (contract keeps an index). */
+export async function listOnChainSyndicateIds(): Promise<string[]> {
+  try {
+    const provider = new ethers.JsonRpcProvider(config.XLAYER_RPC_URL, config.XLAYER_CHAIN_ID);
+    const contract = new ethers.Contract(config.TREATY_SYNDICATE, SyndicateABI as unknown as ethers.InterfaceAbi, provider);
+    const ids: string[] = await contract.getSyndicateIds();
+    return ids;
+  } catch (err) {
+    logger.warn({ event: "syndicate_list_failed", err });
+    return [];
+  }
+}
+
 function getContract(signer: ethers.Wallet): ethers.Contract {
   return new ethers.Contract(config.TREATY_SYNDICATE, SyndicateABI as unknown as ethers.InterfaceAbi, signer);
 }
