@@ -118,12 +118,13 @@ JSON schema: {"title":"...","preamble":"...","summary":"one sentence","sections"
     timeoutMs: 25_000,
   };
 
-  // Claude first, DeepSeek fallback (frugal: keep model diversity)
-  let result = await aiService.query<z.infer<typeof ContractSchema>>(request);
-  let model = "claude";
-  if (!result && deepseekService.isAvailable) {
-    result = await deepseekService.query<z.infer<typeof ContractSchema>>(request);
-    model = "deepseek";
+  // Cost-split: DeepSeek first (Claude Haiku often truncates long contracts),
+  // Claude as fallback. Dual-model attribution is preserved either way.
+  let result = await deepseekService.query<z.infer<typeof ContractSchema>>(request);
+  let model = "deepseek";
+  if (!result && aiService.isAvailable) {
+    result = await aiService.query<z.infer<typeof ContractSchema>>(request);
+    model = "claude";
   }
 
   if (!result) {

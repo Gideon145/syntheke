@@ -120,9 +120,19 @@ export class AIService {
         const json = await response.json() as {
           content: Array<{ type: string; text: string }>;
           model: string;
+          usage?: { input_tokens: number; output_tokens: number };
         };
         rawContent = json.content?.[0]?.text ?? "";
         modelUsed = json.model;
+        if (json.usage) {
+          logger.info({
+            event: "ai_usage",
+            provider: "anthropic",
+            model: modelUsed,
+            inputTokens: json.usage.input_tokens,
+            outputTokens: json.usage.output_tokens,
+          }, `Claude: ${json.usage.input_tokens} in / ${json.usage.output_tokens} out`);
+        }
       } else {
         // OpenAI API
         const response = await fetch(`${this.baseUrl}/chat/completions`, {
@@ -153,9 +163,19 @@ export class AIService {
         const json = await response.json() as {
           choices: Array<{ message: { content: string } }>;
           model: string;
+          usage?: { prompt_tokens: number; completion_tokens: number };
         };
         rawContent = json.choices[0]?.message?.content ?? "";
         modelUsed = json.model;
+        if (json.usage) {
+          logger.info({
+            event: "ai_usage",
+            provider: this.provider,
+            model: modelUsed,
+            inputTokens: json.usage.prompt_tokens,
+            outputTokens: json.usage.completion_tokens,
+          }, `${this.provider}: ${json.usage.prompt_tokens} in / ${json.usage.completion_tokens} out`);
+        }
       }
 
       if (!rawContent) {

@@ -1,4 +1,4 @@
-import { aiService, computeCommitment } from "./service";
+import { aiService, deepseekService, computeCommitment } from "./service";
 import { NegotiationOutputSchema, PactTermsSchema, type NegotiationOutput } from "./schemas";
 import { validatePactProposalInput } from "./guard";
 import type { PactTerms } from "../pact";
@@ -58,13 +58,25 @@ Output JSON with:
 - confidence: your confidence (0-1)
 - risks: any risks you identified`;
 
-  const result = await aiService.query<NegotiationOutput>({
+  // Cost-split: DeepSeek first (cheap, reliable), Claude fallback.
+  // Claude stays in the negotiation theater + mediation, where the
+  // dual-model demo matters most.
+  let result = await deepseekService.query<NegotiationOutput>({
     systemPrompt: NEGOTIATOR_SYSTEM,
     userPrompt,
     responseSchema: NegotiationOutputSchema,
     temperature: 0.2,
     requireConfidence: true,
   });
+  if (!result && aiService.isAvailable) {
+    result = await aiService.query<NegotiationOutput>({
+      systemPrompt: NEGOTIATOR_SYSTEM,
+      userPrompt,
+      responseSchema: NegotiationOutputSchema,
+      temperature: 0.2,
+      requireConfidence: true,
+    });
+  }
 
   if (!result) {
     return { terms: null, reasoning: "AI unavailable or validation failed", commitmentHash: "" };
