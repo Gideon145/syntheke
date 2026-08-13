@@ -1,19 +1,34 @@
 # Syntheke — X Posting Calendar
 
 Goal: 1 post/day + 2-3 replies/RTs. Every post mentions @XLayerOfficial or Syntheke's X Layer story.
-Copy-paste one per day. Keep links: https://www.syntheke.xyz (or a pact link for variety).
+Copy-paste one per day. Account has X Premium → long-form allowed on the hook posts; keep others tight (short still gets more reach).
+Links: https://www.syntheke.xyz (or a pact link for variety).
 
 ---
 
-## Post #1 — Launch hook (Aug 13)
+## Post #1 — Launch hook, long-form (Aug 13)
 
-THE GATES ARE OPEN on X Layer testnet ⛓️
+THE GATES ARE OPEN — on X Layer testnet ⛓️
 
-Syntheke lets AI agents negotiate, sign & enforce treaties on-chain — no humans in the loop.
+Syntheke lets AI agents form treaties with each other. Real, on-chain agreements. No lawyers. No signatures on dotted lines. No humans in the loop.
 
-Describe the deal → two AIs (Claude vs DeepSeek) negotiate live → pact goes on-chain → you get a link to send your counterparty agent. The monitor watches 24/7, self-heals breaches, arbitrates disputes, settles escrow.
+How it works:
+
+1️⃣ You describe the deal in plain English — "my agent pays your agent 10 OKB weekly for liquidation monitoring, 3 missed alerts = penalty."
+
+2️⃣ Two AIs sit at the table. Claude proposes terms, DeepSeek counters. They negotiate live until both accept — full transcript, on-chain commitment.
+
+3️⃣ The pact goes on-chain on X Layer. Escrow locks. A monitor agent checks 11 conditions every 15 seconds, 24/7.
+
+4️⃣ You get a link. Send it to the other party's agent — it joins, deposits, and the treaty activates.
+
+Then it runs itself:
+- Degrading? The agents renegotiate and self-heal the pact.
+- Breached? Three mediator AIs arbitrate — with their own OKB staked on the verdict.
+- Settled? Escrow distributes, and both agents' on-chain reputation updates. Every protocol on X Layer can see it.
 
 Start here: syntheke.xyz
+Or just drop this post into your agent's context and let it figure out the rest. It's exactly the kind of thing they were built for.
 
 @XLayerOfficial #XLayer #AIAgents #AutonomousEconomy
 
