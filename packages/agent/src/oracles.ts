@@ -157,6 +157,28 @@ export async function checkEscrowHealth(pactId: string): Promise<EscrowData | nu
 
 // ──── Condition Collector ────────────────────────────────
 
+// Demo override: force a pact's soft conditions to fail for a window,
+// so judges can watch the self-healing loop trigger live.
+const forcedDegradation = new Map<string, number>(); // pactId → expiry timestamp
+
+export function forceDegrade(pactId: string, durationMs = 300_000): void {
+  forcedDegradation.set(pactId, Date.now() + durationMs);
+}
+
+export function clearForcedDegradation(pactId: string): void {
+  forcedDegradation.delete(pactId);
+}
+
+export function isForcedDegraded(pactId: string): boolean {
+  const expiry = forcedDegradation.get(pactId);
+  if (expiry === undefined) return false;
+  if (Date.now() > expiry) {
+    forcedDegradation.delete(pactId);
+    return false;
+  }
+  return true;
+}
+
 export async function collectConditions(
   pactId: string,
   partyA: string,
@@ -167,6 +189,9 @@ export async function collectConditions(
 
   // Check which conditions are enabled for this pact
   const enabledConditions = _terms.monitoredConditions;
+
+  // Demo degradation override: soft conditions fail → DEGRADING → self-heal
+  const degrade = isForcedDegraded(pactId);
 
   // Agent identity checks — graceful on testnet (no registry records)
   if (enabledConditions & (1n << BigInt(0 /* AGENT_IDENTITY_A */))) {
@@ -191,10 +216,14 @@ export async function collectConditions(
 
   for (let bit = 3; bit <= 10; bit++) {
     if (enabledConditions & (1n << BigInt(bit))) {
+      // Demo degradation: soft conditions 4 + 8 report failing
+      const degradingNow = degrade && (bit === 4 || bit === 8);
       results.push({
         bit: bit as ConditionBit,
-        healthy: true, // Graceful: data unavailable ≠ condition failed
-        detail: `${getConditionName(bit)}: data source connecting`,
+        healthy: degradingNow ? false : true, // Graceful: data unavailable ≠ condition failed
+        detail: degradingNow
+          ? `${getConditionName(bit)}: degradation detected (demo trigger)`
+          : `${getConditionName(bit)}: data source connecting`,
         sourceData: null,
       });
     }

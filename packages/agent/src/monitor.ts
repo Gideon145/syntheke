@@ -68,6 +68,14 @@ export async function startMonitor(): Promise<void> {
   const { signer, state: signerState } = await createSigner();
   logAgentStart(signerState.address, signerState.chainId);
 
+  // Bootstrap mediator stakes (idempotent — Phase 2a)
+  try {
+    const { ensureMediatorStakes } = await import("./staking");
+    await ensureMediatorStakes(signer);
+  } catch (err) {
+    logError("mediator_stake_bootstrap", err);
+  }
+
   monitorState = {
     signer,
     signerState,
@@ -224,15 +232,17 @@ async function monitorPact(pactId: string): Promise<void> {
       // Update tracker
       pactTracker.lastAttestationBlock = receipt.blockNumber;
       pactTracker.lastState = assessment.recommendedState;
-
-      if (assessment.recommendedState === RecommendedState.DEGRADING) {
-        pactTracker.degradationCount++;
-      } else if (assessment.recommendedState === RecommendedState.ACTIVE) {
-        pactTracker.degradationCount = 0;
-      }
     } catch (err) {
       logError(`attest:${pactId.slice(0, 10)}`, err);
     }
+  }
+
+  // Track consecutive degradation assessments (regardless of attestation)
+  // so the self-heal trigger can count persistence of degrading conditions.
+  if (assessment.recommendedState === RecommendedState.DEGRADING) {
+    pactTracker.degradationCount++;
+  } else if (assessment.recommendedState === RecommendedState.ACTIVE) {
+    pactTracker.degradationCount = 0;
   }
 
   // 6. RECORD — Log cycle completion
@@ -242,39 +252,22 @@ async function monitorPact(pactId: string): Promise<void> {
   // Update monitor state
   monitorState.pactsMonitored.set(pactId, pactTracker);
 
-  // 7. TRIGGER — Auto-initiate renegotiation if appropriate
-  if (assessment.recommendedState === RecommendedState.DEGRADING &&
-      pactTracker.degradationCount >= config.DEGRADATION_CONSECUTIVE_THRESHOLD &&
-      pact.state === 4) { // Currently ACTIVE but degrading
-    // Use AI for smarter renegotiation proposals when available
-    let proposalReason: string;
-    let fairness: number;
-
-    const aiResult = await generateAIRenegotiation(
-      pact.terms,
-      assessment.reason,
-      "X Layer market conditions — Phase 3 AI monitoring active",
-    );
-
-    if (aiResult.terms && aiResult.fairnessScore > 0) {
-      proposalReason = aiResult.reasoning;
-      fairness = aiResult.fairnessScore;
+  // 7. SELF-HEAL — if the pact is DEGRADING on-chain and degradation persists,
+  //    proactively amend terms (AI proposal) and restore ACTIVE — no breach, no humans.
+  if (Number(pact.state) === 5 && // DEGRADING on-chain
+      pactTracker.degradationCount >= config.DEGRADATION_CONSECUTIVE_THRESHOLD) {
+    const { selfHealPact } = await import("./heal");
+    logActivity("selfheal_triggered", "Pact degrading — autonomous self-healing engaged (AI amendment proposal)", pactId);
+    const result = await selfHealPact(monitorState.signer, pactId, pact.terms, assessment.reason);
+    if (result.healed) {
+      pactTracker.degradationCount = 0;
+      pactTracker.lastState = 4; // ACTIVE
+      notifyParties(pactId, "ACTIVE", pact.partyA, pact.partyB, `Treaty self-healed — terms amended: ${result.reason.slice(0, 80)}`);
     } else {
-      // Fall back to deterministic heuristic
-      const proposal = negotiationEngine.generateRenegotiationProposal(
-        pact.terms,
-        "collateral_ratio_approaching",
-      );
-      proposalReason = proposal.reason;
-      fairness = negotiationEngine.evaluateFairness(pact.terms, proposal.newTerms);
+      logger.warn({ event: "selfheal_failed", pactId: pactId.slice(0, 10), reason: result.reason });
+      logActivity("selfheal_failed", `Self-heal declined: ${result.reason}`, pactId);
     }
-
-    logger.info({
-      event: "renegotiation_proposed",
-      pactId: pactId.slice(0, 10),
-      fairness,
-      reason: proposalReason,
-    }, `Renegotiation proposed (fairness: ${fairness}/100)`);
+    return;
   }
 }
 
@@ -345,6 +338,17 @@ async function handleArbitration(
     logActivity("mediation_vote_complete",
       `${voteResult.approveCount}/${voteResult.rejectCount} — ${verdict} — Party A: ${voteResult.partyAShare}%`,
       pactId);
+
+    // ECONOMIC STAKES — slash minority, reward majority (Phase 2a)
+    if (verdict !== "deadlocked") {
+      const { recordVerdictStakes } = await import("./staking");
+      await recordVerdictStakes(
+        signer,
+        pactId,
+        verdict,
+        voteResult.votes.map(v => ({ mediator: v.mediator, verdict: v.verdict })),
+      );
+    }
 
     notifyParties(pactId, "RESOLVING", pact.partyA, pact.partyB,
       `${voteResult.approveCount}/${voteResult.rejectCount} vote — ${verdict}. Party A: ${voteResult.partyAShare}%`);

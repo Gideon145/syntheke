@@ -1,8 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Users, Scale, Shield, History } from "lucide-react";
+import { Users, Scale, Shield, History, Lock } from "lucide-react";
 import { fetchAgentStatus, shortAddress } from "@/lib/api";
+
+const AGENT_API = process.env.NEXT_PUBLIC_AGENT_API ?? "http://localhost:3005";
+
+interface StakingState {
+  address: string;
+  slashPercent: number;
+  totalStaked: string;
+  totalStakedFormatted: string;
+  totalSlashed: string;
+  totalSlashedFormatted: string;
+  verdictCount: number;
+  mediators: Array<{ name: string; address: string; stake: string; stakeFormatted: string }>;
+}
 
 const MEDIATORS = [
   { name: "Themis", role: "Mediator — Market Fairness", icon: Scale, color: "text-amber", wallet: "0x3208DF56aC9e9B04C94ce49ac9DC035059e9f516", balance: "0.01 OKL", desc: "Evaluates pact terms against market conditions. Fairness scoring, proportionality checks, economic balance verification.", caps: ["market fairness", "terms evaluation", "settlement recommendation"], votes: ["approved — equitable breach penalty", "approved — 60/40 split fair", "rejected — collateral ratio excessive"] },
@@ -13,6 +26,7 @@ const MEDIATORS = [
 export default function AgentsPage() {
   const [agent, setAgent] = useState<string | null>(null);
   const [chainId, setChainId] = useState<number>(1952);
+  const [staking, setStaking] = useState<StakingState | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -20,6 +34,10 @@ export default function AgentsPage() {
         const s = await fetchAgentStatus();
         if (s) { setAgent(s.agent); setChainId(s.chainId); }
       } catch { /* agent offline */ }
+      try {
+        const r = await fetch(`${AGENT_API}/staking`, { signal: AbortSignal.timeout(5000) });
+        if (r.ok) setStaking(await r.json());
+      } catch { /* staking offline */ }
     };
     load();
   }, []);
@@ -81,6 +99,52 @@ export default function AgentsPage() {
           </div>
           <p className="text-lg font-semibold text-text-primary mb-2">Monitor Offline</p>
           <p className="text-sm text-text-muted max-w-md mx-auto">Start the Syntheke agent to see live monitoring data.</p>
+        </div>
+      )}
+
+      {/* Mediator Economic Stakes */}
+      {staking && (
+        <div className="mb-8">
+          <div className="text-sm text-text-muted uppercase tracking-[0.2em] mb-4">Mediator Stakes · Wrong Verdicts Get Slashed</div>
+          <div className="card-glow p-5 !cursor-default border-l-2 border-l-amber">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+              <div className="flex items-center gap-2">
+                <Lock className="w-4 h-4 text-amber" />
+                <span className="text-sm font-semibold text-text-primary">MediatorStaking</span>
+                <span className="text-xs text-text-muted font-mono">{shortAddress(staking.address)}</span>
+              </div>
+              <span className="text-xs text-text-muted">slash rate: <span className="text-danger font-semibold">{staking.slashPercent / 100}%</span> per wrong verdict</span>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+              <div className="p-3 rounded-lg bg-bg border border-border">
+                <div className="text-xs text-text-muted uppercase tracking-wider mb-1">Total Staked</div>
+                <div className="font-mono text-lg text-amber font-semibold">{staking.totalStakedFormatted} OKL</div>
+              </div>
+              <div className="p-3 rounded-lg bg-bg border border-border">
+                <div className="text-xs text-text-muted uppercase tracking-wider mb-1">Total Slashed</div>
+                <div className="font-mono text-lg text-danger font-semibold">{staking.totalSlashedFormatted} OKL</div>
+              </div>
+              <div className="p-3 rounded-lg bg-bg border border-border">
+                <div className="text-xs text-text-muted uppercase tracking-wider mb-1">Verdicts</div>
+                <div className="font-mono text-lg text-text-primary font-semibold">{staking.verdictCount}</div>
+              </div>
+              <div className="p-3 rounded-lg bg-bg border border-border">
+                <div className="text-xs text-text-muted uppercase tracking-wider mb-1">Skin in the Game</div>
+                <div className="font-mono text-lg text-success font-semibold">3 agents</div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {staking.mediators.map(m => (
+                <div key={m.name} className="flex items-center justify-between p-2.5 rounded-lg bg-bg border border-border">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-text-primary">{m.name}</span>
+                    <span className="text-xs text-text-muted font-mono">{shortAddress(m.address)}</span>
+                  </div>
+                  <span className="font-mono text-sm text-text-secondary">{m.stakeFormatted} OKL staked</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 

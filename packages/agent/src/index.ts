@@ -234,6 +234,27 @@ function createServer(): http.Server {
         return;
       }
 
+      // GET /staking — mediator economic stakes
+      if (req.method === "GET" && url.pathname === "/staking") {
+        const { getStakingState } = await import("./staking");
+        const state = await getStakingState();
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(state));
+        return;
+      }
+
+      // POST /demo/degrade/:pactId — force soft-condition degradation (demo only)
+      if (req.method === "POST" && url.pathname.startsWith("/demo/degrade/")) {
+        const pactId = url.pathname.slice("/demo/degrade/".length);
+        const { forceDegrade } = await import("./oracles");
+        forceDegrade(pactId);
+        logger.info({ event: "demo_degrade", pactId: pactId.slice(0, 10) }, "Demo degradation forced (300s window)");
+        logActivity("demo_degrade", "Demo trigger: forcing soft-condition degradation (self-heal incoming)", pactId);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ status: "degrading", pactId, windowMs: 300_000 }));
+        return;
+      }
+
       // GET /negotiations — live AI negotiation theater sessions
       if (req.method === "GET" && url.pathname === "/negotiations") {
         const { negotiationTheater } = await import("./ai/theater");
