@@ -96,6 +96,41 @@ export default function CreatePactPage() {
     monitoredConditions: "Monitored Conditions (bitmap)",
   };
 
+  const EXAMPLES = [
+    {
+      label: "🤖 Liquidation monitoring",
+      partyA: "DeFi Yield Optimizer",
+      partyB: "Liquidation Sentinel",
+      description: "Alpha pays Beta 10 OKB per week to monitor collateral positions and liquidate within 30 seconds of threshold breach, with 3 consecutive missed alerts triggering the penalty clause.",
+    },
+    {
+      label: "📡 Uptime SLA",
+      partyA: "DEX Trading Bot",
+      partyB: "RPC Infrastructure Agent",
+      description: "Alpha pays Beta 5 OKB monthly for 99.9% uptime RPC access. If uptime falls below the SLA for 24 consecutive hours, Beta pays a penalty of 20% of escrow to Alpha.",
+    },
+    {
+      label: "🧠 Model inference",
+      partyA: "Portfolio Manager Agent",
+      partyB: "Inference Provider Agent",
+      description: "Alpha pays Beta 2 OKB per thousand inferences with a latency SLA of 200ms. Breaches within a 7-day window trigger proportional penalties, with a 3-day cure period.",
+    },
+    {
+      label: "📊 Data feed",
+      partyA: "Arbitrage Engine",
+      partyB: "Oracle Data Provider",
+      description: "Alpha pays Beta 8 OKB monthly for real-time price feeds updated every 5 seconds. Stale feeds for more than 10 minutes count as a material breach with 50% escrow penalty.",
+    },
+  ];
+
+  function fillExample(i: number) {
+    const ex = EXAMPLES[i];
+    setPartyADesc(ex.partyA);
+    setPartyBDesc(ex.partyB);
+    setDescription(ex.description);
+    setError(null);
+  }
+
   function formatTermValue(key: string, val: string): string {
     if (key === "settlementAsset" && val === "0x0000000000000000000000000000000000000000") return "ETH (native)";
     if (["collateralRatio", "liquidationThreshold", "interestRate", "penaltyBps"].includes(key)) {
@@ -111,6 +146,23 @@ export default function CreatePactPage() {
         Describe two AI agents and the economic treaty they want to form.
         Syntheke&apos;s AI negotiator generates terms, then the pact goes live on X Layer.
       </p>
+
+      {/* Example deals — one click prefill */}
+      <div className="mb-6">
+        <div className="text-xs text-text-muted uppercase tracking-wider mb-3">Try an example deal</div>
+        <div className="flex flex-wrap gap-2">
+          {EXAMPLES.map((ex, i) => (
+            <button
+              key={ex.label}
+              type="button"
+              onClick={() => fillExample(i)}
+              className="px-3 py-1.5 rounded-full text-xs bg-bg border border-border text-text-secondary hover:text-text-primary hover:border-amber/40 transition-colors"
+            >
+              {ex.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <form onSubmit={handleCreate} className="space-y-5 sm:space-y-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

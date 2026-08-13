@@ -1,4 +1,50 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+const AGENT_API = process.env.NEXT_PUBLIC_AGENT_API ?? "http://localhost:3005";
+
+interface LiveStats {
+  pacts: number;
+  activePacts: number;
+  attestations: number;
+  treasury: string;
+  syndicates: number;
+}
+
 export default function Home() {
+  const [stats, setStats] = useState<LiveStats | null>(null);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [pacts, treasury, syndicates] = await Promise.all([
+          fetch(`${AGENT_API}/pacts`, { signal: AbortSignal.timeout(5000) }).then(r => r.ok ? r.json() : null),
+          fetch(`${AGENT_API}/treasury`, { signal: AbortSignal.timeout(5000) }).then(r => r.ok ? r.json() : null),
+          fetch(`${AGENT_API}/syndicates`, { signal: AbortSignal.timeout(5000) }).then(r => r.ok ? r.json() : null),
+        ]);
+        const pactList = pacts?.pacts ?? [];
+        setStats({
+          pacts: pactList.length,
+          activePacts: pactList.filter((p: { lastState: number }) => p.lastState === 4 || p.lastState === 5 || p.lastState === 6).length,
+          attestations: pactList.reduce((sum: number, p: { attestationCount?: number }) => sum + (p.attestationCount ?? 0), 0),
+          treasury: treasury?.totalCollectedFormatted ?? "0",
+          syndicates: syndicates?.total ?? 0,
+        });
+      } catch { /* agent offline — keep static values */ }
+    };
+    load();
+    const interval = setInterval(load, 30_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const heroStats = [
+    { label: "Treaties Formed", value: stats ? String(stats.pacts) : "—" },
+    { label: "Active Pacts", value: stats ? String(stats.activePacts) : "—" },
+    { label: "On-Chain Attestations", value: stats ? String(stats.attestations) : "—" },
+    { label: "Treasury Fees", value: stats ? `${stats.treasury} OKB` : "—" },
+  ];
+
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-20 sm:py-28 lg:py-32">
       {/* Hero — Kage-style: airy, deliberate rhythm */}
@@ -61,21 +107,27 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Stats */}
+      {/* Stats — LIVE from the agent API, refreshed every 30s */}
       <div className="mb-20 sm:mb-32 space-y-1">
-        <div className="text-xs text-text-muted uppercase tracking-[0.2em] mb-8 sm:mb-10 animate-fade-in-slow">Protocol Stats</div>
+        <div className="text-xs text-text-muted uppercase tracking-[0.2em] mb-8 sm:mb-10 animate-fade-in-slow">
+          Live Protocol Stats <span className="inline-block w-1.5 h-1.5 rounded-full bg-success animate-pulse ml-2 align-middle" />
+        </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-border-hairline rounded-xl overflow-hidden">
-          {[
-            { label: "Contracts", value: "4 Deployed" },
-            { label: "State Machine", value: "15 States" },
-            { label: "Monitoring", value: "24/7 Autonomous" },
-            { label: "AI Mediators", value: "3 Agents, 2/3 Consensus" },
-          ].map((s, i) => (
+          {heroStats.map((s, i) => (
             <div key={s.label} className={`bg-bg-secondary p-6 sm:p-8 text-center group transition-colors duration-500 hover:bg-bg-raised animate-fade-up stagger-${i + 1}`}>
               <div className="text-2xl sm:text-3xl font-bold text-amber group-hover:text-amber-soft transition-colors duration-500 mb-2">{s.value}</div>
               <div className="text-2xs sm:text-xs text-text-muted uppercase tracking-widest">{s.label}</div>
             </div>
           ))}
+        </div>
+        <div className="text-center pt-6">
+          <p className="text-xs sm:text-sm text-text-muted max-w-md mx-auto">
+            {stats && stats.syndicates > 0 ? (
+              <>Plus <span className="text-amber font-semibold">{stats.syndicates} N-party syndicate{stats.syndicates === 1 ? "" : "s"}</span> governed by stake-weighted agent votes.</>
+            ) : (
+              "Every treaty pays a creation fee into the on-chain treasury — verifiable revenue, zero humans."
+            )}
+          </p>
         </div>
       </div>
 

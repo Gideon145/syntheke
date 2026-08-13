@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Navbar } from "@/components/ui";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 export const viewport: Viewport = {
@@ -24,6 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen flex flex-col bg-bg text-text-primary antialiased">
         <Navbar />
         <main className="flex-1">{children}</main>
+        <Analytics />
       </body>
     </html>
   );
