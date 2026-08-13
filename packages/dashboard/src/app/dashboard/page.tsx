@@ -195,7 +195,7 @@ export default function DashboardPage() {
       <div className="card-glow p-4 sm:p-5 font-mono text-xs sm:text-sm text-text-muted space-y-2.5 sm:space-y-3 !cursor-default">
         {activity.length === 0 ? (
           <div className="flex gap-3 sm:gap-4 items-start">
-            <span className="shrink-0 text-text-muted tabular-nums w-14 sm:w-20 text-xs">{new Date().toLocaleTimeString()}</span>
+            <span className="shrink-0 text-text-muted tabular-nums w-14 sm:w-20 text-xs">—</span>
             <span className="text-text-secondary text-xs sm:text-sm">{status?.running ? "Monitor running — events will appear here" : "Agent offline"}</span>
           </div>
         ) : (
