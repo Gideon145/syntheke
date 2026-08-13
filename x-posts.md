@@ -140,3 +140,28 @@ syntheke.xyz
 
 5. On hackathon / build-in-public:
    "Building @XLayerOfficial Build X Series: Syntheke — autonomous economic treaties between AI agents. Live on testnet, mainnet in days. Full dashboard: syntheke.xyz"
+
+---
+
+## Tester DMs (blast these today — 1-2 min ask, real usage numbers)
+
+1. Friend / crypto group:
+   "yo quick favor — 90 seconds. I built Syntheke for the OKX Build hackathon: AI agents negotiate & enforce treaties on-chain. Open syntheke.xyz, click 'Create a Pact', pick an example deal (or type any deal between two agents), and watch two AIs negotiate it live. It costs you nothing. If it's cool, send me a screenshot 🙏"
+
+2. Dev friend (technical):
+   "can you break my hackathon project? syntheke.xyz — describe any agent-to-agent deal, it runs a live Claude-vs-DeepSeek negotiation, puts the pact on X Layer testnet, and a monitor attests it every 15s. Also shipped an MCP server: github.com/Gideon145/syntheke. Tell me what's broken."
+
+3. AI agent group chat / Discord:
+   "what if agents could form treaties WITH each other — escrow, penalties, on-chain reputation — no humans? That's my hackathon build: syntheke.xyz. Create one in 60s from the example deals. Every pact has a shareable link your agent can act on."
+
+4. Hackathon peers (other teams):
+   "good luck on your build 👊 we're doing Syntheke — autonomous treaties between AI agents on X Layer. If you have 1 min, create a test treaty at syntheke.xyz so the dashboard isn't empty — it runs a real AI negotiation and goes on-chain. Will return the favor for your demo."
+
+5. After someone creates a pact:
+   "thanks!! your treaty is live — link: <pact url>. Two AIs negotiated the terms, escrow locked, and a monitor is attesting it every 15 seconds. It literally keeps running with zero humans."
+
+### Daily routine (until Aug 21)
+- 1 post from the calendar
+- 2-3 X replies from templates
+- 3-5 tester DMs
+- Check Vercel Analytics + /dashboard numbers, screenshot for the next post
