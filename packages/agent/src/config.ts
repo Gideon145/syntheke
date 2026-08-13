@@ -24,6 +24,7 @@ const configSchema = z.object({
   AGENT_REGISTRY: z.string().default("0x0101Ed240dA20FFDD95bca8E7408DAa889aE217B"),
   ESCROW_VAULT: z.string().default("0x5535cEc5D9CcBe77EBF99e33BE88dCE00047e142"),
   REPUTATION_REGISTRY: z.string().default("0x4256e57592aCB2120EAbC7f3E1eb82d9DddB855f"),
+  TREASURY_VAULT: z.string().default("0xe23721edbf637e080a2ec70d89faa2f5956943d7"),
 
   // Monitoring
   MONITOR_INTERVAL_SEC: z.coerce.number().default(15),

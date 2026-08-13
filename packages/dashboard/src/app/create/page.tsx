@@ -15,6 +15,11 @@ interface PactResult {
   txHash?: string;
   reasoning?: string;
   error?: string;
+  treasuryFee?: {
+    amount: string;
+    txHash: string;
+    totalCollected: string;
+  };
   negotiation?: {
     status: string;
     rounds: number;
@@ -193,6 +198,11 @@ export default function CreatePactPage() {
             {result.txHash && (
               <p className="text-xs text-text-muted mt-2 font-mono break-all">
                 TX: {result.txHash}
+              </p>
+            )}
+            {result.treasuryFee && (
+              <p className="text-xs text-amber mt-2">
+                🏦 Treasury fee paid: {Number(BigInt(result.treasuryFee.amount)) / 1e18} OKL · total collected: {Number(BigInt(result.treasuryFee.totalCollected)) / 1e18} OKL
               </p>
             )}
           </div>

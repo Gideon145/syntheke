@@ -1,4 +1,5 @@
 import http from "node:http";
+import { ethers } from "ethers";
 import { config } from "./config";
 import { startMonitor, stopMonitor, getMonitorState } from "./monitor";
 import { negotiationEngine } from "./negotiator";
@@ -202,6 +203,34 @@ function createServer(): http.Server {
 
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify(enriched));
+        return;
+      }
+
+      // GET /treasury — on-chain protocol treasury stats
+      if (req.method === "GET" && url.pathname === "/treasury") {
+        const { ethers } = await import("ethers");
+        const treasuryAbi = await import("./abis/TreasuryVault.json", { with: { type: "json" } });
+        const provider = new ethers.JsonRpcProvider(config.XLAYER_RPC_URL, config.XLAYER_CHAIN_ID);
+        const treasury = new ethers.Contract(config.TREASURY_VAULT, treasuryAbi.default as unknown as ethers.InterfaceAbi, provider);
+        const [feeAmount, totalCollected, count, balance, owner] = await Promise.all([
+          treasury.feeAmount(),
+          treasury.totalFeesCollected(),
+          treasury.feeCount(),
+          treasury.balance(),
+          treasury.owner(),
+        ]);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({
+          address: config.TREASURY_VAULT,
+          owner,
+          feeAmount: feeAmount.toString(),
+          feeAmountFormatted: ethers.formatEther(feeAmount),
+          totalCollected: totalCollected.toString(),
+          totalCollectedFormatted: ethers.formatEther(totalCollected),
+          feeCount: Number(count),
+          balance: balance.toString(),
+          balanceFormatted: ethers.formatEther(balance),
+        }));
         return;
       }
 

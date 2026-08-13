@@ -1,10 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Shield, ExternalLink } from "lucide-react";
+import { Shield, ExternalLink, Coins } from "lucide-react";
 import { fetchAgentStatus, fetchPacts, shortAddress, type AgentStatus, type PactSummary } from "@/lib/api";
 
 const AGENT_API = process.env.NEXT_PUBLIC_AGENT_API ?? "http://localhost:3005";
+
+interface TreasuryState {
+  address: string;
+  feeAmount: string;
+  feeAmountFormatted: string;
+  totalCollected: string;
+  totalCollectedFormatted: string;
+  feeCount: number;
+  balance: string;
+  balanceFormatted: string;
+}
 
 interface ActivityEvent {
   timestamp: number;
@@ -27,12 +38,17 @@ export default function DashboardPage() {
   const [pacts, setPacts] = useState<PactSummary[]>([]);
   const [activity, setActivity] = useState<ActivityEvent[]>([]);
   const [notifications, setNotifications] = useState<NotificationEvent[]>([]);
+  const [treasury, setTreasury] = useState<TreasuryState | null>(null);
 
   useEffect(() => {
     let firstLoad = true;
     const load = async () => {
       const s = await fetchAgentStatus();
       setStatus(s);
+      try {
+        const t = await fetch(`${AGENT_API}/treasury`, { signal: AbortSignal.timeout(5000) });
+        if (t.ok) setTreasury(await t.json());
+      } catch { /* keep existing */ }
       try {
         const p = await fetchPacts();
         if (p.length > 0 || firstLoad) setPacts(p);
@@ -103,8 +119,45 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      <h2 className="section-heading mb-4">Active Pacts</h2>
-      {pacts.length === 0 ? (
+      {/* Protocol Treasury */}
+      <div className="card-glow p-5 !cursor-default border-l-2 border-l-amber mb-10">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+          <div className="flex items-center gap-2">
+            <Coins className="w-4 h-4 text-amber" />
+            <span className="text-sm font-semibold text-text-primary">Protocol Treasury</span>
+            <span className="text-xs text-text-muted font-mono">{treasury ? shortAddress(treasury.address) : "loading..."}</span>
+          </div>
+          {treasury && (
+            <a href={`https://www.oklink.com/xlayer/address/${treasury.address}`} target="_blank" rel="noopener"
+              className="text-xs text-amber hover:text-lantern transition-colors flex items-center gap-1">
+              Explorer <ExternalLink className="w-3 h-3" />
+            </a>
+          )}
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="p-3 rounded-lg bg-bg border border-border">
+            <div className="text-xs text-text-muted uppercase tracking-wider mb-1">Total Collected</div>
+            <div className="font-mono text-lg text-amber font-semibold">{treasury ? `${treasury.totalCollectedFormatted} OKL` : "—"}</div>
+          </div>
+          <div className="p-3 rounded-lg bg-bg border border-border">
+            <div className="text-xs text-text-muted uppercase tracking-wider mb-1">Fees Paid</div>
+            <div className="font-mono text-lg text-text-primary font-semibold">{treasury?.feeCount ?? "—"}</div>
+          </div>
+          <div className="p-3 rounded-lg bg-bg border border-border">
+            <div className="text-xs text-text-muted uppercase tracking-wider mb-1">Creation Fee</div>
+            <div className="font-mono text-lg text-text-primary font-semibold">{treasury ? `${treasury.feeAmountFormatted} OKL` : "—"}</div>
+          </div>
+          <div className="p-3 rounded-lg bg-bg border border-border">
+            <div className="text-xs text-text-muted uppercase tracking-wider mb-1">Treasury Balance</div>
+            <div className="font-mono text-lg text-text-primary font-semibold">{treasury ? `${treasury.balanceFormatted} OKL` : "—"}</div>
+          </div>
+        </div>
+        <p className="text-xs text-text-muted mt-3">
+          Every AI-formed treaty pays a creation fee into the on-chain treasury — verifiable revenue, zero humans.
+        </p>
+      </div>
+
+      <h2 className="section-heading mb-4">Active Pacts</h2>      {pacts.length === 0 ? (
         <div className="card-glow p-12 text-center mb-10">
           <div className="w-12 h-12 rounded-full bg-okx/10 flex items-center justify-center mx-auto mb-4">
             <Shield className="w-6 h-6 text-okx" />
