@@ -104,16 +104,44 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-10">
         {[
-          { label: "Cycles", value: status?.cycles?.toLocaleString() ?? "—", sub: "15s intervals" },
-          { label: "Attestations", value: status?.attestations?.toLocaleString() ?? "—", sub: "on-chain records" },
-          { label: "Pacts Monitored", value: String(status?.pactsMonitored ?? "—"), sub: "autonomous" },
-          { label: "Agent", value: status?.agent ? shortAddress(status.agent) : "—", sub: "monitor address" },
+          {
+            label: "Total Treaties",
+            value: pacts.length ? pacts.length.toLocaleString() : "—",
+            sub: "formed on X Layer",
+            accent: true,
+          },
+          {
+            label: "Active Pacts",
+            value: pacts.length ? String(pacts.filter(p => [4, 5, 6].includes(p.lastState)).length) : "—",
+            sub: "monitored now",
+          },
+          {
+            label: "On-Chain Attestations",
+            value: pacts.length ? pacts.reduce((s, p) => s + p.attestationCount, 0).toLocaleString() : "—",
+            sub: "all-time, verifiable",
+            accent: true,
+          },
+          {
+            label: "Treasury Fees",
+            value: treasury ? `${treasury.totalCollectedFormatted} OKB` : "—",
+            sub: `${treasury?.feeCount ?? "—"} fees paid`,
+          },
+          {
+            label: "Cycles (session)",
+            value: status?.cycles?.toLocaleString() ?? "—",
+            sub: "since agent boot",
+          },
+          {
+            label: "Attestations (session)",
+            value: status?.attestations?.toLocaleString() ?? "—",
+            sub: "since agent boot",
+          },
         ].map(m => (
           <div key={m.label} className="metric-card group">
             <div className="metric-label">{m.label}</div>
-            <div className="metric-value group-hover:text-amber transition-colors">{m.value}</div>
+            <div className={`metric-value group-hover:text-amber transition-colors ${m.accent ? "text-amber" : ""}`}>{m.value}</div>
             <span className="text-xs text-text-muted">{m.sub}</span>
           </div>
         ))}
