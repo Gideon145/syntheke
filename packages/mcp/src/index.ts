@@ -127,7 +127,7 @@ server.tool(
     return {
       content: [{
         type: "text",
-        text: `Syntheke Treasury (${data.address})\nTotal collected: ${data.totalCollectedFormatted} OKL\nFees paid: ${data.feeCount}\nCurrent balance: ${data.balanceFormatted} OKL\nCreation fee: ${data.feeAmountFormatted} OKL per treaty`,
+        text: `Syntheke Treasury (${data.address})\nTotal collected: ${data.totalCollectedFormatted} OKB\nFees paid: ${data.feeCount}\nCurrent balance: ${data.balanceFormatted} OKB\nCreation fee: ${data.feeAmountFormatted} OKB per treaty`,
       }],
     };
   },
@@ -141,11 +141,11 @@ server.tool(
   async () => {
     const data = await agentFetch<{ mediators?: Array<{ name: string; stakeFormatted: string }>; totalStakedFormatted?: string; totalSlashedFormatted?: string; verdictCount?: number; slashPercent?: number }>("/staking");
     if ("error" in data) return { content: [{ type: "text", text: `Error: ${data.error}` }] };
-    const lines = (data.mediators ?? []).map(m => `  ${m.name}: ${m.stakeFormatted} OKL staked`);
+    const lines = (data.mediators ?? []).map(m => `  ${m.name}: ${m.stakeFormatted} OKB staked`);
     return {
       content: [{
         type: "text",
-        text: `Mediator Stakes\nTotal: ${data.totalStakedFormatted} OKL - Slashed: ${data.totalSlashedFormatted} OKL - Verdicts: ${data.verdictCount}\nSlash rate: ${(data.slashPercent ?? 0) / 100}% per wrong verdict\n${lines.join("\n")}`,
+        text: `Mediator Stakes\nTotal: ${data.totalStakedFormatted} OKB - Slashed: ${data.totalSlashedFormatted} OKB - Verdicts: ${data.verdictCount}\nSlash rate: ${(data.slashPercent ?? 0) / 100}% per wrong verdict\n${lines.join("\n")}`,
       }],
     };
   },

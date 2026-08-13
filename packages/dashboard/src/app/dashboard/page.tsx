@@ -137,7 +137,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div className="p-3 rounded-lg bg-bg border border-border">
             <div className="text-xs text-text-muted uppercase tracking-wider mb-1">Total Collected</div>
-            <div className="font-mono text-lg text-amber font-semibold">{treasury ? `${treasury.totalCollectedFormatted} OKL` : "—"}</div>
+            <div className="font-mono text-lg text-amber font-semibold">{treasury ? `${treasury.totalCollectedFormatted} OKB` : "—"}</div>
           </div>
           <div className="p-3 rounded-lg bg-bg border border-border">
             <div className="text-xs text-text-muted uppercase tracking-wider mb-1">Fees Paid</div>
@@ -145,11 +145,11 @@ export default function DashboardPage() {
           </div>
           <div className="p-3 rounded-lg bg-bg border border-border">
             <div className="text-xs text-text-muted uppercase tracking-wider mb-1">Creation Fee</div>
-            <div className="font-mono text-lg text-text-primary font-semibold">{treasury ? `${treasury.feeAmountFormatted} OKL` : "—"}</div>
+            <div className="font-mono text-lg text-text-primary font-semibold">{treasury ? `${treasury.feeAmountFormatted} OKB` : "—"}</div>
           </div>
           <div className="p-3 rounded-lg bg-bg border border-border">
             <div className="text-xs text-text-muted uppercase tracking-wider mb-1">Treasury Balance</div>
-            <div className="font-mono text-lg text-text-primary font-semibold">{treasury ? `${treasury.balanceFormatted} OKL` : "—"}</div>
+            <div className="font-mono text-lg text-text-primary font-semibold">{treasury ? `${treasury.balanceFormatted} OKB` : "—"}</div>
           </div>
         </div>
         <p className="text-xs text-text-muted mt-3">

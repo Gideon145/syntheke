@@ -6,7 +6,7 @@ import {TreasuryVault} from "../src/TreasuryVault.sol";
 
 /**
  * @title DeployTreasury
- * @notice Deploys the Syntheke TreasuryVault with a 0.01 OKL creation fee.
+ * @notice Deploys the Syntheke TreasuryVault with a 0.01 OKB creation fee.
  *
  * Usage:
  *   forge script script/DeployTreasury.s.sol:DeployTreasury --rpc-url xlayer_testnet --broadcast
@@ -16,7 +16,7 @@ contract DeployTreasury is Script {
         uint256 deployerKey = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(deployerKey);
 
-        // 0.01 OKL creation fee
+        // 0.01 OKB creation fee
         uint256 feeAmount = 0.01 ether;
 
         console.log("Deployer:", deployer);

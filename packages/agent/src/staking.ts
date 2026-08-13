@@ -1,7 +1,7 @@
 /**
  * staking.ts — Mediator economic stakes (Phase 2a)
  *
- * Themis, Athena, and Solon stake native OKL in the MediatorStaking contract.
+ * Themis, Athena, and Solon stake native OKB in the MediatorStaking contract.
  * After every arbitration:
  *   - minority (wrong verdict) mediators are slashed
  *   - slashed stake is distributed to the majority (correct verdict)
@@ -38,7 +38,7 @@ export async function ensureMediatorStakes(signer: ethers.Wallet): Promise<void>
     try {
       const current: bigint = await contract.stakes(m.address);
       if (current >= minStake) {
-        logger.info({ event: "mediator_stake_ok", mediator: m.name, stake: ethers.formatEther(current) }, `${m.name} already staked ${ethers.formatEther(current)} OKL`);
+        logger.info({ event: "mediator_stake_ok", mediator: m.name, stake: ethers.formatEther(current) }, `${m.name} already staked ${ethers.formatEther(current)} OKB`);
         continue;
       }
       const provider = new ethers.JsonRpcProvider(config.XLAYER_RPC_URL, config.XLAYER_CHAIN_ID);
@@ -46,8 +46,8 @@ export async function ensureMediatorStakes(signer: ethers.Wallet): Promise<void>
       const mediatorContract = getStakingContract(mediatorWallet);
       const tx = await mediatorContract.stake({ value: minStake });
       await tx.wait();
-      logger.info({ event: "mediator_staked", mediator: m.name, amount: config.MEDIATOR_STAKE_AMOUNT }, `${m.name} staked ${config.MEDIATOR_STAKE_AMOUNT} OKL`);
-      logActivity("mediator_staked", `${m.name} staked ${config.MEDIATOR_STAKE_AMOUNT} OKL into mediator staking`);
+      logger.info({ event: "mediator_staked", mediator: m.name, amount: config.MEDIATOR_STAKE_AMOUNT }, `${m.name} staked ${config.MEDIATOR_STAKE_AMOUNT} OKB`);
+      logActivity("mediator_staked", `${m.name} staked ${config.MEDIATOR_STAKE_AMOUNT} OKB into mediator staking`);
     } catch (err) {
       logger.warn({ event: "mediator_stake_failed", mediator: m.name, err }, `${m.name} stake failed (insufficient balance?)`);
     }

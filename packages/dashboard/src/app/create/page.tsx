@@ -210,7 +210,7 @@ export default function CreatePactPage() {
             )}
             {result.treasuryFee && (
               <p className="text-xs text-amber mt-2">
-                🏦 Treasury fee paid: {Number(BigInt(result.treasuryFee.amount)) / 1e18} OKL · total collected: {Number(BigInt(result.treasuryFee.totalCollected)) / 1e18} OKL
+                🏦 Treasury fee paid: {Number(BigInt(result.treasuryFee.amount)) / 1e18} OKB · total collected: {Number(BigInt(result.treasuryFee.totalCollected)) / 1e18} OKB
               </p>
             )}
           </div>

@@ -253,7 +253,7 @@ export async function createPactFromNL(input: CreatePactInput): Promise<CreatePa
     const pactId = draftEvent.args.pactId as string;
     logger.info({ event: "create_pact_draft_created", pactId });
 
-    // 2.4 PROTOCOL TREASURY FEE — 0.01 OKL creation fee → on-chain TreasuryVault
+    // 2.4 PROTOCOL TREASURY FEE — 0.01 OKB creation fee → on-chain TreasuryVault
     let treasuryFee: { amount: string; txHash: string; totalCollected: string } | undefined;
     try {
       const treasuryAbi = await import("./abis/TreasuryVault.json", { with: { type: "json" } });
@@ -278,7 +278,7 @@ export async function createPactFromNL(input: CreatePactInput): Promise<CreatePa
         pactId: pactId.slice(0, 10),
         amount: ethers.formatEther(feeAmount),
         totalCollected: ethers.formatEther(totalCollected),
-      }, `Treasury fee paid: ${ethers.formatEther(feeAmount)} OKL (total: ${ethers.formatEther(totalCollected)} OKL)`);
+      }, `Treasury fee paid: ${ethers.formatEther(feeAmount)} OKB (total: ${ethers.formatEther(totalCollected)} OKB)`);
     } catch (err) {
       logger.warn({ event: "treasury_fee_failed", err }, "Treasury fee payment failed — continuing without fee");
     }
@@ -488,7 +488,7 @@ function generateDefaultTerms(description: string): PactTerms {
   const desc = description.toLowerCase();
 
   // Detect payment amount from description
-  let amount = 100000000000000n; // 0.0001 OKL in wei (testnet — keep tiny)
+    let amount = 100000000000000n; // 0.0001 OKB in wei (testnet — keep tiny)
   const usdcMatch = desc.match(/(\d+)\s*usdc/i);
   if (usdcMatch) amount = BigInt(usdcMatch[1]) * 1000000n; // USDC has 6 decimals
 

@@ -18,9 +18,9 @@ interface StakingState {
 }
 
 const MEDIATORS = [
-  { name: "Themis", role: "Mediator — Market Fairness", icon: Scale, color: "text-amber", wallet: "0x3208DF56aC9e9B04C94ce49ac9DC035059e9f516", balance: "0.01 OKL", desc: "Evaluates pact terms against market conditions. Fairness scoring, proportionality checks, economic balance verification.", caps: ["market fairness", "terms evaluation", "settlement recommendation"], votes: ["approved — equitable breach penalty", "approved — 60/40 split fair", "rejected — collateral ratio excessive"] },
-  { name: "Athena", role: "Mediator — Risk Assessment", icon: Shield, color: "text-blue-400", wallet: "0xf19aF06DE5c74bf0c5CF7e8aa71a608F64F78c37", balance: "0.01 OKL", desc: "Evaluates counterparty and systemic risk. Creditworthiness analysis, tail-risk assessment, protocol integrity protection.", caps: ["risk assessment", "counterparty analysis", "systemic risk"], votes: ["approved — low systemic risk", "rejected — Party B history risky", "approved — resolution protects protocol"] },
-  { name: "Solon", role: "Mediator — Historical Precedent", icon: History, color: "text-emerald-400", wallet: "0x435d6bd56cB281Fb3b1EE6A54001B49988AC016e", balance: "0.01 OKL", desc: "Evaluates disputes against historical pact outcomes. Pattern recognition, precedent consistency, convention enforcement.", caps: ["historical analysis", "precedent matching", "convention enforcement"], votes: ["approved — consistent with precedent", "approved — similar to Pact #377c", "abstained — novel case"] },
+  { name: "Themis", role: "Mediator — Market Fairness", icon: Scale, color: "text-amber", wallet: "0x3208DF56aC9e9B04C94ce49ac9DC035059e9f516", balance: "0.01 OKB", desc: "Evaluates pact terms against market conditions. Fairness scoring, proportionality checks, economic balance verification.", caps: ["market fairness", "terms evaluation", "settlement recommendation"], votes: ["approved — equitable breach penalty", "approved — 60/40 split fair", "rejected — collateral ratio excessive"] },
+  { name: "Athena", role: "Mediator — Risk Assessment", icon: Shield, color: "text-blue-400", wallet: "0xf19aF06DE5c74bf0c5CF7e8aa71a608F64F78c37", balance: "0.01 OKB", desc: "Evaluates counterparty and systemic risk. Creditworthiness analysis, tail-risk assessment, protocol integrity protection.", caps: ["risk assessment", "counterparty analysis", "systemic risk"], votes: ["approved — low systemic risk", "rejected — Party B history risky", "approved — resolution protects protocol"] },
+  { name: "Solon", role: "Mediator — Historical Precedent", icon: History, color: "text-emerald-400", wallet: "0x435d6bd56cB281Fb3b1EE6A54001B49988AC016e", balance: "0.01 OKB", desc: "Evaluates disputes against historical pact outcomes. Pattern recognition, precedent consistency, convention enforcement.", caps: ["historical analysis", "precedent matching", "convention enforcement"], votes: ["approved — consistent with precedent", "approved — similar to Pact #377c", "abstained — novel case"] },
 ];
 
 export default function AgentsPage() {
@@ -118,11 +118,11 @@ export default function AgentsPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
               <div className="p-3 rounded-lg bg-bg border border-border">
                 <div className="text-xs text-text-muted uppercase tracking-wider mb-1">Total Staked</div>
-                <div className="font-mono text-lg text-amber font-semibold">{staking.totalStakedFormatted} OKL</div>
+                <div className="font-mono text-lg text-amber font-semibold">{staking.totalStakedFormatted} OKB</div>
               </div>
               <div className="p-3 rounded-lg bg-bg border border-border">
                 <div className="text-xs text-text-muted uppercase tracking-wider mb-1">Total Slashed</div>
-                <div className="font-mono text-lg text-danger font-semibold">{staking.totalSlashedFormatted} OKL</div>
+                <div className="font-mono text-lg text-danger font-semibold">{staking.totalSlashedFormatted} OKB</div>
               </div>
               <div className="p-3 rounded-lg bg-bg border border-border">
                 <div className="text-xs text-text-muted uppercase tracking-wider mb-1">Verdicts</div>
@@ -140,7 +140,7 @@ export default function AgentsPage() {
                     <span className="text-sm font-semibold text-text-primary">{m.name}</span>
                     <span className="text-xs text-text-muted font-mono">{shortAddress(m.address)}</span>
                   </div>
-                  <span className="font-mono text-sm text-text-secondary">{m.stakeFormatted} OKL staked</span>
+                  <span className="font-mono text-sm text-text-secondary">{m.stakeFormatted} OKB staked</span>
                 </div>
               ))}
             </div>
