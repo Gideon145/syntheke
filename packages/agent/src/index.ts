@@ -113,19 +113,52 @@ setInterval(refreshPactCache, 30_000);
 
 // ──── HTTP Server ────────────────────────────────────────
 
+/** Premium content behind x402: full attestation history + theater transcript. */
+async function buildPremiumTimeline(pactId: string): Promise<Record<string, unknown>> {
+  const events = activityLog.filter(a => a.pactId === pactId);
+  let onChain: Record<string, unknown> = {};
+  try {
+    const { getPactContractRead } = await import("./pact");
+    const state = await getPactContractRead().getPactState(pactId);
+    onChain = {
+      lastState: Number(state.state),
+      attestationCount: Number(state.attestationCount),
+      degradationCount: Number(state.consecutiveDegradation),
+      breachTier: Number(state.breachTier),
+      partyA: state.partyA,
+      partyB: state.partyB,
+      closed: state.closed,
+    };
+  } catch { /* on-chain read failed */ }
+
+  let theater: unknown = null;
+  try {
+    const { negotiationTheater } = await import("./ai/theater");
+    theater = negotiationTheater.getSession(pactId) ?? null;
+  } catch { /* theater unavailable */ }
+
+  return {
+    pactId,
+    unlockedAt: Date.now(),
+    onChain,
+    attestationHistory: events.slice(-30),
+    negotiationTheater: theater,
+  };
+}
+
 function createServer(): http.Server {
   return http.createServer(async (req, res) => {
     // CORS
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, PAYMENT-SIGNATURE, PAYMENT-REQUIRED");
+    res.setHeader("Access-Control-Expose-Headers", "PAYMENT-REQUIRED, PAYMENT-RESPONSE");
 
     if (req.method === "OPTIONS") {
       res.writeHead(204);
       res.end();
       return;
     }
-
     const url = new URL(req.url ?? "/", `http://localhost:${config.PORT}`);
 
     try {
@@ -225,6 +258,93 @@ function createServer(): http.Server {
         const state = await getEscrowState();
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify(state));
+        return;
+      }
+
+      // GET /premium/timeline/:pactId — x402 payment-gated (Batch 2, Feature 4)
+      if (req.method === "GET" && url.pathname.startsWith("/premium/timeline/")) {
+        const pactId = url.pathname.slice("/premium/timeline/".length);
+        const { settlePayment, respond402, paymentResponseHeader } = await import("./x402");
+        const path = url.pathname;
+
+        // Paid replay: PAYMENT-SIGNATURE header present → verify + settle
+        const settlement = await settlePayment(req.headers["payment-signature"] as string | undefined, path);
+        if (settlement) {
+          logActivity("x402_payment", `Premium access settled: ${settlement.amount} TUSD9 units from ${settlement.payer.slice(0, 10)}…`, pactId, settlement.txHash);
+          const timeline = await buildPremiumTimeline(pactId);
+          res.writeHead(200, {
+            "Content-Type": "application/json",
+            "PAYMENT-RESPONSE": paymentResponseHeader(settlement),
+          });
+          res.end(JSON.stringify({ paidAccess: true, settlement, ...timeline }));
+          return;
+        }
+
+        respond402(res, "GET", path);
+        return;
+      }
+
+      // GET /votes/:pactId — on-chain commit-reveal mediator votes (Batch 2, Feature 5)
+      if (req.method === "GET" && url.pathname.startsWith("/votes/")) {
+        const pactId = url.pathname.slice(7);
+        const { getVoteRoundState } = await import("./vote");
+        try {
+          const state = await getVoteRoundState(pactId);
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify(state));
+        } catch (err) {
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ address: config.MEDIATOR_VOTES, pactId, mediators: [], votes: [], commitCount: 0, roundComplete: false }));
+        }
+        return;
+      }
+
+      // GET /payments — x402 payment state (Batch 2)
+      if (req.method === "GET" && url.pathname === "/payments") {
+        const { getPaymentsState } = await import("./x402");
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(getPaymentsState()));
+        return;
+      }
+
+      // GET /feedback/pending — ERC-8004 dual-write queue (Batch 2, Feature 6)
+      if (req.method === "GET" && url.pathname === "/feedback/pending") {
+        const { loadPendingFeedback } = await import("./db");
+        const { getEvaluatorIds, getQueuedFeedback } = await import("./feedback");
+        const dbPending = await loadPendingFeedback();
+        const mem = getQueuedFeedback();
+        // Merge DB rows with in-memory entries (memory-only mode has no DB)
+        const seen = new Set(dbPending.map(p => `${p.pactId}|${p.party}`));
+        const memOnly = mem.filter(q => !seen.has(`${q.pactId}|${q.party}`));
+        const pending = [
+          ...dbPending,
+          ...memOnly.map(q => ({
+            id: q.id, pactId: q.pactId, party: q.party, okxAgentId: q.okxAgentId,
+            creatorAgentId: q.creatorAgentId, score: q.score, description: q.description,
+            taskId: q.taskId, createdAt: q.createdAt,
+          })),
+        ];
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ pending, total: pending.length, evaluators: getEvaluatorIds() }));
+        return;
+      }
+
+      // POST /feedback/acked — mark queued reviews as submitted by the bridge
+      if (req.method === "POST" && url.pathname === "/feedback/acked") {
+        let body = "";
+        for await (const chunk of req) body += chunk;
+        try {
+          const { ids } = JSON.parse(body || "{}") as { ids?: number[] };
+          const { ackFeedback } = await import("./db");
+          const { ackQueuedFeedback } = await import("./feedback");
+          for (const id of ids ?? []) ackFeedback(id);
+          ackQueuedFeedback(ids ?? []);
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ acked: ids?.length ?? 0 }));
+        } catch {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "bad_request" }));
+        }
         return;
       }
 

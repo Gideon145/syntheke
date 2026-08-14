@@ -102,6 +102,19 @@ export async function initDb(): Promise<void> {
       pact_id TEXT PRIMARY KEY,
       name TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS syntheke_feedback_queue (
+      id BIGSERIAL PRIMARY KEY,
+      pact_id TEXT NOT NULL,
+      party TEXT NOT NULL,
+      okx_agent_id TEXT,
+      creator_agent_id TEXT NOT NULL,
+      score REAL NOT NULL,
+      description TEXT,
+      task_id TEXT,
+      submitted BOOLEAN NOT NULL DEFAULT FALSE,
+      submitted_at BIGINT,
+      created_at BIGINT NOT NULL
+    );
   `);
 }
 
@@ -184,4 +197,57 @@ export function savePactName(pactId: string, name: string): void {
 export async function loadPactNames(): Promise<Map<string, string>> {
   const rows = await queryRows<{ pact_id: string; name: string }>(`SELECT pact_id, name FROM syntheke_pact_names`);
   return new Map(rows.map(r => [r.pact_id, r.name]));
+}
+
+// ──── Feedback queue (Batch 2 — ERC-8004 dual-write) ──────
+
+export function saveFeedback(entry: {
+  pactId: string;
+  party: string;
+  okxAgentId?: string;
+  creatorAgentId: string;
+  score: number;
+  description: string;
+  taskId?: string;
+}): void {
+  void query(
+    `INSERT INTO syntheke_feedback_queue
+       (pact_id, party, okx_agent_id, creator_agent_id, score, description, task_id, created_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+    [entry.pactId, entry.party, entry.okxAgentId ?? null, entry.creatorAgentId,
+      entry.score, entry.description, entry.taskId ?? null, Date.now()],
+  );
+}
+
+export async function loadPendingFeedback(): Promise<Array<{
+  id: number;
+  pactId: string;
+  party: string;
+  okxAgentId: string | null;
+  creatorAgentId: string;
+  score: number;
+  description: string | null;
+  taskId: string | null;
+  createdAt: number;
+}>> {
+  const rows = await queryRows<{
+    id: string; pact_id: string; party: string; okx_agent_id: string | null;
+    creator_agent_id: string; score: string; description: string | null;
+    task_id: string | null; created_at: string;
+  }>(`SELECT * FROM syntheke_feedback_queue WHERE submitted = FALSE ORDER BY id ASC`);
+  return rows.map(r => ({
+    id: Number(r.id),
+    pactId: r.pact_id,
+    party: r.party,
+    okxAgentId: r.okx_agent_id,
+    creatorAgentId: r.creator_agent_id,
+    score: Number(r.score),
+    description: r.description,
+    taskId: r.task_id,
+    createdAt: Number(r.created_at),
+  }));
+}
+
+export function ackFeedback(id: number): void {
+  void query(`UPDATE syntheke_feedback_queue SET submitted = TRUE, submitted_at = $2 WHERE id = $1`, [id, Date.now()]);
 }

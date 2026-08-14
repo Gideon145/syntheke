@@ -47,6 +47,8 @@ export default function DashboardPage() {
   const [notifications, setNotifications] = useState<NotificationEvent[]>([]);
   const [treasury, setTreasury] = useState<TreasuryState | null>(null);
   const [escrow, setEscrow] = useState<EscrowState | null>(null);
+  const [payments, setPayments] = useState<{ settledCount: number; priceFormatted: string; totalCollected: string } | null>(null);
+  const [feedback, setFeedback] = useState<{ total: number } | null>(null);
 
   useEffect(() => {
     let firstLoad = true;
@@ -60,6 +62,14 @@ export default function DashboardPage() {
       try {
         const e = await fetch(`${AGENT_API}/escrow`, { signal: AbortSignal.timeout(5000) });
         if (e.ok) setEscrow(await e.json());
+      } catch { /* keep existing */ }
+      try {
+        const pm = await fetch(`${AGENT_API}/payments`, { signal: AbortSignal.timeout(5000) });
+        if (pm.ok) setPayments(await pm.json());
+      } catch { /* keep existing */ }
+      try {
+        const fb = await fetch(`${AGENT_API}/feedback/pending`, { signal: AbortSignal.timeout(5000) });
+        if (fb.ok) setFeedback(await fb.json());
       } catch { /* keep existing */ }
       try {
         const p = await fetchPacts();
@@ -155,6 +165,17 @@ export default function DashboardPage() {
             label: "Attestations (session)",
             value: status?.attestations?.toLocaleString() ?? "—",
             sub: "since agent boot",
+          },
+          {
+            label: "x402 Payments",
+            value: payments ? String(payments.settledCount) : "—",
+            sub: `settled · ${payments?.priceFormatted ?? 1} TUSD9 access`,
+            accent: true,
+          },
+          {
+            label: "OKX Feedback Queue",
+            value: feedback ? String(feedback.total) : "—",
+            sub: "reviews pending dual-write",
           },
         ].map(m => (
           <div key={m.label} className="metric-card group">

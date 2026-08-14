@@ -28,6 +28,11 @@ const configSchema = z.object({
   MEDIATOR_STAKING: z.string().default("0xc3387efd100cc22b94ad7f68b55039daf0cf9caa"),
   ESCROW_VAULT_V2: z.string().default("0x13be96c8a71628d41e80755f4027aa51a9014e08"),
   TEST_USDC: z.string().default("0xfc8423bf39a5be5c38961ae83ef56e0f680374aa"),
+  // Batch 2
+  TEST_USDC_3009: z.string().default("0x9436031671c96726126fad7E72AAfB4e9ed2A92b"),
+  MEDIATOR_VOTES: z.string().default("0x921691a7151ab1478045096B9a3ecE25C51A9D43"),
+  PREMIUM_PRICE_USDC: z.string().default("1"), // TUSD9 units for x402 premium endpoints
+  OKX_AGENT_IDS: z.string().default("Themis:10920,Athena:10921,Solon:10922"),
   REPUTATION_ORACLE: z.string().default("0xfd61828f15fc98e1dcfe0dd6498abee6e003c1cf"),
   TREATY_SYNDICATE: z.string().default("0xc8665453576bdba28aa72abb12152fed639cff12"),
   MEDIATOR_STAKE_AMOUNT: z.string().default("0.003"), // OKB per mediator

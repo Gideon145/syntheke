@@ -416,6 +416,19 @@ async function handleArbitration(
       logError(`escrow:${pactId.slice(0, 10)}`, err);
     }
 
+    // Step 5: ERC-8004 FEEDBACK DUAL-WRITE — queue OKX marketplace reviews (Batch 2)
+    try {
+      const { queuePactFeedback } = await import("./feedback");
+      await queuePactFeedback(pactId, {
+        verdict: verdict === "deadlocked" ? "deadlocked" : verdict,
+        partyA: pact.partyA,
+        partyB: pact.partyB,
+        partyAShare: voteResult.partyAShare,
+      });
+    } catch (err) {
+      logError(`feedback:${pactId.slice(0, 10)}`, err);
+    }
+
   } catch (err) {
     logError(`arbitration:${pactId.slice(0, 10)}`, err);
   }

@@ -206,6 +206,71 @@ verdict (visible on-chain and in the reputation oracle).
 
 ---
 
+## 📓 Development Log
+
+> **The ship's book.** Every batch, every deploy, every on-chain artifact gets
+> recorded here the moment it happens. The final README (documentation refresh)
+> will be rewritten from this log at the end — so nothing is ever lost.
+
+### Batch 1 — Escrow, Identity, Persistence (Aug 14 2026)
+
+**Commit:** `936faf6` — "Escrow settlement, agent identity registration, state persistence"
+
+**Feature 1 — Real escrow (EscrowVaultV2 + TestUSDC)**
+- Old `EscrowVault` v1 was locked to `onlySyntheke` with a set-once owner → unusable for the agent. Built owner-based `EscrowVaultV2` instead.
+- Contracts deployed on X Layer testnet (chain 1952):
+  - `EscrowVaultV2` → `0x13be96c8a71628d41e80755f4027aa51a9014e08` — owner-pulled custody (`deposit` pulls `transferFrom` from each party via approval), `settle` (A+B == total), `slash`, `refundBoth`, `getPactIds()`, `getTVL()`, `settledCount`, `setOwner`.
+  - `TestUSDC` → `0xfc8423bf39a5be5c38961ae83ef56e0f680374aa` — 6-decimal mock USDC, public `mint`.
+- Agent wiring: `src/escrow.ts` — `depositEscrowReal`, `settleEscrow`, `toUSDCUnits`, `sendOwnerTx` (6-retry nonce wrapper — critical because monitor and escrow share the owner wallet).
+- Flow: `create-pact.ts` step 8.5 deposits both parties' escrow into the vault after flag deposits; `monitor.ts` `handleArbitration` Step 4 settles the vault with the computed payout split.
+- Verified end-to-end: pact `0x37a30bcc...10d31a5` → 50.0 + 50.0 TestUSDC locked → demo breach → CLOSED state 12 → `settled=true`, `settledCount=1`, TVL 0, 50/50 paid out.
+- Frontend: dashboard "Escrow TVL" metric card + pact page escrow panel (EscrowVaultV2, ✓ Settled/Locked badge, A/B/Total grid). Verified live on www.syntheke.xyz.
+
+**Feature 2 — ERC-8004 mediator registration (real OKX marketplace)**
+- Registered all three mediators as **Evaluator** identities on the OKX AI Agent marketplace, X Layer mainnet (chainIndex 196). One evaluator per wallet → created 3 OKX Agentic Wallet accounts under opukemegideon@gmail.com.
+  - Themis → agent #10920, owner `0x53d724e6acd672ba08133bcd32b0412500bea79d`, tx `0x1ff133fbb7c41d19ec7917908c143078f60b5cfc24287ef50caa647fcde9e02f`
+  - Athena → agent #10921, owner `0x6f6ec7ce8f915702888fffec75f0ccfb119969ba`, tx `0x22c532a7a9116bd7a546a7ffc8711b33024c0bbcf9b92c4728cef3ba67f347b5`
+  - Solon → agent #10922, owner `0x8aeb89e6435fb92ba208683ab340bc3558edf1cb`, tx `0xd5c5d4c25e5af8b0735fbcd978700c99ff54afa5858a492b07fd97eff198cb46`
+- OKX covers registration fees. Identity owners are the OKX custodial accounts (private keys can't be imported into the OKX wallet), while on-chain voting signatures still come from the mediator signer wallets (`0x3208…` / `0xf19a…` / `0x435d…`).
+- CLI quirks solved: v4.2.4→4.4.10 upgrade locked-binary workaround (`onchainos.old.exe` + `onchainos.tmp` → `onchainos.exe`); deprecated skills removed.
+
+**Feature 3 — Postgres persistence (Railway)**
+- `src/db.ts`: lazy `pg` pool, graceful memory-only fallback. Tables: `syntheke_activity`, `syntheke_negotiations`, `syntheke_contracts`, `syntheke_pact_names`.
+- Wired: `logActivity` → `saveActivity`, `setPactName` → `savePactName`, theater `push()` → `saveNegotiation`, `storeContract` → `saveContract`. Boot-time `restorePersistedState()` reloads activity ring, pact names, theater sessions, contracts.
+- ESM pitfall fixed: `require("pg")` fails under `"type":"module"` → switched to `createRequire(import.meta.url)`.
+- Railway: added Postgres plugin, linked `DATABASE_URL=${{Postgres.DATABASE_URL}}` to the `agent` service.
+- Verified on prod: redeployed agent → new container restored `activity=30` from Postgres (`event="state_restored" activity=30`).
+
+**Deploys:** Railway `agent-production-507e.up.railway.app` (new deployment ID `1d3a4e81-f8d4-402f-b77d-02270bf4f8b6`), Vercel `www.syntheke.xyz` (prod build `syntheke-hsww8tivg-ogxyz.vercel.app`). Monitor loop auto-restarted (`already_running`).
+
+### Batch 2 — Payments, Vote Verification, Feedback (Aug 14 2026)
+
+**Commit:** `…` — "Agent payments and on-chain mediator verification"
+
+**Feature 4 — OKX Agent Payments (x402)**
+- New contract `TestUSDC3009` → `0x9436031671c96726126fad7E72AAfB4e9ed2A92b` — mock USDC with **EIP-3009 transfer-with-authorization** (EIP-712 domain `TestUSD3009` v2), so payers sign off-chain and the server settles on-chain. 2 new Forge tests (auth + replay rejection).
+- New module `src/x402.ts` (server side of the protocol): premium endpoints answer **HTTP 402** with a base64 `PAYMENT-REQUIRED` header (x402 v2 offer: scheme `exact`, network `eip155:1952`, `payTo` = agent wallet). On replay with `PAYMENT-SIGNATURE`, the server recovers the EIP-712 signer, verifies amount ≥ price, and submits `transferWithAuthorization` as relayer → treasury. Responds 200 with base64 `PAYMENT-RESPONSE` header.
+- New endpoint `GET /premium/timeline/:pactId` — paid full attestation history + theater transcript; `GET /payments` — payment stats.
+- **Verified end-to-end with the real OKX CLI**: captured 402 → `onchainos payment pay-local` (payer `0xeccf…4985`) signed the EIP-3009 authorization → replay returned `HTTP 200`, settlement tx `0x170a061d…`, treasury +1.0 TUSD9, payer −1.0. The OKX CLI accepted our offer as-is — real interop.
+- Debug notes: forge-artifact ABIs must be stripped to the bare `abi` array for ethers; CLI `pay-local` needs `EVM_PRIVATE_KEY` in `~/.onchainos/.env` and the offer must include `payTo`; CLI returns one 65-byte signature (split r/s/v server-side).
+- Frontend: pact page "Premium Timeline" card — idle → locked (shows the decoded 402 offer: scheme/network/asset/price) → unlocked.
+
+**Feature 5 — On-chain mediator vote verification (commit-reveal)**
+- New contract `MediatorVotes` → `0x921691a7151ab1478045096B9a3ecE25C51A9D43` — Themis/Athena/Solon registered as mediators. `commitVote(pactId, keccak256(verdict, fairnessScore, reasonHash, nonce))` first; reveals are **locked until all 3 mediators commit**; `revealVote` verifies the hash on-chain (mismatch reverts) and stores the verdict. `getVotes`/`tally` for public verification. 7 new Forge tests (gate, mismatch, replay, permissions) — suite now 39/39.
+- `src/vote.ts` rewritten to the two-phase flow (commit → reveal), then reads the revealed votes back **from the chain** as source of truth. New endpoint `GET /votes/:pactId`.
+- **Verified in real arbitration**: pact `0x61317d82…` closed (state 12) with on-chain votes Themis approve 35 · Athena reject 40 · Solon approve 70 — all commits landed before any reveal (contract-enforced).
+- Frontend: "Mediator Votes — Commit-Reveal" panel — per-mediator ✓ committed / ✓ revealed + commitment hash + verdict/fairness list.
+
+**Feature 6 — ERC-8004 feedback dual-write**
+- `src/feedback.ts`: after every settlement, queues OKX-style star reviews (0–5, derived from the verdict: winning party high, breaching party low) with the registered evaluator identity (Themis #10920) as creator. Persisted in Postgres (`syntheke_feedback_queue`) + in-memory mirror; `GET /feedback/pending` and `POST /feedback/acked` endpoints.
+- Bridge runner `scripts/feedback_sync.ts`: pulls pending reviews and submits them through the OKX marketplace (`onchainos agent feedback-submit`). OKX requires a task id, so full submission activates when A2A marketplace join lands (Batch 4); until then reviews stay queued and visible on the dashboard (dual-write infrastructure ready, both registries update together once live).
+- **Verified**: closed pact queued 2 reviews (4.5/5 and 0.5/5) — visible via API + frontend "⭐ OKX marketplace feedback queued" badge.
+- Frontend: dashboard metric cards "x402 Payments" + "OKX Feedback Queue".
+
+**Deploys:** _fill after deploy_
+
+---
+
 ## License
 
 MIT

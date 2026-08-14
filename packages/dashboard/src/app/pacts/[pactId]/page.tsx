@@ -50,6 +50,27 @@ interface EscrowPosition {
   settled: boolean;
 }
 
+interface VoteRound {
+  address: string;
+  pactId: string;
+  mediators: Array<{ address: string; committed: boolean; commitment: string; revealed: boolean }>;
+  votes: Array<{ mediator: string; verdict: string; fairnessScore: number; reasonHash: string }>;
+  commitCount: number;
+  roundComplete: boolean;
+}
+
+interface PaymentsState {
+  priceFormatted: string;
+  asset: string;
+  settledCount: number;
+  totalCollected: string;
+}
+
+interface FeedbackPending {
+  pending: Array<{ id: number; pactId: string; party: string; score: number; okxAgentId: string | null; submitted?: boolean }>;
+  total: number;
+}
+
 const STATE_NAMES: Record<number, string> = {
   0: "DRAFT", 1: "NEGOTIATING", 2: "PROPOSED", 3: "COMMITTED",
   4: "ACTIVE", 5: "DEGRADING", 6: "RENEGOTIATING", 7: "BREACHED",
@@ -118,6 +139,10 @@ export default function PactDetailPage() {
   const [negotiation, setNegotiation] = useState<NegotiationTranscript | null>(null);
   const [contract, setContract] = useState<PactContract | null>(null);
   const [escrowPos, setEscrowPos] = useState<EscrowPosition | null>(null);
+  const [voteRound, setVoteRound] = useState<VoteRound | null>(null);
+  const [payments, setPayments] = useState<PaymentsState | null>(null);
+  const [premium, setPremium] = useState<{ status: "idle" | "locked" | "unlocked"; offer?: { x402Version?: number; accepts?: Array<{ amount?: string; asset?: string; network?: string; scheme?: string }> }; data?: { attestationHistory?: unknown[]; onChain?: Record<string, unknown> } }>({ status: "idle" });
+  const [feedback, setFeedback] = useState<FeedbackPending["pending"]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -150,12 +175,47 @@ export default function PactDetailPage() {
           if (pos) setEscrowPos(pos);
         }
       } catch { /* no escrow */ }
+      try {
+        const r = await fetch(`${AGENT_API}/votes/${pactId}`, {
+          signal: AbortSignal.timeout(5000),
+        });
+        if (r.ok) setVoteRound(await r.json());
+      } catch { /* no vote round */ }
+      try {
+        const r = await fetch(`${AGENT_API}/payments`, {
+          signal: AbortSignal.timeout(5000),
+        });
+        if (r.ok) setPayments(await r.json());
+      } catch { /* payments unavailable */ }
+      try {
+        const r = await fetch(`${AGENT_API}/feedback/pending`, {
+          signal: AbortSignal.timeout(5000),
+        });
+        if (r.ok) {
+          const data = await r.json() as FeedbackPending;
+          setFeedback(data.pending?.filter(f => f.pactId === pactId) ?? []);
+        }
+      } catch { /* feedback unavailable */ }
       setLoading(false);
     };
     if (pactId) load();
     const i = setInterval(load, 10000);
     return () => clearInterval(i);
   }, [pactId]);
+
+  // x402 premium unlock — first hit returns HTTP 402 with the payment offer
+  const unlockPremium = async () => {
+    try {
+      const r = await fetch(`${AGENT_API}/premium/timeline/${pactId}`);
+      if (r.status === 402) {
+        const offer = await r.json();
+        setPremium({ status: "locked", offer });
+      } else if (r.ok) {
+        const data = await r.json();
+        setPremium({ status: "unlocked", data });
+      }
+    } catch { /* agent offline */ }
+  };
 
   if (loading) {
     return (
@@ -217,6 +277,114 @@ export default function PactDetailPage() {
             <div className="p-3 rounded-lg bg-bg border border-border">
               <div className="text-lg font-mono text-text-primary">{escrowPos.amountBFormatted}</div>
               <div className="text-xs text-text-muted mt-1">Party B · TestUSDC</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* On-chain mediator votes — commit-reveal (Batch 2) */}
+      {voteRound && (voteRound.commitCount > 0 || voteRound.votes.length > 0) && (
+        <div className="card-glow p-4 sm:p-6 mb-6 sm:mb-8 border-l-2 border-l-lantern">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs sm:text-sm text-text-muted uppercase tracking-wider">Mediator Votes — Commit-Reveal</span>
+            <span className="text-[10px] font-mono text-text-muted break-all max-w-[50%] text-right">{voteRound.address}</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+            {voteRound.mediators.map((m, i) => (
+              <div key={i} className="p-3 rounded-lg bg-bg border border-border text-xs">
+                <div className="font-mono text-text-primary truncate">{m.address}</div>
+                <div className="mt-1.5 space-y-1">
+                  <div className={m.committed ? "text-success" : "text-text-muted"}>
+                    {m.committed ? "✓ committed" : "○ not committed"}
+                  </div>
+                  <div className={m.revealed ? "text-success" : "text-text-muted"}>
+                    {m.revealed ? "✓ revealed" : "○ not revealed"}
+                  </div>
+                  {m.commitment && (
+                    <div className="font-mono text-[10px] text-text-muted truncate">#{m.commitment.slice(0, 18)}…</div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+          {voteRound.votes.length > 0 && (
+            <div className="space-y-2">
+              {voteRound.votes.map((v, i) => (
+                <div key={i} className="flex items-center justify-between p-2.5 rounded-lg bg-bg/60 border border-border text-xs">
+                  <span className="font-mono text-text-primary">{v.mediator}</span>
+                  <span className={`px-2 py-0.5 rounded font-semibold uppercase ${v.verdict === "approve" ? "bg-success/10 text-success" : v.verdict === "reject" ? "bg-danger/10 text-danger" : "bg-warning/10 text-warning"}`}>
+                    {v.verdict}
+                  </span>
+                  <span className="font-mono text-text-muted">fairness {v.fairnessScore}/100</span>
+                </div>
+              ))}
+            </div>
+          )}
+          <p className="text-[11px] text-text-muted mt-3">
+            🔐 Commitments land before any reveal — verified on-chain, no verdict copying possible.
+          </p>
+        </div>
+      )}
+
+      {/* Premium timeline — x402 payment-gated (Batch 2) */}
+      <div className="card-glow p-4 sm:p-6 mb-6 sm:mb-8 border-l-2 border-l-amber">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-xs sm:text-sm text-text-muted uppercase tracking-wider">Premium Timeline</span>
+          <span className="px-2.5 py-1 rounded-md text-xs font-semibold border text-amber border-amber/30 bg-amber/5">x402 · OKX Agent Payments</span>
+        </div>
+        {premium.status === "idle" && (
+          <button
+            onClick={unlockPremium}
+            className="w-full py-2.5 rounded-lg border border-amber/40 text-amber text-sm font-semibold hover:bg-amber/5 transition-colors"
+          >
+            🔓 Unlock full attestation history
+          </button>
+        )}
+        {premium.status === "locked" && premium.offer && (
+          <div className="text-sm">
+            <p className="text-text-secondary mb-2">This endpoint is payment-gated. The agent replied with <code className="font-mono text-xs text-amber">HTTP 402 Payment Required</code>:</p>
+            <div className="p-3 rounded-lg bg-bg border border-border text-xs font-mono space-y-1 text-text-secondary">
+              <div>scheme: <span className="text-text-primary">{premium.offer.accepts?.[0]?.scheme}</span></div>
+              <div>network: <span className="text-text-primary">{premium.offer.accepts?.[0]?.network}</span></div>
+              <div>asset: <span className="text-text-primary break-all">{premium.offer.accepts?.[0]?.asset}</span></div>
+              <div>price: <span className="text-amber">{payments?.priceFormatted ?? "1.0"} TUSD9</span></div>
+            </div>
+            <p className="text-[11px] text-text-muted mt-2">
+              Pay with the **OKX Agent Payments Protocol** — any OKX.AI agent (or the onchainos CLI) signs the
+              transfer authorization and replays the request with <code className="font-mono">PAYMENT-SIGNATURE</code>.
+              Settlement lands on X Layer instantly.
+            </p>
+            <button
+              onClick={unlockPremium}
+              className="mt-3 w-full py-2 rounded-lg border border-border text-text-muted text-xs hover:text-amber transition-colors"
+            >
+              ↻ Retry (after paying)
+            </button>
+          </div>
+        )}
+        {premium.status === "unlocked" && premium.data && (
+          <div className="text-sm">
+            <p className="text-success font-semibold mb-2">✓ Payment settled — premium timeline unlocked</p>
+            <div className="p-3 rounded-lg bg-bg border border-border text-xs font-mono text-text-secondary space-y-1">
+              <div>attestationHistory: <span className="text-amber">{premium.data.attestationHistory?.length ?? 0} events</span></div>
+              {premium.data.onChain && (
+                <div>onChain: <span className="text-text-primary">{JSON.stringify(premium.data.onChain).slice(0, 90)}…</span></div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ERC-8004 feedback dual-write badge (Batch 2) */}
+      {feedback.length > 0 && (
+        <div className="card-glow p-4 sm:p-5 mb-6 sm:mb-8 border-l-2 border-l-success flex items-center gap-3">
+          <span className="text-xl">⭐</span>
+          <div>
+            <div className="text-sm font-semibold text-text-primary">
+              OKX marketplace feedback queued — {feedback.length} review{feedback.length > 1 ? "s" : ""}
+            </div>
+            <div className="text-xs text-text-muted">
+              {feedback.map(f => `${f.party.slice(0, 6)}… → ${f.score}/5`).join(" · ")} — synced to the ERC-8004 registry by the bridge runner.
             </div>
           </div>
         </div>
