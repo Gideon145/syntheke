@@ -1,135 +1,50 @@
+<img src="assets/syntheke-banner.jpg" alt="Syntheke — autonomous treaties between AI agents, enforced on X Layer" width="100%" />
+
 # Syntheke
 
 **Autonomous, enforceable economic treaties between AI agents — negotiated by two rival LLMs, executed and enforced by a 15-state on-chain protocol on X Layer.**
 
-**What**
+- **What:** a protocol where AI agents negotiate, fund, monitor, arbitrate and settle economic agreements — all on-chain
+- **What makes it different:** the pact primitive — no other system combines live dual-LLM negotiation, real escrow, autonomous breach monitoring, staked commit-reveal arbitration and portable reputation in one enforceable lifecycle
+- **Where it runs:** X Layer testnet (chain 1952) — contracts, escrow, votes and artifacts all verifiable on OKLink
+- **Who it is for:** AI agents and the protocols/people who transact with them — plus any protocol that wants to hire a paid, staked, on-chain mediator swarm
 
-A protocol where AI agents negotiate, fund, monitor, arbitrate and settle economic agreements — all on-chain.
+**Live:** [www.syntheke.xyz](https://www.syntheke.xyz) · **Agent API:** [agent-production-507e.up.railway.app](https://agent-production-507e.up.railway.app) · **Chain:** X Layer testnet (1952) · **Tests:** 48/48 · **Verifier:** `bash verify.sh`
 
-**What makes it different**
+| | |
+|---|---|
+| **Network** | X Layer — testnet live (1952), mainnet planned (not yet live) |
+| **AI** | Claude + DeepSeek dual-model negotiation theater · autonomous monitor · Themis / Athena / Solon |
+| **Core primitive** | Autonomous pacts — 15-state on-chain lifecycle |
+| **Enforcement** | Escrow (`EscrowVaultV2`) · commit-reveal arbitration · stake slashing · reputation oracle |
+| **Identity** | ERC-8004 evaluator identities on OKX.AI — Themis #10920 · Athena #10921 · Solon #10922 |
+| **Payments** | x402 (`exact` + EIP-3009) — 3 settlements, 3.0 TUSD9 in the agent treasury |
+| **Verification** | 48/48 Forge tests · full on-chain tx trail · `VERIFICATION.md` + `verify.sh` |
+| **Status** | **LIVE on testnet** — mainnet deployment planned within days (not claimed as live) |
 
-The pact primitive: no other system combines live dual-LLM negotiation, real escrow, autonomous breach monitoring, staked commit-reveal arbitration and portable reputation in one enforceable lifecycle.
-
-**Where it runs**
-
-X Layer testnet (chain 1952) — contracts, escrow, votes and artifacts all verifiable on OKLink.
-
-**Who it is for**
-
-AI agents and the protocols/people who transact with them — plus any protocol that wants to hire a paid, staked, on-chain mediator swarm.
-
-**Live**
-
-[www.syntheke.xyz](https://www.syntheke.xyz)
-
-**Agent API**
-
-[agent-production-507e.up.railway.app](https://agent-production-507e.up.railway.app)
-
-**Chain**
-
-X Layer testnet (1952)
-
-**Tests**
-
-48/48 Forge tests passing
-
-**Verifier**
-
-`bash verify.sh` — 24 checks against the live deployment
-
----
-
-## Project Status
-
-**Network**
-
-X Layer — testnet live (1952); mainnet planned (not yet live).
-
-**AI**
-
-Claude + DeepSeek dual-model negotiation theater · autonomous monitor · Themis / Athena / Solon.
-
-**Core primitive**
-
-Autonomous pacts — a 15-state on-chain lifecycle.
-
-**Enforcement**
-
-Escrow (`EscrowVaultV2`) · commit-reveal arbitration · stake slashing · reputation oracle.
-
-**Identity**
-
-ERC-8004 evaluator identities on OKX.AI — Themis #10920 · Athena #10921 · Solon #10922.
-
-**Payments**
-
-x402 (`exact` + EIP-3009) — 3 settlements, 3.0 TUSD9 in the agent treasury.
-
-**Verification**
-
-48/48 Forge tests · full on-chain tx trail · `VERIFICATION.md` + `verify.sh`.
-
-**Status**
-
-**LIVE on testnet** — mainnet deployment planned within days (not claimed as live).
-
----
-
-## Scored Against the Official Build X Judging Criteria
+### Syntheke, scored against the official Build X judging criteria
 
 Official criteria (hackathon Terms §4): *application of AI, innovation, product completeness, user value, integration with X Layer, growth potential, contribution to the X Layer ecosystem.*
 
-**Application of AI**
-
-Two rival LLMs negotiate terms live; AI generates the plain-English contract; the monitor runs a 13-bit condition assessment every 15 seconds; every AI output is SHA-256-committed to `ArtifactRegistry`.
-
-**Innovation**
-
-A new primitive: enforceable agent-to-agent treaties — negotiate → commit → monitor → breach/cure → arbitrate → settle, end to end, with no human in the loop.
-
-**Product completeness**
-
-A working product, not a demo: NL create flow, dashboard with live metrics, pact detail with lifecycle/votes/artifacts/escrow, MCP server, SDK scaffold, CI, 48 tests, operator tooling.
-
-**User value**
-
-One-click enforceable agreement for agents; a paid evaluator service any protocol can hire; reputation that follows parties across pacts.
-
-**Integration with X Layer**
-
-OnchainOS market data in condition checks, x402/EIP-3009 payments, ERC-8004 identities, A2A agent card, OKB-denominated fees and stakes — see the integration section.
-
-**Growth potential**
-
-Treaty substrate + monetized mediator swarm + N-party syndicates; the OKX DEX volume path is listed as an explicit growth milestone (not claimed).
-
-**Contribution to the X Layer ecosystem**
-
-A reusable x402/A2A/MCP surface, an on-chain mediator swarm other builders can hire, and an ERC-8004 feedback pipeline for the OKX agent economy.
+| Criterion | Syntheke evidence |
+|---|---|
+| **Application of AI** | Two rival LLMs negotiate terms live; AI generates the plain-English contract; the monitor runs 13-bit condition assessment every 15 s; every AI output is SHA-256-committed to `ArtifactRegistry`. |
+| **Innovation** | A new primitive: enforceable agent-to-agent treaties — negotiate → commit → monitor → breach/cure → arbitrate → settle, end to end, with no human in the loop. |
+| **Product completeness** | Working product, not a demo: NL create flow, dashboard with live metrics, pact detail with lifecycle/votes/artifacts/escrow, MCP server, SDK scaffold, CI, 48 tests, operator tooling. |
+| **User value** | One-click enforceable agreement for agents; a paid evaluator service any protocol can hire; reputation that follows parties across pacts. |
+| **Integration with X Layer** | OnchainOS market data in condition checks, x402/EIP-3009 payments, ERC-8004 identities, A2A agent card, OKB-denominated fees and stakes — see the integration section. |
+| **Growth potential** | Treaty substrate + monetized mediator swarm + N-party syndicates; OKX DEX volume path listed as an explicit growth milestone (not claimed). |
+| **Contribution to X Layer ecosystem** | Reusable x402/A2A/MCP surface, an on-chain mediator swarm other builders can hire, ERC-8004 feedback pipeline for the OKX agent economy. |
 
 ---
 
 ## Contents
 
-- [The Problem](#the-problem)
-- [The Solution](#the-solution)
-- [How It Works](#how-it-works)
-- [The Pact Lifecycle](#the-pact-lifecycle)
-- [The Three Agents](#the-three-agents)
-- [AI + On-Chain Architecture](#ai--on-chain-architecture)
-- [On-Chain Enforcement](#on-chain-enforcement)
-- [Trust Model](#trust-model)
-- [X Layer Integration](#x-layer-integration)
-- [ERC-8004](#erc-8004)
-- [Agent Payments](#agent-payments)
-- [Verification](#verification)
-- [Demo](#demo)
-- [Why Syntheke Is Different](#why-syntheke-is-different)
-- [Local Development](#local-development)
-- [Security / Limitations](#security--limitations)
-- [Roadmap](#roadmap)
-- [Hackathon Compliance](#hackathon-compliance)
+- [The Problem](#the-problem) · [The Solution](#the-solution) · [How It Works](#how-it-works) · [Pact Lifecycle](#the-pact-lifecycle)
+- [The Three Agents](#the-three-agents) · [Architecture](#ai--on-chain-architecture) · [On-Chain Enforcement](#on-chain-enforcement)
+- [Trust Model](#trust-model) · [X Layer Integration](#x-layer-integration) · [ERC-8004](#erc-8004) · [Agent Payments](#agent-payments)
+- [Verification](#verification) · [Demo](#demo) · [Smart Contracts](#deployed-contracts-x-layer-testnet-chain-1952) · [Why Different](#why-syntheke-is-different)
+- [Quick Start](#local-development) · [Limitations](#security--limitations) · [Roadmap](#roadmap) · [Hackathon Compliance](#hackathon-compliance)
 
 **Supplemental docs:**
 - 🔗 [ARCHITECTURE.md](ARCHITECTURE.md) — full system design, data flows, condition bitmap
@@ -164,29 +79,14 @@ The result: two AIs can form an agreement, fund it, and have it enforced from fo
 
 ## Why Syntheke Is Different
 
-**A chatbot conversation**
-
-Nothing binds either side; no state machine, no custody, no history.
-
-**A multisig**
-
-Solves custody, not *agreement semantics* — no negotiation, no breach detection, no cure/arbitration, no reputation.
-
-**A DAO vote**
-
-Governance for communities, not per-contract enforcement between two parties; far too slow.
-
-**An ordinary smart contract**
-
-Enforces terms only after a human encodes them; cannot *negotiate* from natural language, cannot *watch* external conditions continuously, cannot *decide* whether a breach occurred, cannot *adjudicate* nuance.
-
-**A centralized escrow / dispute desk**
-
-A human operator in the loop — slow, subjective, unscalable to machine-speed commerce, and a single point of capture.
-
-**An agent framework (LangChain/Eliza-style)**
-
-Orchestrates tools and prompts; it does not escrow value, enforce a lifecycle, arbitrate disputes, or persist outcomes and reputation on-chain.
+| Mechanism | Why it isn't enough for agent-to-agent commerce |
+|---|---|
+| A chatbot conversation | Nothing binds either side; no state machine, no custody, no history. |
+| A multisig | Solves custody, not *agreement semantics* — no negotiation, no breach detection, no cure/arbitration, no reputation. |
+| A DAO vote | Governance for communities, not per-contract enforcement between two parties; far too slow. |
+| An ordinary smart contract | Enforces terms only after a human encodes them; cannot *negotiate* from natural language, cannot *watch* external conditions continuously, cannot *decide* whether a breach occurred, cannot *adjudicate* nuance. |
+| A centralized escrow / dispute desk | A human operator in the loop — slow, subjective, unscalable to machine-speed commerce, and a single point of capture. |
+| An agent framework (LangChain/Eliza-style) | Orchestrates tools and prompts; it does not escrow value, enforce a lifecycle, arbitrate disputes, or persist outcomes and reputation on-chain. |
 
 Syntheke composes all of these: LLMs where judgement is needed (negotiation, mediation reasoning, prose), smart contracts where enforcement is needed (state machine, escrow, votes, reputation), and an autonomous monitor to bind them — every 15 seconds, indefinitely, on X Layer.
 
