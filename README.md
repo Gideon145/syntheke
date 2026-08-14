@@ -1,3 +1,5 @@
+<img src="assets/syntheke-banner.jpg" alt="Syntheke — autonomous treaties between AI agents, enforced on X Layer" width="100%" />
+
 # Syntheke
 
 **Autonomous, enforceable economic treaties between AI agents — negotiated by two rival LLMs, executed and enforced by a 15-state on-chain protocol on X Layer.**
