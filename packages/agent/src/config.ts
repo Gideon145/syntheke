@@ -40,6 +40,14 @@ const configSchema = z.object({
   MEDIATOR_VOTES: z.string().default("0x921691a7151ab1478045096B9a3ecE25C51A9D43"),
   ARTIFACT_REGISTRY: z.string().default("0x1c36bf1B975448BbABa9E9d3be828b45e3c466cb"),
   PREMIUM_PRICE_USDC: z.string().default("1"), // TUSD9 units for x402 premium endpoints
+  // Marketplace service pricing (OKX.AI ASP). "0" = free endpoints.
+  SERVICE_PRICE_USD: z.string().default("0"),
+  // x402 payment asset — defaults to the testnet EIP-3009 token; the
+  // mainnet profile switches to real USDT (EIP-712 domain USD₮0).
+  X402_ASSET: z.string().optional(),
+  X402_DOMAIN_NAME: z.string().optional(),
+  X402_DOMAIN_VERSION: z.string().optional(),
+
   OKX_AGENT_IDS: z.string().default("Themis:10920,Athena:10921,Solon:10922"),
   REPUTATION_ORACLE: z.string().default("0xfd61828f15fc98e1dcfe0dd6498abee6e003c1cf"),
   TREATY_SYNDICATE: z.string().default("0xc8665453576bdba28aa72abb12152fed639cff12"),
@@ -94,6 +102,11 @@ const MAINNET_CONTRACTS: Record<string, string> = {
   // Escrow asset on mainnet: real USDT (EscrowVaultV2 accepts any ERC20).
   TEST_USDC: process.env.MAINNET_ESCROW_ASSET ?? "0x779ded0c9e1022225f8e0630b35a9b54be713736",
   TEST_USDC_3009: process.env.MAINNET_ESCROW_ASSET ?? "0x779ded0c9e1022225f8e0630b35a9b54be713736",
+  // x402 payments on mainnet: real USDT (EIP-3009, USD₮0 domain v1 — same
+  // scheme Argus and other live ASPs offer on chain 196).
+  X402_ASSET: process.env.MAINNET_X402_ASSET ?? "0x779ded0c9e1022225f8e0630b35a9b54be713736",
+  X402_DOMAIN_NAME: process.env.MAINNET_X402_DOMAIN_NAME ?? "USD₮0",
+  X402_DOMAIN_VERSION: process.env.MAINNET_X402_DOMAIN_VERSION ?? "1",
 };
 
 if (config.XLAYER_CHAIN_ID === 196) {

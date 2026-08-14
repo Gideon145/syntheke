@@ -282,11 +282,11 @@ function createServer(): http.Server {
       // GET /premium/timeline/:pactId — x402 payment-gated (Batch 2, Feature 4)
       if (req.method === "GET" && url.pathname.startsWith("/premium/timeline/")) {
         const pactId = url.pathname.slice("/premium/timeline/".length);
-        const { settlePayment, respond402, paymentResponseHeader } = await import("./x402");
+        const { settlePayment, respond402, paymentResponseHeader, priceUnits } = await import("./x402");
         const path = url.pathname;
 
         // Paid replay: PAYMENT-SIGNATURE header present → verify + settle
-        const settlement = await settlePayment(req.headers["payment-signature"] as string | undefined, path);
+        const settlement = await settlePayment(req.headers["payment-signature"] as string | undefined, path, priceUnits());
         if (settlement) {
           logActivity("x402_payment", `Premium access settled: ${settlement.amount} TUSD9 units from ${settlement.payer.slice(0, 10)}…`, pactId, settlement.txHash);
           const timeline = await buildPremiumTimeline(pactId);
@@ -298,7 +298,7 @@ function createServer(): http.Server {
           return;
         }
 
-        respond402(res, "GET", path);
+        respond402(res, "GET", path, priceUnits());
         return;
       }
 
@@ -694,8 +694,20 @@ function createServer(): http.Server {
       }
 
       // POST /pacts/create — create a new pact from natural language (Phase 7: User Flow)
+      // OKX.AI ASP service: x402-gated when SERVICE_PRICE_USD > 0.
       if (req.method === "POST" && url.pathname === "/pacts/create") {
         const body = await readBody(req);
+        const { settlePayment, respond402, paymentResponseHeader, servicePriceUnits } = await import("./x402");
+        const path = url.pathname;
+        const units = servicePriceUnits();
+        let settlement: Awaited<ReturnType<typeof settlePayment>> = null;
+        if (units > 0n) {
+          settlement = await settlePayment(req.headers["payment-signature"] as string | undefined, path, units);
+          if (!settlement) {
+            respond402(res, "POST", path, units);
+            return;
+          }
+        }
         const { createPactFromNL } = await import("./create-pact");
         const result = await createPactFromNL({
           partyADesc: String(body.partyADesc ?? "Agent Alpha"),
@@ -703,8 +715,14 @@ function createServer(): http.Server {
           description: String(body.description ?? ""),
           adversarial: body.adversarial === true,
         });
-        res.writeHead(result.success ? 200 : 400, { "Content-Type": "application/json" });
-        res.end(JSON.stringify(result));
+        const headers: Record<string, string> = { "Content-Type": "application/json" };
+        if (settlement) headers["PAYMENT-RESPONSE"] = paymentResponseHeader(settlement);
+        res.writeHead(result.success ? 200 : 400, headers);
+        res.end(JSON.stringify({
+          ...result,
+          paid: Boolean(settlement),
+          ...(settlement ? { settlement } : {}),
+        }));
         return;
       }
 
@@ -866,11 +884,11 @@ function createServer(): http.Server {
           attestationCount: Number(body.attestationCount ?? 10),
           degradationCount: Number(body.degradationCount ?? 2),
         };
-        const { settlePayment, respond402, paymentResponseHeader } = await import("./x402");
+        const { settlePayment, respond402, paymentResponseHeader, priceUnits } = await import("./x402");
         const path = url.pathname;
-        const settlement = await settlePayment(req.headers["payment-signature"] as string | undefined, path);
+        const settlement = await settlePayment(req.headers["payment-signature"] as string | undefined, path, priceUnits());
         if (!settlement) {
-          respond402(res, "POST", path);
+          respond402(res, "POST", path, priceUnits());
           return;
         }
         const { runMediatorVote } = await import("./vote");
@@ -899,8 +917,8 @@ function createServer(): http.Server {
         return;
       }
 
-      // POST /services/arbitrate — free marketplace arbitration (OKX.AI ASP service).
-      // Same 3-mediator commit-reveal vote as /tasks/evaluate, without the x402 gate.
+      // POST /services/arbitrate — OKX.AI ASP service. x402-gated when
+      // SERVICE_PRICE_USD > 0 (0.1 USDT on mainnet), free on testnet.
       if (req.method === "POST" && url.pathname === "/services/arbitrate") {
         const body = await readBody(req);
         const pactId = String(body.pactId ?? "");
@@ -915,11 +933,26 @@ function createServer(): http.Server {
           attestationCount: Number(body.attestationCount ?? 0),
           degradationCount: Number(body.degradationCount ?? 0),
         };
+        const { settlePayment, respond402, paymentResponseHeader, servicePriceUnits } = await import("./x402");
+        const path = url.pathname;
+        const units = servicePriceUnits();
+        let settlement: Awaited<ReturnType<typeof settlePayment>> = null;
+        if (units > 0n) {
+          settlement = await settlePayment(req.headers["payment-signature"] as string | undefined, path, units);
+          if (!settlement) {
+            respond402(res, "POST", path, units);
+            return;
+          }
+        }
         try {
           const { runMediatorVote } = await import("./vote");
           const result = await runMediatorVote(evidence);
-          res.writeHead(200, { "Content-Type": "application/json" });
+          const headers: Record<string, string> = { "Content-Type": "application/json" };
+          if (settlement) headers["PAYMENT-RESPONSE"] = paymentResponseHeader(settlement);
+          res.writeHead(200, headers);
           res.end(JSON.stringify({
+            paid: Boolean(settlement),
+            ...(settlement ? { settlement } : {}),
             verdict: result.verdict,
             reached: result.reached,
             partyAShare: result.partyAShare,
@@ -935,7 +968,8 @@ function createServer(): http.Server {
         return;
       }
 
-      // POST /services/assess — free marketplace pact health assessment (OKX.AI ASP service).
+      // POST /services/assess — OKX.AI ASP service. x402-gated when
+      // SERVICE_PRICE_USD > 0 (0.1 USDT on mainnet), free on testnet.
       if (req.method === "POST" && url.pathname === "/services/assess") {
         const body = await readBody(req);
         const pactId = String(body.pactId ?? "");
@@ -943,6 +977,17 @@ function createServer(): http.Server {
           res.writeHead(400, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ error: "pactId is required (66-char bytes32 hex)" }));
           return;
+        }
+        const { settlePayment, respond402, paymentResponseHeader, servicePriceUnits } = await import("./x402");
+        const path = url.pathname;
+        const units = servicePriceUnits();
+        let settlement: Awaited<ReturnType<typeof settlePayment>> = null;
+        if (units > 0n) {
+          settlement = await settlePayment(req.headers["payment-signature"] as string | undefined, path, units);
+          if (!settlement) {
+            respond402(res, "POST", path, units);
+            return;
+          }
         }
         try {
           const { getPactContractRead } = await import("./pact");
@@ -955,8 +1000,12 @@ function createServer(): http.Server {
             "SETTLING", "CLOSED", "EXPIRED", "TERMINATED",
           ];
           const TIER_NAMES = ["NONE", "MINOR", "MATERIAL", "FUNDAMENTAL", "CATASTROPHIC"];
-          res.writeHead(200, { "Content-Type": "application/json" });
+          const headers: Record<string, string> = { "Content-Type": "application/json" };
+          if (settlement) headers["PAYMENT-RESPONSE"] = paymentResponseHeader(settlement);
+          res.writeHead(200, headers);
           res.end(JSON.stringify({
+            paid: Boolean(settlement),
+            ...(settlement ? { settlement } : {}),
             pactId,
             state: STATE_NAMES[Number(onChain.state)] ?? String(onChain.state),
             stateId: Number(onChain.state),

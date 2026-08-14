@@ -31,11 +31,12 @@ export interface PaymentOffer {
     payTo: string;
     amount: string;
     maxPrice: string;
+    maxTimeoutSeconds?: number;
     extra: {
-      assetTransferMethod: "eip-3009";
+      assetTransferMethod?: "eip-3009";
       name: string;    // EIP-712 domain name the payer signs
       version: string; // EIP-712 domain version
-    };
+    } & Record<string, unknown>;
   }>;
 }
 
@@ -59,11 +60,30 @@ export function priceUnits(): bigint {
   return BigInt(Math.round(usd * 1e6));
 }
 
+/** Marketplace service fee units (OKX.AI ASP). 0 = free endpoint. */
+export function servicePriceUnits(): bigint {
+  const usd = Number(config.SERVICE_PRICE_USD);
+  if (!Number.isFinite(usd) || usd <= 0) return 0n;
+  return BigInt(Math.round(usd * 1e6));
+}
+
+function x402Asset(): string {
+  return config.X402_ASSET ?? config.TEST_USDC_3009;
+}
+
+function x402Domain(): { name: string; version: string } {
+  return {
+    name: config.X402_DOMAIN_NAME ?? "TestUSD3009",
+    version: config.X402_DOMAIN_VERSION ?? "2",
+  };
+}
+
 /**
- * Build the x402 v2 payment-required payload for a premium resource.
+ * Build the x402 v2 payment-required payload for a paid resource.
  */
-export function buildPaymentOffer(method: string, path: string): PaymentOffer {
-  const amount = priceUnits().toString();
+export function buildPaymentOffer(method: string, path: string, units: bigint): PaymentOffer {
+  const amount = units.toString();
+  const domain = x402Domain();
   return {
     x402Version: 2,
     resource: { method, path },
@@ -71,14 +91,14 @@ export function buildPaymentOffer(method: string, path: string): PaymentOffer {
       {
         scheme: "exact",
         network: `eip155:${config.XLAYER_CHAIN_ID}`,
-        asset: config.TEST_USDC_3009,
+        asset: x402Asset(),
         payTo: TREASURY,
         amount,
         maxPrice: amount,
+        maxTimeoutSeconds: 300,
         extra: {
-          assetTransferMethod: "eip-3009",
-          name: "TestUSD3009",
-          version: "2",
+          name: domain.name,
+          version: domain.version,
         },
       },
     ],
@@ -86,8 +106,8 @@ export function buildPaymentOffer(method: string, path: string): PaymentOffer {
 }
 
 /** HTTP 402 response helper. */
-export function respond402(res: import("http").ServerResponse, method: string, path: string): void {
-  const offer = buildPaymentOffer(method, path);
+export function respond402(res: import("http").ServerResponse, method: string, path: string, units: bigint): void {
+  const offer = buildPaymentOffer(method, path, units);
   const b64 = Buffer.from(JSON.stringify(offer)).toString("base64");
   res.writeHead(402, {
     "Content-Type": "application/json",
@@ -192,11 +212,12 @@ function parsePaymentHeader(header: string | undefined): EIP3009Fields | null {
 export async function settlePayment(
   header: string | undefined,
   resourcePath: string,
+  units: bigint,
 ): Promise<Settlement | null> {
   const fields = parsePaymentHeader(header);
   if (!fields) return null;
 
-  const expected = priceUnits();
+  const expected = units;
   if (fields.value < expected) {
     logger.warn({ event: "x402_underpaid", got: fields.value.toString(), want: expected.toString() },
       "Payment below required amount");
@@ -206,7 +227,7 @@ export async function settlePayment(
   try {
     const provider = new ethers.JsonRpcProvider(config.XLAYER_RPC_URL, config.XLAYER_CHAIN_ID);
     const token = new ethers.Contract(
-      config.TEST_USDC_3009,
+      x402Asset(),
       TestUSDC3009ABI as unknown as ethers.InterfaceAbi,
       provider,
     );

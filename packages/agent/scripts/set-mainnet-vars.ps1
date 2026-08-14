@@ -17,6 +17,7 @@ $vars = @(
   "XLAYER_RPC_URL=https://rpc.xlayer.tech",
   "XLAYER_CHAIN_ID=196",
   "LEGACY_SYNTHEKE_CONTRACTS=",
+  "SERVICE_PRICE_USD=0.1",
   "AGENT_PRIVATE_KEY=$agentKey",
   "THEMIS_PRIVATE_KEY=$(Get-EnvValue 'THEMIS_PRIVATE_KEY')",
   "THEMIS_ADDRESS=$(Get-EnvValue 'THEMIS_ADDRESS')",
