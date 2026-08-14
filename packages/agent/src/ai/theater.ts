@@ -17,6 +17,7 @@
 import { z } from "zod";
 import { aiService, deepseekService, computeCommitment, type AIService } from "./service";
 import { logger } from "../logger";
+import { saveNegotiation } from "../db";
 
 // ──── Schemas ────────────────────────────────────────────
 
@@ -167,6 +168,8 @@ export class NegotiationTheater {
       };
       session.transcript.push(entry);
       session.updatedAt = Date.now();
+      // Persist after every move — survives restarts (Batch 1)
+      saveNegotiation(pactId, session);
       return entry;
     };
 
@@ -301,6 +304,16 @@ export class NegotiationTheater {
 
   getSession(pactId: string): TheaterSession | undefined {
     return sessions.get(pactId);
+  }
+
+  /** Restore a persisted session after restart (Batch 1). */
+  restoreSession(pactId: string, payload: unknown): void {
+    try {
+      const s = payload as TheaterSession;
+      if (s && s.pactId && Array.isArray(s.transcript)) {
+        sessions.set(pactId, s);
+      }
+    } catch { /* skip malformed */ }
   }
 
   listSessions(): Array<{ pactId: string; status: string; round: number; moves: number; createdAt: number }> {

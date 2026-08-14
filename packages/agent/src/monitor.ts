@@ -401,6 +401,21 @@ async function handleArbitration(
       logError(`reputation:${pactId.slice(0, 10)}`, err);
     }
 
+    // Step 4: REAL ESCROW SETTLEMENT — distribute TestUSDC per the verdict (Batch 1)
+    try {
+      const { settleEscrow, toUSDCUnits } = await import("./escrow");
+      await settleEscrow(
+        signer,
+        pactId,
+        pact.partyA,
+        toUSDCUnits(partyAPayout),
+        pact.partyB,
+        toUSDCUnits(partyBPayout),
+      );
+    } catch (err) {
+      logError(`escrow:${pactId.slice(0, 10)}`, err);
+    }
+
   } catch (err) {
     logError(`arbitration:${pactId.slice(0, 10)}`, err);
   }

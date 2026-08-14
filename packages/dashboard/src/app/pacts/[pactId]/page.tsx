@@ -42,6 +42,14 @@ interface PactContract {
   model: string;
 }
 
+interface EscrowPosition {
+  pactId: string;
+  amountAFormatted: string;
+  amountBFormatted: string;
+  totalFormatted: string;
+  settled: boolean;
+}
+
 const STATE_NAMES: Record<number, string> = {
   0: "DRAFT", 1: "NEGOTIATING", 2: "PROPOSED", 3: "COMMITTED",
   4: "ACTIVE", 5: "DEGRADING", 6: "RENEGOTIATING", 7: "BREACHED",
@@ -109,6 +117,7 @@ export default function PactDetailPage() {
   const [pact, setPact] = useState<PactDetail | null>(null);
   const [negotiation, setNegotiation] = useState<NegotiationTranscript | null>(null);
   const [contract, setContract] = useState<PactContract | null>(null);
+  const [escrowPos, setEscrowPos] = useState<EscrowPosition | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -131,6 +140,16 @@ export default function PactDetailPage() {
         });
         if (r.ok) setContract(await r.json());
       } catch { /* no contract */ }
+      try {
+        const r = await fetch(`${AGENT_API}/escrow`, {
+          signal: AbortSignal.timeout(5000),
+        });
+        if (r.ok) {
+          const data = await r.json();
+          const pos = data.positions?.find((p: EscrowPosition) => p.pactId === pactId);
+          if (pos) setEscrowPos(pos);
+        }
+      } catch { /* no escrow */ }
       setLoading(false);
     };
     if (pactId) load();
@@ -176,6 +195,32 @@ export default function PactDetailPage() {
         <h1 className="page-title mb-2 text-2xl sm:text-3xl">Pact Detail</h1>
         <code className="text-xs sm:text-sm text-text-muted font-mono break-all">{pactId}</code>
       </div>
+
+      {/* Real Escrow */}
+      {escrowPos && (
+        <div className="card-glow p-4 sm:p-6 mb-6 sm:mb-8 border-l-2 border-l-amber">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs sm:text-sm text-text-muted uppercase tracking-wider">Escrow (EscrowVaultV2)</span>
+            <span className={`px-2.5 py-1 rounded-md text-xs font-semibold border ${escrowPos.settled ? "text-success border-success/30 bg-success/5" : "text-amber border-amber/30 bg-amber/5"}`}>
+              {escrowPos.settled ? "✓ Settled — funds paid out" : "🔒 Locked in custody"}
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-3 text-center">
+            <div className="p-3 rounded-lg bg-bg border border-border">
+              <div className="text-lg font-mono text-text-primary">{escrowPos.amountAFormatted}</div>
+              <div className="text-xs text-text-muted mt-1">Party A · TestUSDC</div>
+            </div>
+            <div className="p-3 rounded-lg bg-bg border border-border">
+              <div className="text-lg font-mono text-amber">{escrowPos.totalFormatted}</div>
+              <div className="text-xs text-text-muted mt-1">Total escrow</div>
+            </div>
+            <div className="p-3 rounded-lg bg-bg border border-border">
+              <div className="text-lg font-mono text-text-primary">{escrowPos.amountBFormatted}</div>
+              <div className="text-xs text-text-muted mt-1">Party B · TestUSDC</div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Current State */}
       <div className={`card-glow p-4 sm:p-6 mb-6 sm:mb-8 border-l-2 ${stateName === "ACTIVE" ? "border-l-success" : stateName === "BREACHED" ? "border-l-danger" : "border-l-amber"}`}>

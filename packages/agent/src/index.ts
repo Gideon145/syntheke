@@ -5,6 +5,15 @@ import { startMonitor, stopMonitor, getMonitorState } from "./monitor";
 import { negotiationEngine } from "./negotiator";
 import type { DisputeEvidence } from "./ai/mediator";
 import { logger } from "./logger";
+import {
+  initDb,
+  saveActivity,
+  loadRecentActivity,
+  loadPactNames,
+  loadNegotiations,
+  loadContracts,
+  savePactName,
+} from "./db";
 
 // ──── Activity Log (ring buffer, last 30 events) ─────────
 
@@ -22,6 +31,8 @@ const MAX_ACTIVITY = 30;
 export function logActivity(event: string, detail: string, pactId?: string, txHash?: string): void {
   activityLog.push({ timestamp: Date.now(), event, detail, pactId, txHash });
   if (activityLog.length > MAX_ACTIVITY) activityLog.shift();
+  // Persist for restart survival (Batch 1)
+  saveActivity({ timestamp: Date.now(), event, detail, pactId, txHash });
 }
 
 // ──── Cached Pact List (refreshed every 30s) ──────────────
@@ -43,6 +54,8 @@ const pactNames = new Map<string, string>();
 export function setPactName(pactId: string, description: string): void {
   const short = description.length > 55 ? description.slice(0, 52) + "..." : description;
   pactNames.set(pactId, short);
+  // Persist for restart survival (Batch 1)
+  savePactName(pactId, short);
 }
 
 let cachedPacts: CachedPact[] = [];
@@ -203,6 +216,15 @@ function createServer(): http.Server {
 
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify(enriched));
+        return;
+      }
+
+      // GET /escrow — real escrow vault state (Batch 1)
+      if (req.method === "GET" && url.pathname === "/escrow") {
+        const { getEscrowState } = await import("./escrow");
+        const state = await getEscrowState();
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(state));
         return;
       }
 
@@ -594,6 +616,9 @@ function readBody(req: http.IncomingMessage): Promise<Record<string, unknown>> {
 async function main(): Promise<void> {
   logger.info({ event: "agent_bootstrap" }, "🏛️  Syntheke Agent Phase 2 starting...");
 
+  // Restore persisted state (Batch 1) — survives restarts when DATABASE_URL is set
+  await restorePersistedState();
+
   // Start HTTP server
   const server = createServer();
   server.listen(config.PORT, () => {
@@ -612,6 +637,46 @@ async function main(): Promise<void> {
   };
   process.on("SIGINT", shutdown);
   process.on("SIGTERM", shutdown);
+}
+
+/**
+ * Load activity log, pact names, negotiation sessions and contracts from
+ * Postgres into their in-memory stores. Best-effort — memory-only if no DB.
+ */
+async function restorePersistedState(): Promise<void> {
+  try {
+    await initDb();
+
+    const [activity, names, negotiations, contracts] = await Promise.all([
+      loadRecentActivity(30),
+      loadPactNames(),
+      loadNegotiations(),
+      loadContracts(),
+    ]);
+
+    if (activity.length > 0) {
+      for (const a of activity) activityLog.push(a);
+      while (activityLog.length > MAX_ACTIVITY) activityLog.shift();
+    }
+    for (const [pactId, name] of names) pactNames.set(pactId, name);
+
+    if (negotiations.length > 0 || contracts.length > 0) {
+      const { negotiationTheater } = await import("./ai/theater");
+      const { storeContract } = await import("./ai/contract-writer");
+      for (const n of negotiations) negotiationTheater.restoreSession(n.pact_id, n.payload);
+      for (const c of contracts) storeContract(c.payload as Parameters<typeof storeContract>[0]);
+    }
+
+    logger.info({
+      event: "state_restored",
+      activity: activity.length,
+      names: names.size,
+      negotiations: negotiations.length,
+      contracts: contracts.length,
+    }, "Persisted state restored from database");
+  } catch (err) {
+    logger.warn({ event: "state_restore_failed", err }, "State restore failed — memory-only mode");
+  }
 }
 
 main().catch((err) => {

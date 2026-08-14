@@ -17,6 +17,13 @@ interface TreasuryState {
   balanceFormatted: string;
 }
 
+interface EscrowState {
+  address: string;
+  token: string;
+  tvlFormatted: string;
+  settledCount: number;
+}
+
 interface ActivityEvent {
   timestamp: number;
   event: string;
@@ -39,6 +46,7 @@ export default function DashboardPage() {
   const [activity, setActivity] = useState<ActivityEvent[]>([]);
   const [notifications, setNotifications] = useState<NotificationEvent[]>([]);
   const [treasury, setTreasury] = useState<TreasuryState | null>(null);
+  const [escrow, setEscrow] = useState<EscrowState | null>(null);
 
   useEffect(() => {
     let firstLoad = true;
@@ -48,6 +56,10 @@ export default function DashboardPage() {
       try {
         const t = await fetch(`${AGENT_API}/treasury`, { signal: AbortSignal.timeout(5000) });
         if (t.ok) setTreasury(await t.json());
+      } catch { /* keep existing */ }
+      try {
+        const e = await fetch(`${AGENT_API}/escrow`, { signal: AbortSignal.timeout(5000) });
+        if (e.ok) setEscrow(await e.json());
       } catch { /* keep existing */ }
       try {
         const p = await fetchPacts();
@@ -127,6 +139,12 @@ export default function DashboardPage() {
             label: "Treasury Fees",
             value: treasury ? `${treasury.totalCollectedFormatted} OKB` : "—",
             sub: `${treasury?.feeCount ?? "—"} fees paid`,
+          },
+          {
+            label: "Escrow TVL",
+            value: escrow ? `${escrow.tvlFormatted} USDC` : "—",
+            sub: `${escrow?.settledCount ?? "—"} settlements paid out`,
+            accent: true,
           },
           {
             label: "Cycles (session)",

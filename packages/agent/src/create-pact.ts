@@ -399,6 +399,18 @@ export async function createPactFromNL(input: CreatePactInput): Promise<CreatePa
     await sendWithRetry(signerB, contractB, "depositEscrow", [pactId], "depositEscrow_B");
     logger.info({ event: "escrow_deposited", pactId, party: "B", state: "COMMITTED" });
 
+    // 8.5 REAL ESCROW — lock actual TestUSDC in EscrowVaultV2 for both parties (Batch 1)
+    try {
+      const { depositEscrowReal, toUSDCUnits } = await import("./escrow");
+      const { logActivity } = await import("./index");
+      const escrow6 = toUSDCUnits(escrowAmount);
+      await depositEscrowReal(funder, pactId, signerA, escrow6);
+      await depositEscrowReal(funder, pactId, signerB, escrow6);
+      logActivity("escrow_locked", `Real escrow locked: ${ethers.formatUnits(escrow6, 6)} TestUSDC from each party in EscrowVaultV2`, pactId);
+    } catch (err) {
+      logger.warn({ event: "escrow_real_failed", err }, "Real escrow deposit failed — flag-based lifecycle continues");
+    }
+
     // 6. Read back pact state to confirm
     const contractRead = getPactContractRead();
     const pactData = await contractRead.getPactState(pactId);

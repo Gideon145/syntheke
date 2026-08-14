@@ -26,6 +26,8 @@ const configSchema = z.object({
   REPUTATION_REGISTRY: z.string().default("0x4256e57592aCB2120EAbC7f3E1eb82d9DddB855f"),
   TREASURY_VAULT: z.string().default("0xe23721edbf637e080a2ec70d89faa2f5956943d7"),
   MEDIATOR_STAKING: z.string().default("0xc3387efd100cc22b94ad7f68b55039daf0cf9caa"),
+  ESCROW_VAULT_V2: z.string().default("0x13be96c8a71628d41e80755f4027aa51a9014e08"),
+  TEST_USDC: z.string().default("0xfc8423bf39a5be5c38961ae83ef56e0f680374aa"),
   REPUTATION_ORACLE: z.string().default("0xfd61828f15fc98e1dcfe0dd6498abee6e003c1cf"),
   TREATY_SYNDICATE: z.string().default("0xc8665453576bdba28aa72abb12152fed639cff12"),
   MEDIATOR_STAKE_AMOUNT: z.string().default("0.003"), // OKB per mediator
@@ -48,7 +50,7 @@ const configSchema = z.object({
   DEEPSEEK_BASE_URL: z.string().default("https://api.deepseek.com"),
 
   // Database
-  DATABASE_URL: z.string().default("postgres://syntheke:syntheke@localhost:5432/syntheke"),
+  DATABASE_URL: z.string().optional(),
 
   // Server
   PORT: z.coerce.number().default(3002),

@@ -55,6 +55,10 @@ export function getContract(pactId: string): PactContract | undefined {
 export function storeContract(contract: PactContract): void {
   contracts.set(contract.pactId, contract);
   prune();
+  // Persist for restart survival (Batch 1)
+  try {
+    void import("../db").then(({ saveContract }) => saveContract(contract.pactId, contract));
+  } catch { /* db unavailable */ }
 }
 
 // ──── Terms formatting ───────────────────────────────────
