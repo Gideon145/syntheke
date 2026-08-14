@@ -28,3 +28,4 @@ packages/dashboard/.next/
 
 .vercel
 .env*.local
+*.tsbuildinfo
