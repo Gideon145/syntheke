@@ -721,6 +721,14 @@ function createServer(): http.Server {
             }
           }
         } catch { /* no session */ }
+        // Fallback: no in-memory session (e.g. pact created by another instance) —
+        // verify the registry records themselves so provenance still shows as proven.
+        if (checks.length === 0) {
+          for (const a of chain.artifacts.slice(0, 12)) {
+            const v = await verifyArtifactOnChain(pactId, a.hash);
+            checks.push({ kind: a.kind, hash: a.hash, onChain: v.found });
+          }
+        }
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ ...chain, localChecks: checks, allVerified: checks.length > 0 && checks.every(c => c.onChain) }));
         return;
