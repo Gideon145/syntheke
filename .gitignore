@@ -29,3 +29,6 @@ packages/dashboard/.next/
 .vercel
 .env*.local
 *.tsbuildinfo
+
+.env.mainnet
+.env.testnet

@@ -243,7 +243,7 @@ function evaluateDispute(name: string, evidence: { pactId: string; breachTier: n
     if (degradationCount === 0 && breachTier <= 1) {
       return { mediator: "Athena", address: "", verdict: "approve", fairnessScore: 60, reason: "Direct breach without degradation — suggests systemic issue. Approve with caution." };
     }
-    return { mediator: "Athena", address: "", verdict: "reject", fairnessScore: 40, reason: "Insufficient degradation history — possible false positive on testnet" };
+    return { mediator: "Athena", address: "", verdict: "reject", fairnessScore: 40, reason: "Insufficient degradation history — possible false positive" };
   }
 
   // Solon — Historical Precedent: looks for patterns
