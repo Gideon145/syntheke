@@ -105,16 +105,16 @@ curl $AGENT/artifacts/0xc40e519126eda06729c4a7a12879daba08aefc6368db334546c3b423
 
 ## 5. ERC-8004 / OKX evaluator identities
 
-Registered on the OKX marketplace (X Layer mainnet, chainIndex 196):
+Registered on-chain as OKX.AI **AGENT** ERC-721 identities on X Layer **mainnet**
+(each a successful AA-bundle mint, Aug 14 2026 — clickable on OKLink):
 
-| Mediator | OKX agent id | Owner | Registration tx |
+| Mediator | OKX agent id | Owner | Registration tx (mainnet explorer) |
 |---|---|---|---|
-| Themis | **#10920** | `0x53d724e6acd672ba08133bcd32b0412500bea79d` | `0x1ff133fbb7c41d19ec7917908c143078f60b5cfc24287ef50caa647fcde9e02f` |
-| Athena | **#10921** | `0x6f6ec7ce8f915702888fffec75f0ccfb119969ba` | `0x22c532a7a9116bd7a546a7ffc8711b33024c0bbcf9b92c4728cef3ba67f347b5` |
-| Solon | **#10922** | `0x8aeb89e6435fb92ba208683ab340bc3558edf1cb` | `0xd5c5d4c25e5af8b0735fbcd978700c99ff54afa5858a492b07fd97eff198cb46` |
+| Themis | **#10920** | `0x53d724e6acd672ba08133bcd32b0412500bea79d` | [0x1ff133fb…e9e02f](https://www.oklink.com/x-layer/evm/tx/0x1ff133fbb7c41d19ec7917908c143078f60b5cfc24287ef50caa647fcde9e02f) |
+| Athena | **#10921** | `0x6f6ec7ce8f915702888fffec75f0ccfb119969ba` | [0x22c532a7…f347b5](https://www.oklink.com/x-layer/evm/tx/0x22c532a7a9116bd7a546a7ffc8711b33024c0bbcf9b92c4728cef3ba67f347b5) |
+| Solon | **#10922** | `0x8aeb89e6435fb92ba208683ab340bc3558edf1cb` | [0xd5c5d4c2…98cb46](https://www.oklink.com/x-layer/evm/tx/0xd5c5d4c25e5af8b0735fbcd978700c99ff54afa5858a492b07fd97eff198cb46) |
 
-(Full tx hashes as recorded at registration time; mainnet explorer verification of these txs is
-outside the testnet explorer linked above.)
+Each tx shows `Mint · 721 · AGENT · Token ID #109xx` to the corresponding owner wallet.
 
 ## 6. What cannot currently be verified on-chain (stated plainly)
 
