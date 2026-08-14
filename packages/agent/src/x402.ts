@@ -188,7 +188,7 @@ function parsePaymentHeader(header: string | undefined): EIP3009Fields | null {
     if (!from || value === null || validAfter === null || validBefore === null || !nonce || v === null || !r || !s) {
       return null;
     }
-    const vInt = Number(v);
+    const vInt = Number(v) < 27 ? Number(v) + 27 : Number(v);
     return {
       from,
       value,

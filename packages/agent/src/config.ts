@@ -55,6 +55,7 @@ const configSchema = z.object({
 
   // Monitoring
   MONITOR_INTERVAL_SEC: z.coerce.number().default(15),
+  MONITOR_ENABLED: z.coerce.boolean().default(true), // false = HTTP-only (ASP service instances)
   DEGRADATION_CONSECUTIVE_THRESHOLD: z.coerce.number().default(3),
   ATTEST_BATCH_SIZE: z.coerce.number().default(10),
 

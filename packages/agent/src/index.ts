@@ -1097,8 +1097,12 @@ async function main(): Promise<void> {
     logger.info({ event: "server_started", port: config.PORT }, `HTTP server on :${config.PORT}`);
   });
 
-  // Start the autonomous monitor
-  await startMonitor();
+  // Start the autonomous monitor (disabled on ASP-only / HTTP-only instances)
+  if (config.MONITOR_ENABLED) {
+    await startMonitor();
+  } else {
+    logger.info({ event: "monitor_disabled" }, "Monitor disabled (MONITOR_ENABLED=false) — HTTP-only instance");
+  }
 
   // Graceful shutdown
   const shutdown = () => {
