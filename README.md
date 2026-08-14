@@ -58,7 +58,6 @@ Official criteria (hackathon Terms §4): *application of AI, innovation, product
 - [Quick Start](#local-development)
 - [Limitations](#security--limitations)
 - [Roadmap](#roadmap)
-- [Hackathon Compliance](#hackathon-compliance)
 
 **Supplemental docs:**
 - 🔗 [ARCHITECTURE.md](ARCHITECTURE.md) — full system design, data flows, condition bitmap
@@ -451,21 +450,6 @@ planned inventory are in **[SECURITY.md](SECURITY.md)**. Summary:
 **In progress:** mainnet deployment (target Aug 16) · feedback bridge activation via A2A task ids · breach attribution (`_breachingParty` placeholder) · LLM-per-mediator verdicts in arbitration.
 
 **Future:** TEE/HSM attestation of monitor execution · independent party signing flows · multi-round arbitration · OKX DEX volume path (Launch Grant) · syndicate → pact composability · AI-RWA-adjacent asset treaties.
-
-## Hackathon Compliance
-
-**OKX X Layer Build X Series — AI Season** (Aug 7–21, 2026, 23:59 UTC · [official page](https://web3.okx.com/xlayer/build-x-series))
-
-| Requirement (from the official page) | Syntheke implementation | Evidence |
-|---|---|---|
-| Incorporate AI into product design | Dual-LLM negotiation, AI contract prose, AI monitor, LLM mediation endpoint | `packages/agent/src/ai/*`, artifact txs above |
-| Deployed on X Layer | 10 contract modules (+ 2 test tokens) on X Layer testnet (1952) | Address table above |
-| Testnet during hackathon + mainnet subsequently | Testnet live; evaluator identities registered on mainnet (196); full mainnet deploy planned Aug 16 | Explorer links; FAQ of the official page confirms testnet-then-mainnet |
-| Dedicated X account, kept active | Maintained posting calendar (`x-posts.md`) | Submission-time item |
-| Submission post mentions @XLayerOfficial | Prepared post templates | Must be published before form submission |
-| Submit via Google Form by Aug 21 23:59 UTC | Form requires: Project Name, Description, URL, GitHub, Email, Telegram, X handle, X post URL | [Submission form](https://docs.google.com/forms/d/e/1FAIpQLSfgU_3zcXdxK0GJQxj33QeUWdEcAaYnieVe9p5cFDb2JFQa4Q/viewform) |
-
-**Judging criteria coverage (Terms §4):** *application of AI* (negotiation/monitoring/mediation) · *innovation* (enforceable agent-to-agent treaties) · *product completeness* (create→enforce→settle, dashboard, MCP) · *user value* (one-click enforceable agreements) · *integration with X Layer* (section above) · *growth potential* (evaluator service + treaty substrate) · *contribution to the X Layer ecosystem* (x402/A2A/OnchainOS/ERC-8004 surface other builders can call).
 
 ## Why Syntheke Matters
 
