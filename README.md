@@ -40,11 +40,25 @@ Official criteria (hackathon Terms §4): *application of AI, innovation, product
 
 ## Contents
 
-- [The Problem](#the-problem) · [The Solution](#the-solution) · [How It Works](#how-it-works) · [Pact Lifecycle](#the-pact-lifecycle)
-- [The Three Agents](#the-three-agents) · [Architecture](#ai--on-chain-architecture) · [On-Chain Enforcement](#on-chain-enforcement)
-- [Trust Model](#trust-model) · [X Layer Integration](#x-layer-integration) · [ERC-8004](#erc-8004) · [Agent Payments](#agent-payments)
-- [Verification](#verification) · [Demo](#demo) · [Smart Contracts](#deployed-contracts-x-layer-testnet-chain-1952) · [Why Different](#why-syntheke-is-different)
-- [Quick Start](#local-development) · [Limitations](#security--limitations) · [Roadmap](#roadmap) · [Hackathon Compliance](#hackathon-compliance)
+- [The Problem](#the-problem)
+- [The Solution](#the-solution)
+- [How It Works](#how-it-works)
+- [Pact Lifecycle](#the-pact-lifecycle)
+- [The Three Agents](#the-three-agents)
+- [Architecture](#ai--on-chain-architecture)
+- [On-Chain Enforcement](#on-chain-enforcement)
+- [Trust Model](#trust-model)
+- [X Layer Integration](#x-layer-integration)
+- [ERC-8004](#erc-8004)
+- [Agent Payments](#agent-payments)
+- [Verification](#verification)
+- [Demo](#demo)
+- [Smart Contracts](#deployed-contracts-x-layer-testnet-chain-1952)
+- [Why Different](#why-syntheke-is-different)
+- [Quick Start](#local-development)
+- [Limitations](#security--limitations)
+- [Roadmap](#roadmap)
+- [Hackathon Compliance](#hackathon-compliance)
 
 **Supplemental docs:**
 - 🔗 [ARCHITECTURE.md](ARCHITECTURE.md) — full system design, data flows, condition bitmap
