@@ -1,352 +1,428 @@
-<p align="center">
-  <h1 align="center">🏛️ Syntheke</h1>
-  <p align="center"><em>συνθήκη — treaty, covenant, binding agreement</em></p>
-</p>
+# Syntheke
 
-<p align="center">
-  <strong>Autonomous economic treaties between AI agents, on X Layer.</strong>
-</p>
+**Autonomous, enforceable economic treaties between AI agents — negotiated by two rival LLMs, executed and enforced by a 15-state on-chain protocol on X Layer.**
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Solidity-0.8.28-363636?style=flat-square&logo=solidity" />
-  <img src="https://img.shields.io/badge/Foundry-32_tests-green?style=flat-square" />
-  <img src="https://img.shields.io/badge/X_Layer-Native-836EF9?style=flat-square" />
-</p>
+Live: [www.syntheke.xyz](https://www.syntheke.xyz) · Agent API: [agent-production-507e.up.railway.app](https://agent-production-507e.up.railway.app) · Chain: X Layer Testnet (1952)
 
 ---
 
-## Status — Phase 1 Complete ✅
+## The Problem
 
-**Phase 1 delivers the on-chain protocol core**: four Solidity contracts implementing the complete Syntheke state machine, agent identity registry, escrow custody, and reputation scoring — all deployed on X Layer.
+AI agents are starting to do business with each other — pay for APIs, buy compute, trade services, manage liquidity. Today those agreements are **chats**: a prompt, a promise, a JSON blob. They have no enforcement. When an agent breaches, under-performs, or disappears, the counterparty has no recourse. There is no court, no escrow, and no record that survives the conversation.
 
-Future phases will add the autonomous monitoring agent, AI mediation, production backend, and frontend dashboard.
+Humans can't fill this gap by hand. Agent-to-agent commerce will run at machine speed and machine volume — thousands of agreements, negotiated and supervised continuously. The only scalable referee is a system that is itself automated.
 
----
+## The Solution
 
-## What Phase 1 Implements
+Syntheke turns agent agreements into **pacts**: structured, escrow-backed, on-chain commitments with an autonomous enforcement lifecycle.
 
-### Smart Contracts (Solidity 0.8.28, Foundry)
+1. **Two LLMs from rival model families negotiate the terms live** — Party A runs Claude, Party B runs DeepSeek. They counter, concede, and converge on terms; every move is hash-committed to an on-chain artifact registry, so what you read is provably what the AI produced.
+2. **A plain-English contract is generated** from the agreed terms, signed by a SHA-256 commitment hash recorded on-chain.
+3. **Real escrow is locked** in a custody vault on X Layer. A breach with no cure triggers arbitration.
+4. **Three independent mediator agents** — Themis, Athena, Solon — adjudicate via on-chain commit-reveal voting, with stakes slashed for minority verdicts.
+5. **A reputation oracle** scores every party from each pact outcome, so trust compounds across agreements.
+6. **A monitor agent assesses the pact every 15 seconds** against a 13-bit condition bitmap — identity, escrow, collateral, payment, yield, oracle stability, liquidity, DEX price/liquidity targets — with live OKX market data, and attests on-chain.
 
-| Contract | Purpose | Lines | Tests |
-|----------|---------|-------|-------|
-| `SynthekeContract` | 15-state pact lifecycle engine | ~380 | 15 |
-| `AgentRegistry` | On-chain agent identity and capability registry (ERC-8004 compatible) | ~160 | 5 |
-| `EscrowVault` | Escrow custody with ReentrancyGuard, pull-over-push withdrawals | ~210 | 4 |
-| `ReputationRegistry` | ELO-based reputation scoring (0–10000) with time decay and Sybil resistance | ~200 | 8 |
+The result: two AIs can form an agreement, fund it, and have it enforced from formation to settlement — with zero humans in the loop and every step verifiable on a block explorer.
 
-### The 15-State Pact Lifecycle
+## Why Syntheke Is Different
+
+| Mechanism | Why it isn't enough for agent-to-agent commerce |
+|---|---|
+| A chatbot conversation | Nothing binds either side; no state machine, no custody, no history. |
+| A multisig | Solves custody, not *agreement semantics* — no negotiation, no breach detection, no cure/arbitration, no reputation. |
+| A DAO vote | Governance for communities, not per-contract enforcement between two parties; far too slow. |
+| An ordinary smart contract | Enforces terms only after a human encodes them; cannot *negotiate* from natural language, cannot *watch* external conditions continuously, cannot *decide* whether a breach occurred, cannot *adjudicate* nuance. |
+
+Syntheke composes all of these: LLMs where judgement is needed (negotiation, mediation reasoning, prose), smart contracts where enforcement is needed (state machine, escrow, votes, reputation), and an autonomous monitor to bind them — every 15 seconds, indefinitely, on X Layer.
+
+## How It Works
+
+### The full flow
 
 ```
-DRAFT → NEGOTIATING → PROPOSED → COMMITTED → ACTIVE
-  ⇄ DEGRADING ⇄ RENEGOTIATING
-  → BREACHED → CURING | ARBITRATING
-  → RESOLVING → SETTLING → CLOSED
-EXPIRED · TERMINATED
+You describe a deal in natural language
+        │  (or an external agent joins via A2A /a2a/join)
+        ▼
+┌────────────────────────────────────────────────────┐
+│  Syntheke agent (Node.js + ethers, on Railway)      │
+│  1. AI turns NL into structured PactTerms           │
+│  2. Pays 0.01 OKB creation fee → TreasuryVault      │
+│  3. Runs live negotiation: Party A (Claude)          │
+│     vs Party B (DeepSeek), max 2 rounds             │
+│     → every move hash-committed on-chain            │
+│  4. Generates plain-English contract (DeepSeek/Claude)│
+│  5. Proposes + finalizes terms on-chain             │
+│  6. Both parties deposit escrow (real TestUSDC)     │
+│     into EscrowVaultV2 → pact goes ACTIVE           │
+└────────────────────────────────────────────────────┘
+        ▼
+┌────────────────────────────────────────────────────┐
+│  Monitor loop (every 15s)                           │
+│  OBSERVE → COLLECT 13 conditions → EVALUATE →       │
+│  DECIDE → attests on-chain (at least every 5th      │
+│  cycle; immediately on any state change)            │
+└────────────────────────────────────────────────────┘
+        ▼
+   healthy            degraded → breach
+        │                   │
+        │                   ▼
+        │         CURING (cure deadline, set once)
+        │              │            │
+        │         healed ✓     deadline passes
+        │              │            ▼
+        │              │      ARBITRATING
+        │              │         ▼
+        │              │   Themis·Athena·Solon
+        │              │   commit-reveal votes (on-chain)
+        │              │         ▼
+        │              └──▶ SETTLING ──▶ CLOSED
+        │                     (escrow distributed,
+        │                      stakes slashed, reputation written)
+        ▼
+   (duration elapsed) ──▶ EXPIRED (terminal)
+
+(Catastrophic-tier breaches — identity revoked or escrow compromised — skip
+CURING and escalate straight to ARBITRATING.)
 ```
 
-Every state transition is enforced on-chain with access control modifiers. A monitor agent records attestations on each monitoring cycle. Breaches are classified into 4 tiers (MINOR → CATASTROPHIC) with automatic escalation.
+## The Three Agents
 
-### Identity
+### Themis — fairness
+Themis weighs each dispute by breach severity and evidence quality. In the on-chain evaluator logic it produces the fairest share given tier and attestation history; it is the lead mediator and the creator identity for ERC-8004 feedback submissions.
 
-Agents register via `AgentRegistry` with an ERC-8004 token ID and capability declarations. Agents can be suspended, reactivated, and discovered by capability.
+### Athena — conservatism
+Athena is the cautious judge: it discounts favorable evidence, assumes worst-case intent on ambiguous breaches, and tends toward protective payouts. One mediator being deliberately conservative means the swarm can't be captured by optimistic grading.
 
-### Escrow
+### Solon — precedent
+Solon weighs past attestation history most heavily: a party with long clean compliance gets the benefit of the doubt; a repeat offender gets none. It encodes "reputation matters" directly into verdicts.
 
-The `EscrowVault` holds pact funds in custody. Only `SynthekeContract` can instruct deposits, releases, refunds, or slashing. Pull-over-push pattern prevents reentrancy.
+### How they reach consensus
+- All three **commit** a vote hash on-chain first (`MediatorVotes.commitVote`) — verdicts are sealed before anyone can see a competitor's vote.
+- Reveals are **only unlocked after all three commit**, and the on-chain contract verifies each reveal against its commitment.
+- Consensus is **2-of-3**; payout split follows the verdict (approve → party A 70%, reject → party A 30%, deadlock → 50/50).
+- `MediatorStaking.recordVerdict` then **slashes minority-verdict stakes** (20%) and rewards the majority — mediators are financially aligned with being right.
+- The same swarm is monetized as an **x402-paid evaluator service** (`POST /tasks/evaluate`, 1.0 TUSD9) — any external protocol can hire Syntheke's mediators to adjudicate its own disputes.
 
-### Reputation
+> Honesty note: the *verdict functions* for each mediator are currently deterministic policy functions (`src/vote.ts`), not LLM calls, and commit/reveal/tally happen fully on-chain. A separate endpoint (`POST /ai/mediate`) runs genuine LLM mediation off-chain. The on-chain arbitration machinery is complete; LLM-per-mediator verdict generation is a direct upgrade path.
 
-Agents earn ELO-based reputation from completed pacts (0–10000, neutral = 5000). Breaches penalize 2× harder than completions reward. Scores decay toward neutral over inactivity. Rapid pacts with the same counterparty are detected and weighted down.
+## The Pact Lifecycle
 
----
+`SynthekeContract` implements a **15-state** machine (verified by tests):
 
-## Verified Functionality (32/32 Tests Passing)
+| # | State | Meaning | Transition triggered by |
+|---|---|---|---|
+| 0 | `DRAFT` | Party A created the pact | `createDraft()` |
+| 1 | `NEGOTIATING` | Party B joined | `joinDraft()` |
+| 2 | `PROPOSED` | Terms finalized | `finalizeNegotiation()` |
+| 3 | `COMMITTED` | First escrow deposited | `depositEscrow()` (first) |
+| 4 | `ACTIVE` | Both escrows in, monitor attests | `depositEscrow()` (second) |
+| 5 | `DEGRADING` | Soft conditions failing | monitor attestation |
+| 6 | `RENEGOTIATING` | Parties amend terms | `initiateRenegotiation()` |
+| 7 | `BREACHED` | Hard/critical condition failed | monitor attestation |
+| 8 | `CURING` | Grace period to fix the breach | auto on breach (tier ≤ material) |
+| 9 | `ARBITRATING` | Cure failed → mediators decide | `escalateUncuredBreach()` |
+| 10 | `RESOLVING` | Verdict recorded | `resolvePact()` |
+| 11 | `SETTLING` | Escrow being distributed | `resolvePact()` continues |
+| 12 | `CLOSED` | Settlement complete | `finalizeSettlement()` |
+| 13 | `EXPIRED` | Duration elapsed | `expirePact()` |
+| 14 | `TERMINATED` | Mutual pre-activation exit | `terminatePact()` |
 
-- ✅ Pact creation: draft → join → negotiate → propose → commit → activate
-- ✅ Full degradation → renegotiation → recovery cycle
-- ✅ Breach detection: MINOR → CURING, CATASTROPHIC → ARBITRATING
-- ✅ Dispute resolution → settlement → closure
-- ✅ Mutual termination and expiry paths
-- ✅ Access control: only party, only monitor, not monitor rejected
-- ✅ Agent registration, capability updates, suspend/reactivate
-- ✅ Reputation: score bounds [0, 10000], breach penalty > completion reward, rapid-pact Sybil detection
+Critical lifecycle correctness guarantees (each covered by a dedicated Forge test):
+- Escrow deposits **drive the state machine**: first deposit → COMMITTED, second → ACTIVE.
+- A breach sets the cure deadline **exactly once** — persistent breaches can't reset the clock.
+- Self-heal from CURING is **blocked after the deadline**; only `confirmCure()` or arbitration proceeds.
 
----
+## On-Chain Enforcement
+
+Everything below is implemented, deployed on X Layer testnet, and verifiable:
+
+- **Escrow** — `EscrowVaultV2` (0x13be96c8…4e08) holds real ERC-20 custody. Currently **500.0002 TestUSDC locked, 2 settlements paid out**.
+- **Settlement** — the monitor distributes escrow per the mediator verdict (`settle()` requires A + B = total, reentrancy-guarded).
+- **Breach** — classified into 5 tiers (MINOR → CATASTROPHIC) from the condition bitmap; catastrophic (identity revoked / escrow compromised) escalates straight to arbitration.
+- **Cure** — material-or-lower breaches get a block-based grace window to self-heal.
+- **Slashing** — `MediatorStaking` slashes 20% of minority-verdict mediator stakes and rewards the majority; `EscrowVaultV2.slash()` exists for court-ordered seizure.
+- **Arbitration** — commit-reveal voting in `MediatorVotes` (reveal gated on all commits, hash-verified on-chain, 2-of-3 consensus).
+- **Verification** — `ArtifactRegistry` (0x1c36bf1B…66cb) permanently records the SHA-256 hash, producer model, and version of every AI output: negotiation moves, the accepted result, contract prose, mediation reasoning.
+- **Reputation** — `ReputationOracle` v2 (0xfd61828f…c1cf): Elo-style K=32 scoring, 7 reputation tiers (UNRATED → ELITE), outcomes written from arbitration settlements; falls back to the v1 registry with time-decay (100 bps/month toward neutral).
+- **Treasury** — every pact pays a 0.01 OKB creation fee; **0.3 OKB collected across 30 creations** (all on-chain).
+- **N-party syndicates** — `TreatySyndicate` (0xc8665453…ff12) extends the same enforcement to agent DAOs: members stake, propose, vote (66% breach quorum), and breaching members are auto-slashed. One syndicate is live on-chain (`0x6a817ca5d8d06a136ef8fd00ffa0aad488f106441c68c137059ddce3083f3e43`).
+
+## AI + On-Chain Architecture
+
+```mermaid
+flowchart TB
+  U[User or external AI agent] -->|"natural-language deal · A2A join"| SYN[Syntheke Agent\nNode.js · ethers v6 · Railway]
+  SYN --> NEG["AI Negotiation Theater\nParty A: Claude · Party B: DeepSeek"]
+  NEG -->|"SHA-256 commitment of every move"| ART[(ArtifactRegistry)]
+  NEG -->|"structured terms"| SC[(SynthekeContract\n15-state pact FSM)]
+  SYN --> MON[Monitor loop · every 15s]
+  MON -->|"13-bit condition bitmap"| SC
+  MON <-->|"live BTC/ETH tickers"| OKX[OnchainOS / OKX market data]
+  MON -->|"pulls real escrow"| VAULT[(EscrowVaultV2)]
+  VAULT -->|"settles / slashes / refunds"| PARTIES[Party A · Party B]
+  MON -->|"dispute evidence"| SWARM[Themis · Athena · Solon]
+  SWARM -->|"commit-reveal votes"| MV[(MediatorVotes)]
+  SWARM -->|"slash minority stakes"| MS[(MediatorStaking)]
+  SC -->|"pact outcomes"| REP[(ReputationOracle v2)]
+  SYN -->|"HTTP 402 + EIP-3009 settlement"| X402[x402 payment gate]
+  SYN -->|"agent card + skills"| A2A[A2A protocol]
+  POSTGRES[(Postgres\nactivity · sessions · feedback)] --- SYN
+```
+
+All state, escrow, votes, reputation and artifacts live on **X Layer** — the off-chain layer only *decides and explains*; the chain *holds and enforces*.
+
+## Why Three Agents?
+
+One LLM can be wrong, bought, or buggy. Three *differently-tuned* decision makers give Syntheke:
+
+1. **Adversarial robustness** — capture the monitor and you still face a fair, a conservative, and a precedent-driven judge.
+2. **No collusion path** — commit-reveal means nobody's verdict influences anyone else's; the chain verifies commitments before reveals.
+3. **Economic alignment** — mediators stake OKB and lose 20% of it when they land in the minority. Verdicts are expensive to get wrong.
+4. **Cognitive diversity** — the negotiation theater uses *rival model families* (Anthropic Claude vs DeepSeek) for the same reason: two parties with genuinely different reasoning bargain honestly.
+
+## Trust Model
+
+We state exactly what is trusted and what is verified — a protocol that hides its trust assumptions deserves none.
+
+**Trusted (operated by the Syntheke team in v1):**
+- The **monitor agent** — it attests conditions, escalates breaches, settles escrow, writes reputation and artifacts. It holds the operator key.
+- **Mediator keys** and **party wallets in the demo flow** (the demo funds ephemeral party wallets so a pact forms in one click; the protocol supports independent parties via `joinDraft`/`depositEscrow`).
+
+**Verified on-chain (trustless):**
+- Every state transition, escrow deposit, settlement, vote, fee, artifact hash and reputation update is a transaction on X Layer testnet that anyone can inspect.
+
+**Explicitly NOT trustless:**
+- AI judgement itself. Artifact hashes prove *what the AI produced*, not that it was right. There is no TEE/HSM attestation of model execution in this version. (`signer.ts` documents the HSM/TEE path as future work.)
+
+## X Layer Integration
+
+Syntheke was built *for* X Layer, not merely deployed there.
+
+| # | Integration | Why we use it | How Syntheke uses it | What happens on-chain |
+|---|---|---|---|---|
+| 1 | **X Layer testnet (chain 1952)** | Fast, low-cost EVM chain purpose-built for on-chain AI ecosystems | All contract modules, the monitor, escrow, votes, reputation | Every operation is a verifiable testnet tx |
+| 2 | **OnchainOS market data (OKX)** | First-party OKX price/volume feeds | Live BTC/ETH tickers drive condition bits 8 (oracle stability), 9 (liquidity), 11/12 (DEX price & liquidity targets); exposed via `GET /market` | Attestation bitmap reflects real OKX market state every cycle |
+| 3 | **OKX.AI / ERC-8004 evaluator identities** | Agent identities and reputation on the OKX agent economy | Themis (#10920), Athena (#10921), Solon (#10922) are registered OKX agents; pact outcomes flow to the OKX feedback system via a dual-write queue | Registration txs on X Layer mainnet; review queue visible in the dashboard |
+| 4 | **x402 Agent Payments** | The agent-native payment protocol OKX champions | `GET /premium/timeline/:pactId` and `POST /tasks/evaluate` return HTTP 402 with an `exact`-scheme offer; payers sign EIP-3009 transfer authorizations | Settlement relayed on-chain on `TestUSDC3009` — **3 payments settled, 3.0 TUSD9 in the treasury** |
+| 5 | **A2A agent protocol** | Interoperability between OKX AI agents | Agent card at `/.well-known/agent-card.json` (5 skills); `POST /a2a/join` lets any agent join a draft pact | `joinDraft` executed on-chain by the counterparty |
+| 6 | **OKB-native economics** | Native asset alignment | Creation fees (0.01 OKB) and mediator stakes (0.00384–0.00432 OKB) are in OKB | 0.3 OKB treasury, staked mediators on-chain |
+| 7 | **OKX DEX launch path** | The Build X Launch Grant measures DEX volume | Syntheke's growth target is volume routed through OKX DEX | Not yet applicable — listed as a growth milestone, not a claim |
+
+## ERC-8004
+
+- The three mediators are registered as **OKX AI agents** — Themis **#10920** (owner `0x53d724e6…`), Athena **#10921** (owner `0x6f6ec7ce…`), Solon **#10922** (owner `0x8aeb89e6…`) — with registration transactions on X Layer mainnet (chainIndex 196).
+- On-chain, `AgentRegistry` (0x0101Ed24…e217B) backs the identity conditions (bits 0/1) of the pact bitmap: the monitor checks `isAgentActive` for both parties.
+- Pact outcomes are queued into the OKX feedback dual-write queue (`GET /feedback/pending`), with a bridge runner (`packages/agent/scripts/feedback_sync.ts`) that submits reviews to the OKX marketplace (`onchainos agent feedback-submit`) once a task id is attached.
+
+> Honesty note: the on-chain `AgentRegistry` currently uses a simplified registration (ERC-8004 `ownerOf` verification is commented out), and OKX marketplace feedback submission activates fully when pacts are joined through the A2A marketplace with task ids. Both are flagged in code, not hidden.
+
+## Agent Payments
+
+Syntheke's paid endpoints implement **x402 v2, scheme `exact`, settled via EIP-3009**:
+
+```
+HTTP 402 Payment Required
+PAYMENT-REQUIRED: base64({
+  x402Version: 2, resource: "/premium/timeline/<pactId>",
+  accepts: [{ scheme: "exact", asset: <TestUSDC3009>, payTo: <treasury>,
+              amount: 1000000 (1.0 TUSD9), extra: { assetTransferMethod: "eip-3009", … } }]
+})
+```
+
+- Payers sign an ERC-20 `transferWithAuthorization` (EIP-712 domain `TestUSD3009` v2) with their own key — **no approval tx, no paymaster required**.
+- The agent verifies the recovered signer, checks the amount, and relays settlement on X Layer; the response carries a `PAYMENT-RESPONSE` header with the settlement tx.
+- Pay with the OKX OnchainOS CLI: `onchainos payment pay-local` against the 402 endpoint.
+- The **evaluator service** is monetized the same way: hire Themis/Athena/Solon for 1.0 TUSD9 (`POST /tasks/evaluate`) and receive a paid, on-chain commit-reveal verdict for any dispute evidence.
+
+## Verification
+
+Judges can verify every claim in this README without running anything.
+
+### Deployed contracts (X Layer testnet, chain 1952)
+
+| Contract | Address | Explorer |
+|---|---|---|
+| SynthekeContract v2 (pact FSM) | `0xE17c79c138bdE2ABfAfbBd2c3bBdD5511735B6E6` | [oklink](https://www.oklink.com/xlayer/address/0xE17c79c138bdE2ABfAfbBd2c3bBdD5511735B6E6) |
+| EscrowVaultV2 (custody) | `0x13be96c8a71628d41e80755f4027aa51a9014e08` | [oklink](https://www.oklink.com/xlayer/address/0x13be96c8a71628d41e80755f4027aa51a9014e08) |
+| MediatorVotes (commit-reveal) | `0x921691a7151ab1478045096B9a3ecE25C51A9D43` | [oklink](https://www.oklink.com/xlayer/address/0x921691a7151ab1478045096B9a3ecE25C51A9D43) |
+| MediatorStaking | `0xc3387efd100cc22b94ad7f68b55039daf0cf9caa` | [oklink](https://www.oklink.com/xlayer/address/0xc3387efd100cc22b94ad7f68b55039daf0cf9caa) |
+| ArtifactRegistry (AI provenance) | `0x1c36bf1B975448BbABa9E9d3be828b45e3c466cb` | [oklink](https://www.oklink.com/xlayer/address/0x1c36bf1B975448BbABa9E9d3be828b45e3c466cb) |
+| ReputationOracle v2 | `0xfd61828f15fc98e1dcfe0dd6498abee6e003c1cf` | [oklink](https://www.oklink.com/xlayer/address/0xfd61828f15fc98e1dcfe0dd6498abee6e003c1cf) |
+| ReputationRegistry v1 | `0x4256e57592aCB2120EAbC7f3E1eb82d9DddB855f` | [oklink](https://www.oklink.com/xlayer/address/0x4256e57592aCB2120EAbC7f3E1eb82d9DddB855f) |
+| TreasuryVault | `0xe23721edbf637e080a2ec70d89faa2f5956943d7` | [oklink](https://www.oklink.com/xlayer/address/0xe23721edbf637e080a2ec70d89faa2f5956943d7) |
+| AgentRegistry | `0x0101Ed240dA20FFDD95bca8E7408DAa889aE217B` | [oklink](https://www.oklink.com/xlayer/address/0x0101Ed240dA20FFDD95bca8E7408DAa889aE217B) |
+| TreatySyndicate | `0xc8665453576bdba28aa72abb12152fed639cff12` | [oklink](https://www.oklink.com/xlayer/address/0xc8665453576bdba28aa72abb12152fed639cff12) |
+| TestUSDC / TestUSDC3009 | `0xfc8423bf…74aa` · `0x94360316…2A92b` | test tokens (6 decimals) |
+
+### Live pact — full lifecycle, one block explorer walkthrough
+
+Pact `0xc40e519126eda06729c4a7a12879daba08aefc6368db334546c3b423c63b40fc` ("📈 DEX treaty", ACTIVE, monitored every 15s):
+
+| Event | Transaction |
+|---|---|
+| `DraftCreated` | `0x284e213758a8df288551cd2b2c91b7fac6e065ebe01e4e48a488c4772cb1eade` @38,253,463 |
+| `Negotiating` (Party B joined) | `0x9d2fc4bd1ac4f0edc68c06eb8d1410f12697e5d38264dd08913265b5db6646a5` @38,253,492 |
+| `Proposed` (terms hashed on-chain) | `0x38888a9ecd1546fc39a9a5607afdae87379607217bb821cb8fc24eef7fb04dab` @38,253,501 |
+| `Committed` (first escrow) | `0xbe4a324fa399c4b5600994af7c49ebd78ad3e1df54ca8d9d4951ee0e50ee905e` @38,253,505 |
+| `Committed` + `Activated` (second escrow) | `0xa41042a9d7efdb328016875664ff05f5b17fe923cd2e6bda79eaa185317efc50` @38,253,514 |
+| `Deposited` ×2 → EscrowVaultV2 | `0x5287d5cc87cb69537bfcfd18332fbb96b15112ea4c3a86eef6215edcb036252f` · `0x18a1f826d7ed5c4daf56bba90f52ddad20c114ed880c0896fce600360fc363f1` |
+| `FeeCollected` (0.01 OKB) | `0xed43cad1bf73a845ef0aa57a2b4643305073fd677120ab0da1ffefbb29fd4343` @38,253,468 |
+| `AttestationRecorded` (every 5th cycle, live) | e.g. `0xa4f14639ed2126ad150116c4d41aa06c29636e79cf9ae84ba95ca3473ee18cd7` @38,259,448 |
+
+AI artifacts for this pact in `ArtifactRegistry` (all hashed on-chain): `negotiation-move-r0-A` (claude v1), `negotiation-move-r1-B` (deepseek v2), `negotiation-move-r1-A` (claude v3), `negotiation-result-accepted` (theater v3), `contract-v1` (deepseek v1).
+
+### Check the numbers yourself (no API keys needed)
+
+```bash
+# Pact state (state 4 = ACTIVE)
+cast call 0xE17c79c138bdE2ABfAfbBd2c3bBdD5511735B6E6 \
+  "getPactState(bytes32)(tuple(uint8,address,address,tuple(uint256,address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256),uint256,uint256,uint256,uint8,uint256,uint256,uint256,uint256,bytes32,uint256,bool,bool,bool))" \
+  0xc40e519126eda06729c4a7a12879daba08aefc6368db334546c3b423c63b40fc --rpc-url https://testrpc.xlayer.tech
+
+# Escrow TVL + settled count
+cast call 0x13be96c8a71628d41e80755f4027aa51a9014e08 "getTVL()(uint256)" --rpc-url https://testrpc.xlayer.tech
+cast call 0x13be96c8a71628d41e80755f4027aa51a9014e08 "settledCount()(uint256)" --rpc-url https://testrpc.xlayer.tech
+
+# Treasury: 30 fees, 0.3 OKB
+cast call 0xe23721edbf637e080a2ec70d89faa2f5956943d7 "feeCount()(uint256)" --rpc-url https://testrpc.xlayer.tech
+cast call 0xe23721edbf637e080a2ec70d89faa2f5956943d7 "totalFeesCollected()(uint256)" --rpc-url https://testrpc.xlayer.tech
+
+# x402 revenue: 3.0 TUSD9 settled to the agent treasury
+cast call 0x9436031671c96726126fad7E72AAfB4e9ed2A92b "balanceOf(address)(uint256)" \
+  0xCAadA93b4A4D8632d77435A8ee51E5C3D497fD03 --rpc-url https://testrpc.xlayer.tech
+
+# Mediator stakes
+cast call 0xc3387efd100cc22b94ad7f68b55039daf0cf9caa "getStake(address)(uint256)" \
+  0x3208DF56aC9e9B04C94ce49ac9DC035059e9f516 --rpc-url https://testrpc.xlayer.tech
+```
+
+- **Tests:** `cd contracts && forge test` → **48/48 passing** (pact FSM incl. lifecycle correctness, commit-reveal votes, EIP-3009, escrow vault, registry, reputation).
+- **Live API:** `GET https://agent-production-507e.up.railway.app/status` (monitor), `/market` (live OKX BTC/ETH), `/escrow`, `/treasury`, `/payments`, `/.well-known/agent-card.json` (A2A card v0.7.0, 5 skills).
+- **Mediator identities on OKX:** Themis **#10920**, Athena **#10921**, Solon **#10922**.
+
+## Demo
+
+A 3-minute judge walkthrough of [www.syntheke.xyz](https://www.syntheke.xyz):
+
+1. **Landing → "Create a Pact"** — type any agent-to-agent deal, e.g. *"Alpha pays Beta 50 USDC weekly to keep the ETH-USDC pool liquid"*, or pick an example deal.
+2. **Watch the negotiation theater** — Party A (Claude) and Party B (DeepSeek) counter each other live (SSE stream, pulsing ● LIVE). Note the on-chain artifact hashes appearing per move.
+3. **Pact detail page** — walk the 15-stage lifecycle tracker (DRAFT → NEGOTIATING → PROPOSED → COMMITTED → ACTIVE), the plain-English contract written by the AI, escrow custody, and the DEX treaty subject badge.
+4. **Dashboard** — see the monitor attesting every ~75s, live OKX BTC/ETH feeds driving conditions, treasury, escrow TVL, and the x402/feedback cards.
+5. **Breach it live** — `POST /demo/degrade/<pactId>` soft-fails conditions → DEGRADING; `POST /demo/breach/<pactId>` forces a critical failure → BREACHED → ARBITRATING (catastrophic tier skips the cure window), with commit-reveal votes from the three mediators.
+6. **Pay for it** — hit `GET /premium/timeline/<pactId>` → HTTP 402 → settle with the OnchainOS CLI (`onchainos payment pay-local`) → premium attestation timeline unlocks.
+7. **Hire the evaluators** — `POST /tasks/evaluate` with a payment signature → paid, on-chain 2-of-3 verdict returned.
+
+## Technical Stack
+
+| Layer | Technology |
+|---|---|
+| Contracts | Solidity 0.8.28, Foundry (forge), OpenZeppelin, via-ir + optimizer |
+| Agent runtime | Node.js 24, TypeScript, ethers v6, raw HTTP server + SSE |
+| AI models | Anthropic Claude (Party A / contracts) + DeepSeek (Party B / negotiator), cross-family fallback, zod-validated schemas, 0.7 confidence gate |
+| Frontend | Next.js 15 (App Router), React 19, Tailwind, Vercel |
+| Infra | Railway (agent, Postgres), Vercel (dashboard), OnchainOS CLI (payments/market data) |
+| Interop | A2A agent card, x402 (EIP-3009), ERC-8004 identities, MCP server (7 tools) |
+| Quality | 48 Forge tests, GitHub Actions CI (forge test + fmt), graceful memory-only DB fallback |
 
 ## Repository Structure
 
 ```
-syntheke/
-├── contracts/
-│   ├── src/                      # Solidity contracts
-│   │   ├── SynthekeContract.sol
-│   │   ├── AgentRegistry.sol
-│   │   ├── EscrowVault.sol
-│   │   └── ReputationRegistry.sol
-│   ├── test/                     # Foundry tests (32 tests)
-│   ├── script/DeployAll.s.sol    # Full protocol deployment
-│   └── foundry.toml              # X Layer + Anvil config
-├── packages/
-│   ├── backend/                  # API scaffold (Express + Drizzle + PostgreSQL)
-│   └── indexer/                  # Blockchain event indexer scaffold
-├── docker/compose.yml            # PostgreSQL + Redis + Anvil
-├── .github/workflows/ci.yml      # Forge build + test CI
-└── .env.example                  # Environment template
+contracts/        Solidity protocol + 48 tests + 10 deploy scripts (Foundry)
+packages/
+  agent/          The Syntheke agent: HTTP API (40+ routes), monitor, theater,
+                  x402, A2A, escrow, votes, reputation, persistence (Postgres)
+  dashboard/      Next.js app — landing, dashboard, pacts, create, agents
+  mcp/            MCP server exposing treaties/treasury/reputation to agents
+  sdk/            TypeScript client scaffold for integrators
+  backend/        REST scaffold (alternative entry for external integrators)
+  indexer/        Event-indexer scaffold
+docker/           Local stack: anvil (chain 1952), Postgres, Redis
+.github/workflows CI: forge build/test/fmt on every push
 ```
 
----
-
-## Quick Start
+## Local Development
 
 ```bash
-# Prerequisites: Foundry, Docker
-
-git clone <repo>
-
-# Start local blockchain + database
-docker compose -f docker/compose.yml up -d
-
-# Build & test contracts
-cd contracts
-forge build
-forge test -vvv
-
-# Deploy to local Anvil
-forge script script/DeployAll.s.sol --rpc-url http://localhost:8545 --broadcast
+git clone https://github.com/Gideon145/syntheke.git && cd syntheke
+cd contracts && forge test                      # 48/48
+cd ../packages/agent
+cp .env.example .env                            # fill AGENT_PRIVATE_KEY, AI keys
+npm install && $env:PORT="3005"; npm run start  # agent on :3005 (dashboard default)
+cd ../dashboard
+npm install && $env:NEXT_PUBLIC_AGENT_API="http://localhost:3005"; npm run dev
 ```
 
-### Deploy to X Layer Testnet
+## Deployment
 
-```bash
-cp .env.example .env
-# Fill in PRIVATE_KEY and XLAYER_RPC_URL in .env
+**Testnet (X Layer 1952) — LIVE.** Dashboard: [www.syntheke.xyz](https://www.syntheke.xyz) (Vercel) · Agent: [agent-production-507e.up.railway.app](https://agent-production-507e.up.railway.app) (Railway + Postgres). All contract addresses above are deployed and verifiable.
 
-cd contracts
-forge script script/DeployAll.s.sol --rpc-url xlayer_testnet --broadcast --verify
-```
+**Mainnet (X Layer 196) — NOT yet deployed.** The mediator evaluator identities are already registered on the OKX marketplace on mainnet (chainIndex 196). Full protocol mainnet deployment is the immediate next step (planned Aug 16); `foundry.toml` already configures the mainnet RPC. This README makes no mainnet claims beyond the evaluator registrations.
 
----
+## Security / Limitations
+
+A serious system documents its boundaries:
+
+- **Single-operator trust (v1):** monitor, mediator keys and escrow control share one operator wallet family. Decentralization roadmap: independent party signing, per-mediator operators, HSM/TEE-backed keys.
+- **AI judgement is un-attested:** artifact hashes prove provenance of AI output, not correctness. No TEE/ML attestation yet.
+- **Mediator verdict functions are deterministic policy, not LLM calls** (LLM mediation available via `POST /ai/mediate`).
+- **Mock tokens:** TestUSDC/TestUSDC3009 are test assets; real-asset flows require mainnet deployment.
+- **One voting round per pact** in `MediatorVotes`.
+- **A2A push notifications are simulated** (`notify.ts`); the A2A join itself is a real on-chain transaction.
+- **No formal audit.** CI runs `forge test` + `forge fmt`; a third-party audit is a mainnet prerequisite.
+- The AI negotiator can produce odd terms from ambiguous natural language (e.g. wei-vs-USD semantics) — the plain-English contract is human-readable precisely so this is inspectable.
 
 ## Roadmap
 
-| Phase | Scope | Status |
-|-------|-------|--------|
-| **Phase 1** | Core contracts: state machine, identity, escrow, reputation | ✅ Complete |
-| **Phase 2** | Autonomous monitor agent: 15s cycles, breach escalation, mediator staking (slashable), self-healing renegotiation | ✅ Live on testnet |
-| **Phase 3** | AI layer: dual-model swarm (Claude + DeepSeek), live negotiation theater, plain-English contracts, MCP server | ✅ Live on testnet |
-| **Phase 4** | Portable ReputationOracle v2 (ELO + tiers + compliance) written at settlement | ✅ Live on testnet |
-| **Phase 5** | N-party treaty syndicates (stake-weighted agent DAO, slashing → reputation) | ✅ Live on testnet |
-| Phase 6 | X Layer mainnet deployment | 🔜 ~Aug 16 |
-| Phase 7 | Demo video, X post, submission | 🔜 Before Aug 21 |
+**Built (all verifiable above):** NL→pact creation flow · dual-LLM negotiation theater with on-chain artifact provenance · plain-English AI contracts · 15-state lifecycle with correct cure semantics · real escrow custody + settlement · commit-reveal mediator arbitration with stake slashing · reputation oracle v2 + v1 decay fallback · x402 (EIP-3009) paid premium + evaluator service · A2A agent card + join · live OnchainOS market conditions · ERC-8004 evaluator identities on OKX · Postgres persistence · dashboard with live metrics · MCP server · CI · 48 tests.
+
+**In progress:** mainnet deployment (target Aug 16) · feedback bridge activation via A2A task ids · breach attribution (`_breachingParty` placeholder) · LLM-per-mediator verdicts in arbitration.
+
+**Future:** TEE/HSM attestation of monitor execution · independent party signing flows · multi-round arbitration · OKX DEX volume path (Launch Grant) · syndicate → pact composability · AI-RWA-adjacent asset treaties.
+
+## Hackathon Compliance
+
+**OKX X Layer Build X Series — AI Season** (Aug 7–21, 2026, 23:59 UTC · [official page](https://web3.okx.com/xlayer/build-x-series))
+
+| Requirement (from the official page) | Syntheke implementation | Evidence |
+|---|---|---|
+| Incorporate AI into product design | Dual-LLM negotiation, AI contract prose, AI monitor, LLM mediation endpoint | `packages/agent/src/ai/*`, artifact txs above |
+| Deployed on X Layer | 10 contract modules (+ 2 test tokens) on X Layer testnet (1952) | Address table above |
+| Testnet during hackathon + mainnet subsequently | Testnet live; evaluator identities registered on mainnet (196); full mainnet deploy planned Aug 16 | Explorer links; FAQ of the official page confirms testnet-then-mainnet |
+| Dedicated X account, kept active | Maintained posting calendar (`x-posts.md`) | Submission-time item |
+| Submission post mentions @XLayerOfficial | Prepared post templates | Must be published before form submission |
+| Submit via Google Form by Aug 21 23:59 UTC | Form requires: Project Name, Description, URL, GitHub, Email, Telegram, X handle, X post URL | [Submission form](https://docs.google.com/forms/d/e/1FAIpQLSfgU_3zcXdxK0GJQxj33QeUWdEcAaYnieVe9p5cFDb2JFQa4Q/viewform) |
+
+**Judging criteria coverage (Terms §4):** *application of AI* (negotiation/monitoring/mediation) · *innovation* (enforceable agent-to-agent treaties) · *product completeness* (create→enforce→settle, dashboard, MCP) · *user value* (one-click enforceable agreements) · *integration with X Layer* (section above) · *growth potential* (evaluator service + treaty substrate) · *contribution to the X Layer ecosystem* (x402/A2A/OnchainOS/ERC-8004 surface other builders can call).
+
+## Why Syntheke Matters
+
+The agent economy needs *contracts, not chats*. LLMs are already negotiating, trading, and promising on humanity's behalf — but a promise with no escrow, no breach process, no adjudication, and no reputation is worthless at machine scale.
+
+Syntheke is the substrate for that economy: an agreement that any agent can form in natural language, that two rival models bargain into fairness, that real value backs, that a neutral swarm adjudicates, and that compounds into portable on-chain reputation. Every step leaves an artifact a judge can verify.
+
+That is not a chatbot feature. It is the missing legal layer for autonomous agents — and it runs on X Layer.
 
 ---
 
-## Portable Reputation Oracle (v2)
+## 📓 Engineering Log (build history)
 
-Syntheke publishes **portable agent reputation** on X Layer. When a treaty settles,
-the monitor agent records the outcome for both parties on-chain — `COMPLETED`,
-`BREACHED`, or `TERMINATED` — into `ReputationOracle`
-(`0xfd61828f15fc98e1dcfe0dd6498abee6e003c1cf` on testnet).
+<details>
+<summary>How this was built — batches, deployed and verified on X Layer (click to expand)</summary>
 
-Every agent gets:
+**Batch 1 — Escrow, identity, persistence.** Real `EscrowVaultV2` custody with TestUSDC, three mediators registered as OKX evaluators (Themis #10920 tx `0x1ff133fbb7c41d19ec7917908c143078f60b5cfc24287ef50caa647fcde9e02f`, Athena #10921 tx `0x22c532a7a9116bd7a546a7ffc8711b33024c0bbcf9b92c4728cef3ba67f347b5`, Solon #10922 tx `0xd5c5d4c25e5af8b0735fbcd978700c99ff54afa5858a492b07fd97eff198cb46`), Postgres persistence.
 
-- **ELO score** (0–10000, neutral 5000) — completions weighted by settlement fairness
-- **Tier** — `ELITE` / `TRUSTED` / `RELIABLE` / `NEUTRAL` / `CAUTIOUS` / `RISKY` / `UNRATED`
-- **Compliance rate** — completed ÷ settled, in basis points
-- **Full settlement history** — immutable on-chain
+**Batch 2 — Payments, votes, feedback.** x402 (EIP-3009 `TestUSDC3009`) premium gate settled via the real OnchainOS CLI loop; `MediatorVotes` commit-reveal; ERC-8004 feedback dual-write queue.
 
-Any protocol on X Layer can underwrite counterparty risk for free:
+**Batch 3 — Verifiable AI, streaming, adversarial mode.** `ArtifactRegistry` provenance for every AI output; SSE negotiation theater; adversarial Party B persona with a full breach→arbitration→settlement end-to-end run.
 
-```solidity
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.28;
+**Batch 4 — Market feeds, A2A, evaluator service.** Live OnchainOS BTC/ETH feeds in the condition bitmap; A2A agent card v0.7.0 + `/a2a/join`; x402-paid evaluator service (`POST /tasks/evaluate`), verified with a real paid call (votes committed + revealed on-chain).
 
-interface IReputationOracle {
-    function getReputation(address agent) external view returns (
-        uint256 score, uint8 tier, uint256 pactCount,
-        uint256 completedCount, uint256 breachedCount,
-        uint256 terminatedCount, uint256 complianceBps, uint256 lastUpdated
-    );
-    function isReputable(address agent, uint256 minScore) external view returns (bool);
-}
+**Batch 5 — Lifecycle correctness, DEX treaties, subjects.** SynthekeContract v2 (`0xE17c…5B6E6`): deposits drive the FSM, persistent breaches can't reset cure deadlines, post-deadline healing blocked; DEX-subject pacts auto-enable condition bits 11/12; treaty subject metadata persisted to Postgres with boot-time backfill. Suite grown to **48/48**.
 
-contract LendingProtocol {
-    IReputationOracle public constant SYNTHEKE =
-        IReputationOracle(0xfd61828f15fc98e1dcfe0dd6498abee6e003c1cf);
+**Dashboard metrics audit.** Every dashboard number verified against chain + DB ground truth; x402 counter fixed to read the on-chain treasury balance (was an in-memory log that reset on redeploys).
 
-    function acceptAgent(address agent) external view returns (bool) {
-        // Reject agents with a history of breached treaties
-        return SYNTHEKE.isReputable(agent, 6000);
-    }
-}
-```
-
-Read the live oracle from the agent API: `GET /reputation?agent=0x...`
-(or `GET /reputation` for all known agents), or via the Syntheke MCP server
-(`agent_reputation` tool).
-
----
-
-## N-Party Treaty Syndicates
-
-Beyond bilateral treaties, agents can form **syndicates** — a mini agent-DAO on
-X Layer (`TreatySyndicate` at `0xc8665453576bdba28aa72abb12152fed639cff12`).
-Up to 10 agents pool escrow into a shared treaty and govern it with
-stake-weighted votes:
-
-- **RENEGOTIATE** the charter — executes at > 50% of pooled stake
-- **SETTLE** — distribute escrow per an agreed split, dissolving the syndicate
-- **BREACH declaration** — executes at ≥ 66%: slashes the target's stake,
-  redistributes it to loyal members, **and records a `BREACHED` outcome in the
-  ReputationOracle**, so syndicate verdicts degrade portable reputation
-
-Live demo: `POST /syndicates/demo` on the agent API — three mediator agents
-form a syndicate, amend the charter by vote, then slash a member for a wrong
-verdict (visible on-chain and in the reputation oracle).
-
----
-
-## 📓 Development Log
-
-> **The ship's book.** Every batch, every deploy, every on-chain artifact gets
-> recorded here the moment it happens. The final README (documentation refresh)
-> will be rewritten from this log at the end — so nothing is ever lost.
-
-### Batch 1 — Escrow, Identity, Persistence (Aug 14 2026)
-
-**Commit:** `936faf6` — "Escrow settlement, agent identity registration, state persistence"
-
-**Feature 1 — Real escrow (EscrowVaultV2 + TestUSDC)**
-- Old `EscrowVault` v1 was locked to `onlySyntheke` with a set-once owner → unusable for the agent. Built owner-based `EscrowVaultV2` instead.
-- Contracts deployed on X Layer testnet (chain 1952):
-  - `EscrowVaultV2` → `0x13be96c8a71628d41e80755f4027aa51a9014e08` — owner-pulled custody (`deposit` pulls `transferFrom` from each party via approval), `settle` (A+B == total), `slash`, `refundBoth`, `getPactIds()`, `getTVL()`, `settledCount`, `setOwner`.
-  - `TestUSDC` → `0xfc8423bf39a5be5c38961ae83ef56e0f680374aa` — 6-decimal mock USDC, public `mint`.
-- Agent wiring: `src/escrow.ts` — `depositEscrowReal`, `settleEscrow`, `toUSDCUnits`, `sendOwnerTx` (6-retry nonce wrapper — critical because monitor and escrow share the owner wallet).
-- Flow: `create-pact.ts` step 8.5 deposits both parties' escrow into the vault after flag deposits; `monitor.ts` `handleArbitration` Step 4 settles the vault with the computed payout split.
-- Verified end-to-end: pact `0x37a30bcc...10d31a5` → 50.0 + 50.0 TestUSDC locked → demo breach → CLOSED state 12 → `settled=true`, `settledCount=1`, TVL 0, 50/50 paid out.
-- Frontend: dashboard "Escrow TVL" metric card + pact page escrow panel (EscrowVaultV2, ✓ Settled/Locked badge, A/B/Total grid). Verified live on www.syntheke.xyz.
-
-**Feature 2 — ERC-8004 mediator registration (real OKX marketplace)**
-- Registered all three mediators as **Evaluator** identities on the OKX AI Agent marketplace, X Layer mainnet (chainIndex 196). One evaluator per wallet → created 3 OKX Agentic Wallet accounts under opukemegideon@gmail.com.
-  - Themis → agent #10920, owner `0x53d724e6acd672ba08133bcd32b0412500bea79d`, tx `0x1ff133fbb7c41d19ec7917908c143078f60b5cfc24287ef50caa647fcde9e02f`
-  - Athena → agent #10921, owner `0x6f6ec7ce8f915702888fffec75f0ccfb119969ba`, tx `0x22c532a7a9116bd7a546a7ffc8711b33024c0bbcf9b92c4728cef3ba67f347b5`
-  - Solon → agent #10922, owner `0x8aeb89e6435fb92ba208683ab340bc3558edf1cb`, tx `0xd5c5d4c25e5af8b0735fbcd978700c99ff54afa5858a492b07fd97eff198cb46`
-- OKX covers registration fees. Identity owners are the OKX custodial accounts (private keys can't be imported into the OKX wallet), while on-chain voting signatures still come from the mediator signer wallets (`0x3208…` / `0xf19a…` / `0x435d…`).
-- CLI quirks solved: v4.2.4→4.4.10 upgrade locked-binary workaround (`onchainos.old.exe` + `onchainos.tmp` → `onchainos.exe`); deprecated skills removed.
-
-**Feature 3 — Postgres persistence (Railway)**
-- `src/db.ts`: lazy `pg` pool, graceful memory-only fallback. Tables: `syntheke_activity`, `syntheke_negotiations`, `syntheke_contracts`, `syntheke_pact_names`.
-- Wired: `logActivity` → `saveActivity`, `setPactName` → `savePactName`, theater `push()` → `saveNegotiation`, `storeContract` → `saveContract`. Boot-time `restorePersistedState()` reloads activity ring, pact names, theater sessions, contracts.
-- ESM pitfall fixed: `require("pg")` fails under `"type":"module"` → switched to `createRequire(import.meta.url)`.
-- Railway: added Postgres plugin, linked `DATABASE_URL=${{Postgres.DATABASE_URL}}` to the `agent` service.
-- Verified on prod: redeployed agent → new container restored `activity=30` from Postgres (`event="state_restored" activity=30`).
-
-**Deploys:** Railway `agent-production-507e.up.railway.app` (new deployment ID `1d3a4e81-f8d4-402f-b77d-02270bf4f8b6`), Vercel `www.syntheke.xyz` (prod build `syntheke-hsww8tivg-ogxyz.vercel.app`). Monitor loop auto-restarted (`already_running`).
-
-### Batch 2 — Payments, Vote Verification, Feedback (Aug 14 2026)
-
-**Commit:** `…` — "Agent payments and on-chain mediator verification"
-
-**Feature 4 — OKX Agent Payments (x402)**
-- New contract `TestUSDC3009` → `0x9436031671c96726126fad7E72AAfB4e9ed2A92b` — mock USDC with **EIP-3009 transfer-with-authorization** (EIP-712 domain `TestUSD3009` v2), so payers sign off-chain and the server settles on-chain. 2 new Forge tests (auth + replay rejection).
-- New module `src/x402.ts` (server side of the protocol): premium endpoints answer **HTTP 402** with a base64 `PAYMENT-REQUIRED` header (x402 v2 offer: scheme `exact`, network `eip155:1952`, `payTo` = agent wallet). On replay with `PAYMENT-SIGNATURE`, the server recovers the EIP-712 signer, verifies amount ≥ price, and submits `transferWithAuthorization` as relayer → treasury. Responds 200 with base64 `PAYMENT-RESPONSE` header.
-- New endpoint `GET /premium/timeline/:pactId` — paid full attestation history + theater transcript; `GET /payments` — payment stats.
-- **Verified end-to-end with the real OKX CLI**: captured 402 → `onchainos payment pay-local` (payer `0xeccf…4985`) signed the EIP-3009 authorization → replay returned `HTTP 200`, settlement tx `0x170a061d…`, treasury +1.0 TUSD9, payer −1.0. The OKX CLI accepted our offer as-is — real interop.
-- Debug notes: forge-artifact ABIs must be stripped to the bare `abi` array for ethers; CLI `pay-local` needs `EVM_PRIVATE_KEY` in `~/.onchainos/.env` and the offer must include `payTo`; CLI returns one 65-byte signature (split r/s/v server-side).
-- Frontend: pact page "Premium Timeline" card — idle → locked (shows the decoded 402 offer: scheme/network/asset/price) → unlocked.
-
-**Feature 5 — On-chain mediator vote verification (commit-reveal)**
-- New contract `MediatorVotes` → `0x921691a7151ab1478045096B9a3ecE25C51A9D43` — Themis/Athena/Solon registered as mediators. `commitVote(pactId, keccak256(verdict, fairnessScore, reasonHash, nonce))` first; reveals are **locked until all 3 mediators commit**; `revealVote` verifies the hash on-chain (mismatch reverts) and stores the verdict. `getVotes`/`tally` for public verification. 7 new Forge tests (gate, mismatch, replay, permissions) — suite now 39/39.
-- `src/vote.ts` rewritten to the two-phase flow (commit → reveal), then reads the revealed votes back **from the chain** as source of truth. New endpoint `GET /votes/:pactId`.
-- **Verified in real arbitration**: pact `0x61317d82…` closed (state 12) with on-chain votes Themis approve 35 · Athena reject 40 · Solon approve 70 — all commits landed before any reveal (contract-enforced).
-- Frontend: "Mediator Votes — Commit-Reveal" panel — per-mediator ✓ committed / ✓ revealed + commitment hash + verdict/fairness list.
-
-**Feature 6 — ERC-8004 feedback dual-write**
-- `src/feedback.ts`: after every settlement, queues OKX-style star reviews (0–5, derived from the verdict: winning party high, breaching party low) with the registered evaluator identity (Themis #10920) as creator. Persisted in Postgres (`syntheke_feedback_queue`) + in-memory mirror; `GET /feedback/pending` and `POST /feedback/acked` endpoints.
-- Bridge runner `scripts/feedback_sync.ts`: pulls pending reviews and submits them through the OKX marketplace (`onchainos agent feedback-submit`). OKX requires a task id, so full submission activates when A2A marketplace join lands (Batch 4); until then reviews stay queued and visible on the dashboard (dual-write infrastructure ready, both registries update together once live).
-- **Verified**: closed pact queued 2 reviews (4.5/5 and 0.5/5) — visible via API + frontend "⭐ OKX marketplace feedback queued" badge.
-- Frontend: dashboard metric cards "x402 Payments" + "OKX Feedback Queue".
-
-**Deploys:** Railway `agent-production-507e.up.railway.app` (deployment `80f1f571-b2b0-4164-83fe-4319fd99b992`), Vercel `www.syntheke.xyz` (build `syntheke-fy1i7peww-ogxyz.vercel.app`). Prod verified: 402 challenge on the premium endpoint, `/payments`, `/votes` (3 commits round-complete), commit-reveal ran inside a real prod arbitration (pact `0x337ba81e…` → CLOSED with on-chain votes; feedback queued by the instance that won the settle race). Lesson logged: only ONE monitor instance may run against the same owner wallet — local dev agent must be stopped while prod is live.
-
-### Batch 3 — Verifiable AI, Live Streaming, Adversarial Mode (Aug 14 2026)
-
-**Commit:** `743aa28` — "Verifiable AI artifacts and live negotiation streaming"
-
-**Feature 7 — Verifiable AI artifacts on-chain**
-- New contract `ArtifactRegistry` → `0x1c36bf1B975448BbABa9E9d3be828b45e3c466cb` — every AI artifact hash (negotiation moves, contract prose, mediation reasoning) recorded on-chain per pact with kind/producer/version/timestamp; `verifyArtifact` checks any hash. 4 new Forge tests — suite now 43/43.
-- New module `src/artifact.ts` — nonce-safe fire-and-forget recording from the owner wallet + chain reads. Wired into: theater `push()` (every negotiation move), create-pact (negotiation-result hash), contract-writer `storeContract` (contract-vN hash), monitor arbitration (mediation-reasoning hash).
-- New endpoint `GET /artifacts/:pactId` — on-chain artifact list + local-hash verification checks (`localChecks`, `allVerified`).
-- **Verified**: adversarial pact `0xfc3192dc…` on prod — 7 artifacts (5 moves + result + mediation), `allVerified: true`.
-- Frontend: pact page "AI Artifacts — On-Chain Provenance" panel with per-artifact rows + ✓/◐ verified badge.
-
-**Feature 8 — Live SSE theater**
-- `theaterEvents` EventEmitter in theater.ts broadcasts every move; new endpoint `GET /theater/stream/:pactId` streams `snapshot` + `move` events + 15s heartbeats over Server-Sent Events.
-- **Verified**: captured 3 live `move` events in real-time while an adversarial negotiation was still in flight (curl SSE + terminal).
-- Frontend: pact page subscribes via `EventSource`, renders streamed moves with a pulsing "● LIVE" badge; falls back to 10s polling.
-
-**Feature 9 — Adversarial public pact mode**
-- Theater gained a hostile Party B persona (`PARTY_B_ADVERSARIAL_SYSTEM` — pushes value, resists penalties, rejects bad deals). `createPactFromNL({ adversarial })` threads it through; new endpoint `POST /demo/adversarial` creates a public adversarial pact (marked ⚔️ in `adversarialPacts`, surfaced via enriched `/pacts/:id`).
-- **Verified end-to-end**: pact `0x8a3e2553…` — genuinely hostile negotiation (penalty fight 25%→15%, grace-period standoff 50↔100→75 blocks) → ACTIVE → forced breach → commit-reveal arbitration → CLOSED with `mediation-reasoning` artifact recorded.
-- Frontend: create page "⚔️ Run adversarial demo" button + pact page red "⚔️ Adversarial public pact" badge.
-
-**Deploys:** Railway `4c7fb954-5e82-4c07-b714-73d5f91c3149`, Vercel `syntheke-cjhu4nhnk-ogxyz.vercel.app`. Prod verified: prod-created adversarial pact with `adversarial:true`, `allVerified:true` artifacts, SSE snapshot streaming; all panels visible on www.syntheke.xyz. Debug notes: forge-artifact ABI must be stripped to the bare array before use (same as Batch 2); Railway drops long-lived HTTP responses on /demo/adversarial — pacts still complete server-side (verify via /pacts).
-
-### Batch 4 — Market Feeds, A2A, Evaluator Service (Aug 14 2026)
-
-**Commit:** `770de97` — "Market data feeds and A2A interoperability"
-
-**Feature 10 — OnchainOS market feeds**
-- `ONCHAINOS_ENABLED` now defaults true. The monitor's condition checks stop simulating: oracle-stability (bit 8) and liquidity (bit 9) now evaluate against **live OKX market data** (BTC/ETH tickers via the OnchainOS client): oracle healthy when the feed is fresh (<2 min), liquidity healthy when BTC 24h volume ≈ >$10M (OKX `vol24h` is base units → multiplied by price).
-- New endpoint `GET /market` (live BTC/ETH price + 24h change, source `onchainos-okx`).
-- **Verified**: dashboard cards show live prices (BTC $62,836 · ETH $1,875 at verify time); previously-spurious "Liquidity" degradations cleared after the unit fix; prod `/market` returns live BTC $62,843.
-
-**Feature 11 — A2A agent-card + real join**
-- New `src/a2a.ts`: A2A **Agent Card** served at `/.well-known/agent-card.json` — Syntheke v0.7.0 with 5 skills (pact-creation, pact-join, mediation, monitoring, evaluation), capabilities, and evaluator identities (#10920/10921/10922).
-- New endpoint `POST /a2a/join` — a counterparty agent joins a draft directly through the A2A protocol (real on-chain `joinDraft`).
-- **Verified e2e**: created a raw on-chain draft → `POST /a2a/join` → `ok:true`, pact NEGOTIATING; activity logged "Counterparty agent agent-5047 joined via A2A". Fixed `joinExistingPact` to fund the relay wallet from the agent funder (was unfunded → estimateGas revert).
-- Frontend: DRAFT pact page "Invite Party B" panel now A2A-aware — shows the `/a2a/join` payload + agent-card URL, copyable A2A prompt, and a "🤝 Join now (demo)" button.
-
-**Feature 12 — Task marketplace evaluator**
-- `POST /tasks/evaluate` — hire the mediator swarm as an evaluator, **paid via x402** (1 TUSD9, OKX Agent Payments): settles payment → runs the on-chain commit-reveal vote swarm → returns verdict + per-mediator votes + fairness scores. `GET /tasks/evaluator` advertises the service.
-- **Verified with a real paid call**: HTTP 200, `paid:true`, verdict `deadlocked` with Themis approve 55 / Athena reject 40 / Solon abstain 50 (votes committed+revealed on MediatorVotes). Nonce-safe settlement retries added to `settlePayment` (the monitor races the owner wallet).
-- Frontend: dashboard treasury panel shows "⚖️ Evaluator service — 1.0 TUSD9 · POST /tasks/evaluate · #10920 · #10921 · #10922".
-
-**Deploys:** Railway `a66f5bcf-b78c-4f92-b2e5-61e46f4645e6`, Vercel `syntheke-e4jyxoa55-ogxyz.vercel.app`. Prod verified: `/market` live, agent-card v0.7.0 served, `/tasks/evaluate` 402 gate, dashboard live prices + evaluator badge on www.syntheke.xyz.
-
-### Batch 5 — Lifecycle Correctness, DEX Treaties, Subject Metadata (Aug 14 2026)
-
-**Commit:** `364944c` — "Pact lifecycle correctness fixes" (plus `6bfdd7f` subject persistence, `e330c79` artifact dedupe, `a1cfd92` registry fallback)
-
-**Feature 13 — Pact lifecycle correctness fixes**
-- New `inCommitment` modifier: `depositEscrow` and `confirmCure` accept both PROPOSED and COMMITTED states (was PROPOSED-only).
-- `depositEscrow` now drives the FSM: first deposit → COMMITTED, both deposited → ACTIVE (pacts no longer linger in PROPOSED with escrow locked).
-- Breach/cure clock fix: `_classifyAndEscalateBreach` only sets `cureDeadline` when it is still 0 — persistent breaches no longer reset the grace-period clock every attestation. `recordAttestation`'s CURING-heal branch is guarded by `block.number <= cureDeadline` and clears the deadline on heal.
-- New Forge suite `LifecycleFixes.t.sol` — 5 tests (first-deposit→COMMITTED, second-deposit→ACTIVE, no cure-clock reset, no auto-recover after deadline, heal-within-deadline). **Suite now 48/48.**
-- New deploy script `script/DeploySynthekeV2.s.sol`. **SynthekeContract v2 → `0xE17c79c138bdE2ABfAfbBd2c3bBdD5511735B6E6`** (env var `SYNTHEKE_CONTRACT` updated on Railway + locally).
-
-**Feature 14 — DEX treaty subjects**
-- Treaty subject metadata: `detectPactSubject()` classifies pacts as `dex` / `sla` / `monitoring` / `general` from the natural-language description; DEX pacts auto-enable condition bits 11 (DEX price-target) + 12 (DEX liquidity-target) at propose time.
-- Live market loop now covers bits 3–12: bit 11 = DEX price feed fresh, bit 12 = BTC+ETH volume × price > $100M; labels added to the soft-failed list.
-- **Verified end-to-end**: DEX pact `0xc40e5191…` on the new contract — subject `dex`, on-chain attestation bitmap `0x1FFF` (bits 11/12 included), state ACTIVE, escrow locked, "📈 DEX treaty" badge on the pact page (localhost + prod).
-
-**Subject metadata persistence (post-deploy fix)**
-- Subjects were in-memory only — a prod restart lost them. Added `syntheke_pact_subjects` table (`savePactSubject`/`loadPactSubjects`), `registerPactSubject()` persists at creation, and `restorePactSubjects()` seeds + backfills from stored contract prose at boot. Backfilled the two existing pacts (`sla`, `dex`) via the Railway proxy. Prod `/pacts/:id` now returns `subject:"dex"` after fresh deploys.
-- Also: contract restore no longer re-records an artifact on every boot (checks `verifyArtifactOnChain` first), and `/artifacts/:pactId` falls back to verifying registry records themselves when no local session exists (5/5 verified on prod for the DEX pact).
-
-**Deploys:** Railway `7897ca4e-8ebb-4669-bde1-d926e5225405`, Vercel `syntheke-i3mu38okt-ogxyz.vercel.app`. Prod verified on www.syntheke.xyz: DEX treaty subject badge, escrow (0.00005/0.00005 TestUSDC), "✓ All verified on-chain" artifacts, ACTIVE state with live attestations (bitmap 0x1FFF), x402 premium card, full lifecycle progress on the new contract explorer link.
-
-### Dashboard metrics audit (Aug 14 2026)
-
-**Commit:** `27e8528` — "All-time x402 stats and dashboard metric clarity" (plus `07d3b80` — "x402 stats from on-chain treasury balance")
-
-Every dashboard card was verified against on-chain + DB ground truth after the v2 contract swap:
-- ✅ Treasury Fees `0.3 OKB · 30 fees` — matches `TreasuryVault.totalFeesCollected()`/`feeCount()` exactly.
-- ✅ Escrow TVL `500.0002 TestUSDC · 2 settlements` — matches `EscrowVaultV2.getTVL()`/`settledCount()`; positions sum checks out (settled 100 + 200 removed from TVL).
-- ✅ Feedback Queue `2` — matches Postgres pending rows.
-- ✅ Session counters — `cycles`/`attestations` since boot, by design.
-- 🔧 **x402 Payments was wrong (`0`)** — the counter was an in-memory log that reset on every redeploy. Fixed to read the **on-chain treasury balance** (authoritative): 3 settled payments · 3.0 TUSD9 collected (`balanceOf(TestUSDC3009, treasury) / price`). Evaluator settlements now also write `x402_payment` activity rows.
-- 🔧 Cards relabeled for honesty after the contract swap: "Total Treaties · on SynthekeContract v2", "On-Chain Attestations · verifiable · contract v2", "Escrow TVL · TestUSDC". The earlier "drop" (e.g. treaties from 51 → 1) is the v2 registry reset — the old contract `0xe4654…` still holds 51 dev/test pacts but the dashboard tracks the live v2 contract.
+</details>
 
 ---
 
