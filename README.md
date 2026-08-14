@@ -292,6 +292,28 @@ verdict (visible on-chain and in the reputation oracle).
 
 **Deploys:** Railway `4c7fb954-5e82-4c07-b714-73d5f91c3149`, Vercel `syntheke-cjhu4nhnk-ogxyz.vercel.app`. Prod verified: prod-created adversarial pact with `adversarial:true`, `allVerified:true` artifacts, SSE snapshot streaming; all panels visible on www.syntheke.xyz. Debug notes: forge-artifact ABI must be stripped to the bare array before use (same as Batch 2); Railway drops long-lived HTTP responses on /demo/adversarial — pacts still complete server-side (verify via /pacts).
 
+### Batch 4 — Market Feeds, A2A, Evaluator Service (Aug 14 2026)
+
+**Commit:** `770de97` — "Market data feeds and A2A interoperability"
+
+**Feature 10 — OnchainOS market feeds**
+- `ONCHAINOS_ENABLED` now defaults true. The monitor's condition checks stop simulating: oracle-stability (bit 8) and liquidity (bit 9) now evaluate against **live OKX market data** (BTC/ETH tickers via the OnchainOS client): oracle healthy when the feed is fresh (<2 min), liquidity healthy when BTC 24h volume ≈ >$10M (OKX `vol24h` is base units → multiplied by price).
+- New endpoint `GET /market` (live BTC/ETH price + 24h change, source `onchainos-okx`).
+- **Verified**: dashboard cards show live prices (BTC $62,836 · ETH $1,875 at verify time); previously-spurious "Liquidity" degradations cleared after the unit fix; prod `/market` returns live BTC $62,843.
+
+**Feature 11 — A2A agent-card + real join**
+- New `src/a2a.ts`: A2A **Agent Card** served at `/.well-known/agent-card.json` — Syntheke v0.7.0 with 5 skills (pact-creation, pact-join, mediation, monitoring, evaluation), capabilities, and evaluator identities (#10920/10921/10922).
+- New endpoint `POST /a2a/join` — a counterparty agent joins a draft directly through the A2A protocol (real on-chain `joinDraft`).
+- **Verified e2e**: created a raw on-chain draft → `POST /a2a/join` → `ok:true`, pact NEGOTIATING; activity logged "Counterparty agent agent-5047 joined via A2A". Fixed `joinExistingPact` to fund the relay wallet from the agent funder (was unfunded → estimateGas revert).
+- Frontend: DRAFT pact page "Invite Party B" panel now A2A-aware — shows the `/a2a/join` payload + agent-card URL, copyable A2A prompt, and a "🤝 Join now (demo)" button.
+
+**Feature 12 — Task marketplace evaluator**
+- `POST /tasks/evaluate` — hire the mediator swarm as an evaluator, **paid via x402** (1 TUSD9, OKX Agent Payments): settles payment → runs the on-chain commit-reveal vote swarm → returns verdict + per-mediator votes + fairness scores. `GET /tasks/evaluator` advertises the service.
+- **Verified with a real paid call**: HTTP 200, `paid:true`, verdict `deadlocked` with Themis approve 55 / Athena reject 40 / Solon abstain 50 (votes committed+revealed on MediatorVotes). Nonce-safe settlement retries added to `settlePayment` (the monitor races the owner wallet).
+- Frontend: dashboard treasury panel shows "⚖️ Evaluator service — 1.0 TUSD9 · POST /tasks/evaluate · #10920 · #10921 · #10922".
+
+**Deploys:** Railway `a66f5bcf-b78c-4f92-b2e5-61e46f4645e6`, Vercel `syntheke-e4jyxoa55-ogxyz.vercel.app`. Prod verified: `/market` live, agent-card v0.7.0 served, `/tasks/evaluate` 402 gate, dashboard live prices + evaluator badge on www.syntheke.xyz.
+
 ---
 
 ## License
