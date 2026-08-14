@@ -336,6 +336,18 @@ verdict (visible on-chain and in the reputation oracle).
 
 **Deploys:** Railway `7897ca4e-8ebb-4669-bde1-d926e5225405`, Vercel `syntheke-i3mu38okt-ogxyz.vercel.app`. Prod verified on www.syntheke.xyz: DEX treaty subject badge, escrow (0.00005/0.00005 TestUSDC), "✓ All verified on-chain" artifacts, ACTIVE state with live attestations (bitmap 0x1FFF), x402 premium card, full lifecycle progress on the new contract explorer link.
 
+### Dashboard metrics audit (Aug 14 2026)
+
+**Commit:** `27e8528` — "All-time x402 stats and dashboard metric clarity" (plus `07d3b80` — "x402 stats from on-chain treasury balance")
+
+Every dashboard card was verified against on-chain + DB ground truth after the v2 contract swap:
+- ✅ Treasury Fees `0.3 OKB · 30 fees` — matches `TreasuryVault.totalFeesCollected()`/`feeCount()` exactly.
+- ✅ Escrow TVL `500.0002 TestUSDC · 2 settlements` — matches `EscrowVaultV2.getTVL()`/`settledCount()`; positions sum checks out (settled 100 + 200 removed from TVL).
+- ✅ Feedback Queue `2` — matches Postgres pending rows.
+- ✅ Session counters — `cycles`/`attestations` since boot, by design.
+- 🔧 **x402 Payments was wrong (`0`)** — the counter was an in-memory log that reset on every redeploy. Fixed to read the **on-chain treasury balance** (authoritative): 3 settled payments · 3.0 TUSD9 collected (`balanceOf(TestUSDC3009, treasury) / price`). Evaluator settlements now also write `x402_payment` activity rows.
+- 🔧 Cards relabeled for honesty after the contract swap: "Total Treaties · on SynthekeContract v2", "On-Chain Attestations · verifiable · contract v2", "Escrow TVL · TestUSDC". The earlier "drop" (e.g. treaties from 51 → 1) is the v2 registry reset — the old contract `0xe4654…` still holds 51 dev/test pacts but the dashboard tracks the live v2 contract.
+
 ---
 
 ## License
