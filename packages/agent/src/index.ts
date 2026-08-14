@@ -307,8 +307,14 @@ function createServer(): http.Server {
       // GET /payments — x402 payment state (Batch 2)
       if (req.method === "GET" && url.pathname === "/payments") {
         const { getPaymentsState } = await import("./x402");
+        const { loadX402PaymentStats } = await import("./db");
+        const state = getPaymentsState();
+        const dbStats = await loadX402PaymentStats();
+        const settledCount = Math.max(dbStats.count, state.settledCount);
+        const memTotal = BigInt(state.totalCollected || "0");
+        const totalCollected = memTotal > dbStats.totalUnits ? memTotal : dbStats.totalUnits;
         res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify(getPaymentsState()));
+        res.end(JSON.stringify({ ...state, settledCount, totalCollected: totalCollected.toString() }));
         return;
       }
 
@@ -846,6 +852,9 @@ function createServer(): http.Server {
         }
         const { runMediatorVote } = await import("./vote");
         const result = await runMediatorVote(evidence);
+        logActivity("x402_payment",
+          `Evaluator service settled: ${settlement.amount} TUSD9 units from ${settlement.payer.slice(0, 10)}…`,
+          evalPactId, settlement.txHash);
         logActivity("task_evaluated",
           `Evaluator service: ${result.verdict} (${result.approveCount}/${result.rejectCount}) for ${evalPactId.slice(0, 10)}…`,
           evalPactId, settlement.txHash);

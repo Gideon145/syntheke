@@ -220,6 +220,25 @@ export async function loadPactSubjects(): Promise<Map<string, string>> {
   return new Map(rows.map(r => [r.pact_id, r.subject]));
 }
 
+// ──── x402 payments (all-time stats from the activity log) ─────────
+
+/**
+ * Reconstruct all-time x402 settlement stats from the persisted activity
+ * log. Each settlement writes an `x402_payment` activity row whose detail
+ * contains the settled amount in TUSD9 base units.
+ */
+export async function loadX402PaymentStats(): Promise<{ count: number; totalUnits: bigint }> {
+  const rows = await queryRows<{ event: string; detail: string | null }>(
+    `SELECT event, detail FROM syntheke_activity WHERE event = 'x402_payment'`,
+  );
+  let totalUnits = 0n;
+  for (const r of rows) {
+    const m = /settled:\s*(\d+)/.exec(r.detail ?? "");
+    if (m) totalUnits += BigInt(m[1]);
+  }
+  return { count: rows.length, totalUnits };
+}
+
 // ──── Feedback queue (Batch 2 — ERC-8004 dual-write) ──────
 
 export function saveFeedback(entry: {

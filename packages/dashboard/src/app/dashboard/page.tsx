@@ -141,7 +141,7 @@ export default function DashboardPage() {
           {
             label: "Total Treaties",
             value: pacts.length ? pacts.length.toLocaleString() : "—",
-            sub: "formed on X Layer",
+            sub: "on SynthekeContract v2",
             accent: true,
           },
           {
@@ -152,7 +152,7 @@ export default function DashboardPage() {
           {
             label: "On-Chain Attestations",
             value: pacts.length ? pacts.reduce((s, p) => s + p.attestationCount, 0).toLocaleString() : "—",
-            sub: "all-time, verifiable",
+            sub: "verifiable · contract v2",
             accent: true,
           },
           {
@@ -162,7 +162,7 @@ export default function DashboardPage() {
           },
           {
             label: "Escrow TVL",
-            value: escrow ? `${escrow.tvlFormatted} USDC` : "—",
+            value: escrow ? `${escrow.tvlFormatted} TestUSDC` : "—",
             sub: `${escrow?.settledCount ?? "—"} settlements paid out`,
             accent: true,
           },
