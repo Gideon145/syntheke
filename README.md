@@ -314,6 +314,28 @@ verdict (visible on-chain and in the reputation oracle).
 
 **Deploys:** Railway `a66f5bcf-b78c-4f92-b2e5-61e46f4645e6`, Vercel `syntheke-e4jyxoa55-ogxyz.vercel.app`. Prod verified: `/market` live, agent-card v0.7.0 served, `/tasks/evaluate` 402 gate, dashboard live prices + evaluator badge on www.syntheke.xyz.
 
+### Batch 5 — Lifecycle Correctness, DEX Treaties, Subject Metadata (Aug 14 2026)
+
+**Commit:** `364944c` — "Pact lifecycle correctness fixes" (plus `6bfdd7f` subject persistence, `e330c79` artifact dedupe, `a1cfd92` registry fallback)
+
+**Feature 13 — Pact lifecycle correctness fixes**
+- New `inCommitment` modifier: `depositEscrow` and `confirmCure` accept both PROPOSED and COMMITTED states (was PROPOSED-only).
+- `depositEscrow` now drives the FSM: first deposit → COMMITTED, both deposited → ACTIVE (pacts no longer linger in PROPOSED with escrow locked).
+- Breach/cure clock fix: `_classifyAndEscalateBreach` only sets `cureDeadline` when it is still 0 — persistent breaches no longer reset the grace-period clock every attestation. `recordAttestation`'s CURING-heal branch is guarded by `block.number <= cureDeadline` and clears the deadline on heal.
+- New Forge suite `LifecycleFixes.t.sol` — 5 tests (first-deposit→COMMITTED, second-deposit→ACTIVE, no cure-clock reset, no auto-recover after deadline, heal-within-deadline). **Suite now 48/48.**
+- New deploy script `script/DeploySynthekeV2.s.sol`. **SynthekeContract v2 → `0xE17c79c138bdE2ABfAfbBd2c3bBdD5511735B6E6`** (env var `SYNTHEKE_CONTRACT` updated on Railway + locally).
+
+**Feature 14 — DEX treaty subjects**
+- Treaty subject metadata: `detectPactSubject()` classifies pacts as `dex` / `sla` / `monitoring` / `general` from the natural-language description; DEX pacts auto-enable condition bits 11 (DEX price-target) + 12 (DEX liquidity-target) at propose time.
+- Live market loop now covers bits 3–12: bit 11 = DEX price feed fresh, bit 12 = BTC+ETH volume × price > $100M; labels added to the soft-failed list.
+- **Verified end-to-end**: DEX pact `0xc40e5191…` on the new contract — subject `dex`, on-chain attestation bitmap `0x1FFF` (bits 11/12 included), state ACTIVE, escrow locked, "📈 DEX treaty" badge on the pact page (localhost + prod).
+
+**Subject metadata persistence (post-deploy fix)**
+- Subjects were in-memory only — a prod restart lost them. Added `syntheke_pact_subjects` table (`savePactSubject`/`loadPactSubjects`), `registerPactSubject()` persists at creation, and `restorePactSubjects()` seeds + backfills from stored contract prose at boot. Backfilled the two existing pacts (`sla`, `dex`) via the Railway proxy. Prod `/pacts/:id` now returns `subject:"dex"` after fresh deploys.
+- Also: contract restore no longer re-records an artifact on every boot (checks `verifyArtifactOnChain` first), and `/artifacts/:pactId` falls back to verifying registry records themselves when no local session exists (5/5 verified on prod for the DEX pact).
+
+**Deploys:** Railway `7897ca4e-8ebb-4669-bde1-d926e5225405`, Vercel `syntheke-i3mu38okt-ogxyz.vercel.app`. Prod verified on www.syntheke.xyz: DEX treaty subject badge, escrow (0.00005/0.00005 TestUSDC), "✓ All verified on-chain" artifacts, ACTIVE state with live attestations (bitmap 0x1FFF), x402 premium card, full lifecycle progress on the new contract explorer link.
+
 ---
 
 ## License
