@@ -239,14 +239,14 @@ export async function collectConditions(
   // Each condition defaults to healthy if the data source is unavailable,
   // treating "no data" as "no news is good news" rather than a failure.
 
-  for (let bit = 3; bit <= 10; bit++) {
+  for (let bit = 3; bit <= 12; bit++) {
     if (enabledConditions & (1n << BigInt(bit))) {
       // Demo degradation: soft conditions 4 + 8 report failing
       const degradingNow = degrade && (bit === 4 || bit === 8);
 
-      // Live OnchainOS market feeds (Batch 4, Feature 10) — real price data
-      // for the oracle-stability (8) and liquidity (9) conditions.
-      if (!degradingNow && (bit === 8 || bit === 9)) {
+      // Live OnchainOS market feeds (Batch 4/5) — real price data for the
+      // oracle-stability (8), liquidity (9) and DEX-subject (11/12) conditions.
+      if (!degradingNow && (bit === 8 || bit === 9 || bit === 11 || bit === 12)) {
         const live = await evaluateLiveMarketCondition(bit as ConditionBit);
         if (live) {
           results.push(live);
@@ -304,6 +304,34 @@ async function evaluateLiveMarketCondition(bit: ConditionBit): Promise<Condition
           ? `Liquidity adequate: BTC 24h volume ≈ $${Math.round(volumeUsd).toLocaleString()} (OnchainOS/OKX live)`
           : `Liquidity thin: BTC 24h volume ≈ $${Math.round(volumeUsd).toLocaleString()}`,
         sourceData: { btc, source: "onchainos-okx" },
+      };
+    }
+
+    // DEX treaty subjects (Batch 5, Feature 14) — live price + volume feeds
+    if (bit === ConditionBit.DEX_PRICE_TARGET) {
+      if (!eth || !btc) return null;
+      const fresh = Date.now() - btc.timestamp < 120_000;
+      return {
+        bit,
+        healthy: fresh,
+        detail: fresh
+          ? `DEX price feed live: BTC $${btc.price.toLocaleString()} · ETH $${eth.price.toLocaleString()}`
+          : `DEX price feed stale`,
+        sourceData: { btc, eth, source: "onchainos-okx" },
+      };
+    }
+
+    if (bit === ConditionBit.DEX_LIQUIDITY_TARGET) {
+      if (!btc || !eth) return null;
+      const volumeUsd = (btc.volume24h * btc.price) + (eth.volume24h * eth.price);
+      const healthy = volumeUsd > 100_000_000; // > $100M across BTC+ETH
+      return {
+        bit,
+        healthy,
+        detail: healthy
+          ? `DEX liquidity healthy: BTC+ETH 24h volume ≈ $${Math.round(volumeUsd).toLocaleString()}`
+          : `DEX liquidity thin: BTC+ETH 24h volume ≈ $${Math.round(volumeUsd).toLocaleString()}`,
+        sourceData: { btc, eth, source: "onchainos-okx" },
       };
     }
     return null;

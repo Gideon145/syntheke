@@ -220,9 +220,10 @@ function createServer(): http.Server {
         let enriched: Record<string, unknown> = { ...tracker, pactId };
         try {
           const { getPactContractRead } = await import("./pact");
-          const { isAdversarialPact } = await import("./create-pact");
+          const { isAdversarialPact, getPactSubject, SUBJECT_LABELS } = await import("./create-pact");
           const contract = getPactContractRead();
           const onChain = await contract.getPactState(pactId);
+          const subject = getPactSubject(pactId);
           enriched = {
             pactId,
             lastState: Number(onChain.state),
@@ -235,6 +236,8 @@ function createServer(): http.Server {
             breachTier: Number(onChain.breachTier),
             closed: onChain.closed,
             adversarial: isAdversarialPact(pactId),
+            subject: subject ?? "general",
+            subjectLabel: subject ? SUBJECT_LABELS[subject] : SUBJECT_LABELS.general,
           };
         } catch (err) {
           // Fall back to tracker-only data

@@ -31,6 +31,30 @@ export function isAdversarialPact(pactId: string): boolean {
   return adversarialPacts.has(pactId);
 }
 
+/** Treaty subject metadata (Batch 5, Feature 14 — DEX subjects etc.). */
+export type PactSubject = "dex" | "sla" | "monitoring" | "general";
+const pactSubjects = new Map<string, PactSubject>();
+
+/** Heuristic subject detection from the natural-language description. */
+export function detectPactSubject(description: string): PactSubject {
+  const d = description.toLowerCase();
+  if (/(dex|token|pool|liquidity|swap|pair|market maker|perpetual|price floor|amm|trade)/.test(d)) return "dex";
+  if (/(uptime|sla|availability|99\.9|rpc|latency)/.test(d)) return "sla";
+  if (/(monitor|liquidation|alert|sentinel|watch|guard)/.test(d)) return "monitoring";
+  return "general";
+}
+
+export function getPactSubject(pactId: string): PactSubject | null {
+  return pactSubjects.get(pactId) ?? null;
+}
+
+export const SUBJECT_LABELS: Record<PactSubject, string> = {
+  dex: "📈 DEX treaty",
+  sla: "🛡 SLA treaty",
+  monitoring: "👁 Monitoring treaty",
+  general: "🤝 General treaty",
+};
+
 interface CreatePactResult {
   success: boolean;
   pactId?: string;
@@ -41,6 +65,7 @@ interface CreatePactResult {
   txHash?: string;
   reasoning?: string;
   error?: string;
+  subject?: PactSubject;
   treasuryFee?: {
     amount: string;
     txHash: string;
@@ -271,6 +296,13 @@ export async function createPactFromNL(input: CreatePactInput): Promise<CreatePa
     const pactId = draftEvent.args.pactId as string;
     logger.info({ event: "create_pact_draft_created", pactId });
 
+    // Treaty subject metadata (Batch 5, Feature 14)
+    const subject = detectPactSubject(description);
+    pactSubjects.set(pactId, subject);
+    if (subject === "dex") {
+      logger.info({ event: "dex_subject_pact", pactId: pactId.slice(0, 10) }, "📈 DEX-subject treaty — live price/liquidity conditions enabled");
+    }
+
     // Adversarial public pact flag (Batch 3, Feature 9)
     if (input.adversarial) {
       adversarialPacts.add(pactId);
@@ -392,7 +424,11 @@ export async function createPactFromNL(input: CreatePactInput): Promise<CreatePa
     await sendWithRetry(signerB, contractB, "joinDraft", [pactId], "joinDraft");
     logger.info({ event: "create_pact_joined", pactId });
 
-    // 5. Propose terms (Party A)
+    // 5. Propose terms (Party A) — DEX subjects additionally monitor live
+    //    price + liquidity conditions (bits 11/12, Batch 5).
+    const monitoredConditions = subject === "dex"
+      ? terms.monitoredConditions | (1n << 11n) | (1n << 12n)
+      : terms.monitoredConditions;
     await sendWithRetry(signerA, contractA, "proposeTerms", [pactId, {
       amount: terms.amount,
       settlementAsset: terms.settlementAsset || "0x0000000000000000000000000000000000000000",
@@ -404,7 +440,7 @@ export async function createPactFromNL(input: CreatePactInput): Promise<CreatePa
       breachGraceBlocks: terms.breachGraceBlocks,
       renegotiationWindow: terms.renegotiationWindow,
       maxRenegotiationRounds: terms.maxRenegotiationRounds,
-      monitoredConditions: terms.monitoredConditions,
+      monitoredConditions,
     }], "proposeTerms");
 
     // 6. Finalize negotiation → PROPOSED
@@ -469,6 +505,7 @@ export async function createPactFromNL(input: CreatePactInput): Promise<CreatePa
           : "Terms generated from description heuristics (AI unavailable — deterministic fallback)"),
       negotiation,
       treasuryFee,
+      subject,
       contract: contract ? {
         title: contract.title,
         preamble: contract.preamble,

@@ -158,6 +158,14 @@ contract SynthekeContract {
         _;
     }
 
+    modifier inCommitment(bytes32 pactId) {
+        SynthekeState s = pacts[pactId].state;
+        if (s != SynthekeState.PROPOSED && s != SynthekeState.COMMITTED) {
+            revert InvalidState(s, SynthekeState.PROPOSED);
+        }
+        _;
+    }
+
     modifier notClosed(bytes32 pactId) {
         if (pacts[pactId].closed) revert PactClosed();
         _;
@@ -219,8 +227,9 @@ contract SynthekeContract {
 
     // ──── COMMITMENT ───────────────────────────────────────
 
-    /// @notice Deposit escrow. Pact activates when both parties deposit.
-    function depositEscrow(bytes32 pactId) external onlyParty(pactId) inState(pactId, SynthekeState.PROPOSED) {
+    /// @notice Deposit escrow. First deposit moves to COMMITTED; pact activates
+    ///         when both parties have deposited.
+    function depositEscrow(bytes32 pactId) external onlyParty(pactId) inCommitment(pactId) {
         PactData storage p = pacts[pactId];
         if (msg.sender == p.partyA) {
             if (p.partyADeposited) revert AlreadyDeposited();
@@ -235,6 +244,9 @@ contract SynthekeContract {
             p.state = SynthekeState.ACTIVE;
             p.activationBlock = block.number;
             emit Activated(pactId, p.terms.amount, p.terms.duration);
+        } else {
+            // First deposit: pact is now COMMITTED (locked, awaiting counterparty)
+            p.state = SynthekeState.COMMITTED;
         }
     }
 
@@ -275,9 +287,15 @@ contract SynthekeContract {
             p.breachBlock = block.number;
             _classifyAndEscalateBreach(pactId, conditionBitmap, reason);
         } else if (recommendedState == SynthekeState.ACTIVE && p.state == SynthekeState.CURING) {
-            p.state = SynthekeState.ACTIVE;
-            p.consecutiveDegradation = 0;
-            p.breachTier = BreachTier.NONE;
+            // Self-heal only while the cure window is still open. After the
+            // deadline, the breach escalates via escalateUncuredBreach instead
+            // of silently healing (lifecycle correctness — Batch 5).
+            if (block.number <= p.cureDeadline) {
+                p.state = SynthekeState.ACTIVE;
+                p.consecutiveDegradation = 0;
+                p.breachTier = BreachTier.NONE;
+                p.cureDeadline = 0;
+            }
         }
     }
 
@@ -303,11 +321,15 @@ contract SynthekeContract {
 
         emit Breached(pactId, p.breachTier, reason);
 
-        // Auto-escalate based on tier
+        // Auto-escalate based on tier. A pact already in CURING keeps its
+        // ORIGINAL cure deadline — persistent breaches must not reset the
+        // clock (lifecycle correctness — Batch 5).
         if (p.breachTier <= BreachTier.MATERIAL) {
             p.state = SynthekeState.CURING;
-            p.cureDeadline = block.number + p.terms.breachGraceBlocks;
-            emit Curing(pactId, p.cureDeadline);
+            if (p.cureDeadline == 0) {
+                p.cureDeadline = block.number + p.terms.breachGraceBlocks;
+                emit Curing(pactId, p.cureDeadline);
+            }
         } else {
             p.state = SynthekeState.ARBITRATING;
             emit Arbitrating(pactId);
@@ -359,6 +381,7 @@ contract SynthekeContract {
         p.state = SynthekeState.ACTIVE;
         p.breachTier = BreachTier.NONE;
         p.consecutiveDegradation = 0;
+        p.cureDeadline = 0;
     }
 
     /// @notice Escalate uncured breach to arbitration.

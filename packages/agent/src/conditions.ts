@@ -28,7 +28,9 @@ export enum ConditionBit {
   ORACLE_STABLE      = 8,   // Price oracle data is fresh and stable
   LIQUIDITY_ADEQUATE = 9,   // Settlement asset has sufficient liquidity
   MILESTONES_TRACK   = 10,  // Milestone obligations are on schedule
-  // Bits 11-255 reserved for pact-specific custom conditions
+  DEX_PRICE_TARGET   = 11,  // DEX subject: reference price feed live (Batch 5)
+  DEX_LIQUIDITY_TARGET = 12, // DEX subject: pool/trading liquidity healthy (Batch 5)
+  // Bits 13-255 reserved for pact-specific custom conditions
 }
 
 export const CONDITION_LABELS: Record<number, string> = {
@@ -43,6 +45,8 @@ export const CONDITION_LABELS: Record<number, string> = {
   [ConditionBit.ORACLE_STABLE]:      "Oracle stability",
   [ConditionBit.LIQUIDITY_ADEQUATE]: "Liquidity",
   [ConditionBit.MILESTONES_TRACK]:   "Milestones",
+  [ConditionBit.DEX_PRICE_TARGET]:   "DEX price feed",
+  [ConditionBit.DEX_LIQUIDITY_TARGET]: "DEX liquidity",
 };
 
 // ──── Condition Result Types ──────────────────────────────
@@ -95,7 +99,9 @@ export function assessState(
     c.bit === ConditionBit.ORACLE_STABLE ||
     c.bit === ConditionBit.LIQUIDITY_ADEQUATE ||
     c.bit === ConditionBit.MILESTONES_TRACK ||
-    c.bit === ConditionBit.COUNTERPARTY_HEALTH,
+    c.bit === ConditionBit.COUNTERPARTY_HEALTH ||
+    c.bit === ConditionBit.DEX_PRICE_TARGET ||
+    c.bit === ConditionBit.DEX_LIQUIDITY_TARGET,
   );
 
   // Critical failures → immediate BREACH (FUNDAMENTAL or CATASTROPHIC)

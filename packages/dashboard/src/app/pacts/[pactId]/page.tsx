@@ -16,6 +16,8 @@ interface PactDetail {
   partyA?: string;
   partyB?: string;
   adversarial?: boolean;
+  subject?: string;
+  subjectLabel?: string;
   error?: string;
 }
 
@@ -293,6 +295,11 @@ export default function PactDetailPage() {
         {pact.adversarial && (
           <span className="mt-3 inline-block px-3 py-1 rounded-md text-xs font-bold border border-danger/40 bg-danger/10 text-danger">
             ⚔️ Adversarial public pact
+          </span>
+        )}
+        {pact.subjectLabel && pact.subject && pact.subject !== "general" && (
+          <span className="mt-3 ml-2 inline-block px-3 py-1 rounded-md text-xs font-bold border border-amber/40 bg-amber/10 text-amber">
+            {pact.subjectLabel}
           </span>
         )}
       </div>
@@ -694,7 +701,7 @@ export default function PactDetailPage() {
 
       {/* On-chain link */}
       <div className="text-center">
-        <a href={`https://www.oklink.com/xlayer/address/0xe465405380E2E0f625028447E85917662E71ad42`} target="_blank" rel="noopener"
+        <a href={`https://www.oklink.com/xlayer/address/0xE17c79c138bdE2ABfAfbBd2c3bBdD5511735B6E6`} target="_blank" rel="noopener"
           className="text-text-muted text-xs hover:text-amber transition-colors">
           View SynthekeContract on X Layer Explorer →
         </a>

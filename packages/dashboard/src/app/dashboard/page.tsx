@@ -343,7 +343,7 @@ export default function DashboardPage() {
         <div className="text-sm font-semibold text-text-primary mb-3 sm:mb-4">On-Chain Contracts</div>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
           {[
-            { label: "SynthekeContract", addr: "0xe465405380E2E0f625028447E85917662E71ad42" },
+            { label: "SynthekeContract", addr: "0xE17c79c138bdE2ABfAfbBd2c3bBdD5511735B6E6" },
             { label: "AgentRegistry", addr: "0x0101Ed240dA20FFDD95bca8E7408DAa889aE217B" },
             { label: "EscrowVault", addr: "0x5535cEc5D9CcBe77EBF99e33BE88dCE00047e142" },
             { label: "Reputation", addr: "0x4256e57592aCB2120EAbC7f3E1eb82d9DddB855f" },
