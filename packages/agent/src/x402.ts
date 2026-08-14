@@ -232,23 +232,44 @@ export async function settlePayment(
       return null;
     }
 
-    // Settle on-chain as relayer (agent wallet)
+    // Settle on-chain as relayer (agent wallet) — nonce-safe retries because
+    // the monitor loop shares this wallet (learned in Batch 2).
     const signer = new ethers.Wallet(config.AGENT_PRIVATE_KEY, provider);
     const writer = token.connect(signer) as ethers.Contract;
-    const tx = await writer.transferWithAuthorization(
-      fields.from,
-      TREASURY,
-      expected,
-      fields.validAfter,
-      fields.validBefore,
-      fields.nonce,
-      fields.v,
-      fields.r,
-      fields.s,
-    );
-    const receipt = await tx.wait();
-    if (!receipt || receipt.status !== 1) {
-      logger.warn({ event: "x402_settle_reverted", txHash: tx.hash }, "Payment settlement reverted");
+    let receipt: ethers.TransactionReceipt | null = null;
+    let lastErr: unknown = null;
+    for (let attempt = 0; attempt < 6 && !receipt; attempt++) {
+      try {
+        const tx = await writer.transferWithAuthorization(
+          fields.from,
+          TREASURY,
+          expected,
+          fields.validAfter,
+          fields.validBefore,
+          fields.nonce,
+          fields.v,
+          fields.r,
+          fields.s,
+        );
+        receipt = await tx.wait();
+        if (!receipt) throw new Error("settlement not confirmed");
+      } catch (err) {
+        lastErr = err;
+        const msg = (err as Error).message ?? "";
+        if (
+          msg.includes("NONCE_EXPIRED") || msg.includes("nonce too low") ||
+          msg.includes("nonce has already been used") || msg.includes("REPLACEMENT_UNDERPRICED")
+        ) {
+          logger.warn({ event: "x402_settle_retry", attempt, err: msg.slice(0, 100) });
+          await new Promise(r => setTimeout(r, 4000));
+          continue;
+        }
+        throw err;
+      }
+    }
+    if (!receipt) throw new Error(`settlement failed: ${String(lastErr).slice(0, 120)}`);
+    if (receipt.status !== 1) {
+      logger.warn({ event: "x402_settle_reverted", txHash: receipt.hash }, "Payment settlement reverted");
       return null;
     }
 

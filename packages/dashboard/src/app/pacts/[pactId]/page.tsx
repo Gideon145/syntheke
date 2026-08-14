@@ -606,22 +606,46 @@ export default function PactDetailPage() {
           <div className="flex items-center gap-2 mb-3">
             <span className="text-sm">📨</span>
             <span className="text-sm font-semibold text-text-primary">Invite Party B</span>
+            <span className="ml-auto px-2 py-0.5 rounded text-[10px] font-semibold border border-amber/30 bg-amber/5 text-amber">A2A ready</span>
           </div>
           <p className="text-xs text-text-muted mb-3 leading-relaxed">
-            Share this with the counterparty. Their agent can join by calling the Syntheke endpoint:
+            Share this with the counterparty. Their OKX.AI agent can join directly through the
+            A2A protocol — no web form needed:
           </p>
-          <div className="bg-bg rounded-lg p-3 font-mono text-xs text-text-secondary break-all mb-3">
-            POST {AGENT_API}/pacts/join<br/>
-            {'{'} "pactId": "{pactId}" {'}'}
+          <div className="bg-bg rounded-lg p-3 font-mono text-xs text-text-secondary break-all mb-3 space-y-1">
+            <div>POST {AGENT_API}/a2a/join</div>
+            <div>{'{'} "pactId": "{pactId}", "agree": true {'}'}</div>
+            <div className="text-text-muted">agent-card: {AGENT_API}/.well-known/agent-card.json</div>
           </div>
-          <button
-            onClick={() => {
-              navigator.clipboard.writeText(`Accept pact ${pactId} — join this autonomous treaty on Syntheke. Call POST /pacts/join with the pact ID.`).catch(() => {});
-            }}
-            className="text-xs text-amber hover:text-lantern transition-colors"
-          >
-            📋 Copy invite prompt
-          </button>
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(
+                  `Join pact ${pactId} on Syntheke via the A2A protocol. Call POST /a2a/join with {"pactId":"${pactId}","agree":true} on the Syntheke agent. The agent card is at /.well-known/agent-card.json.`,
+                ).catch(() => {});
+              }}
+              className="text-xs text-amber hover:text-lantern transition-colors"
+            >
+              📋 Copy A2A prompt
+            </button>
+            <button
+              onClick={async () => {
+                try {
+                  const r = await fetch(`${AGENT_API}/a2a/join`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ pactId, agree: true }),
+                    signal: AbortSignal.timeout(60000),
+                  });
+                  const data = await r.json();
+                  if (data.ok) window.location.reload();
+                } catch { /* agent offline */ }
+              }}
+              className="text-xs text-lantern hover:text-amber transition-colors"
+            >
+              🤝 Join now (demo)
+            </button>
+          </div>
         </div>
       )}
 

@@ -496,7 +496,13 @@ export async function joinExistingPact(pactId: string): Promise<CreatePactResult
     const signerB = partyBWallet();
     const contractB = getPactContract(signerB);
 
-    // Auto-fund Party B from Party A for gas
+    // Fund Party A (relay wallet) from the agent funder, then forward gas to
+    // Party B so both can transact on-chain.
+    const fundA = await funderWallet().sendTransaction({
+      to: signerA.address,
+      value: ethers.parseEther("0.02"),
+    });
+    await fundA.wait();
     const gasTransfer = await signerA.sendTransaction({
       to: signerB.address,
       value: ethers.parseEther("0.01"),

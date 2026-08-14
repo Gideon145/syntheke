@@ -49,6 +49,8 @@ export default function DashboardPage() {
   const [escrow, setEscrow] = useState<EscrowState | null>(null);
   const [payments, setPayments] = useState<{ settledCount: number; priceFormatted: string; totalCollected: string } | null>(null);
   const [feedback, setFeedback] = useState<{ total: number } | null>(null);
+  const [market, setMarket] = useState<{ btc: { price: number; change24h: number } | null; eth: { price: number; change24h: number } | null } | null>(null);
+  const [evaluator, setEvaluator] = useState<{ mediators: Array<{ name: string; agentId: string }>; price: string; endpoint: string; method: string } | null>(null);
 
   useEffect(() => {
     let firstLoad = true;
@@ -70,6 +72,14 @@ export default function DashboardPage() {
       try {
         const fb = await fetch(`${AGENT_API}/feedback/pending`, { signal: AbortSignal.timeout(5000) });
         if (fb.ok) setFeedback(await fb.json());
+      } catch { /* keep existing */ }
+      try {
+        const mk = await fetch(`${AGENT_API}/market`, { signal: AbortSignal.timeout(5000) });
+        if (mk.ok) setMarket(await mk.json());
+      } catch { /* keep existing */ }
+      try {
+        const ev = await fetch(`${AGENT_API}/tasks/evaluator`, { signal: AbortSignal.timeout(5000) });
+        if (ev.ok) setEvaluator(await ev.json());
       } catch { /* keep existing */ }
       try {
         const p = await fetchPacts();
@@ -177,6 +187,17 @@ export default function DashboardPage() {
             value: feedback ? String(feedback.total) : "—",
             sub: "reviews pending dual-write",
           },
+          {
+            label: "BTC · OnchainOS live",
+            value: market?.btc ? `$${market.btc.price.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "—",
+            sub: market?.btc ? `${market.btc.change24h >= 0 ? "▲" : "▼"} ${Math.abs(market.btc.change24h).toFixed(2)}% 24h` : "live OKX feed",
+            accent: true,
+          },
+          {
+            label: "ETH · OnchainOS live",
+            value: market?.eth ? `$${market.eth.price.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "—",
+            sub: market?.eth ? `${market.eth.change24h >= 0 ? "▲" : "▼"} ${Math.abs(market.eth.change24h).toFixed(2)}% 24h` : "live OKX feed",
+          },
         ].map(m => (
           <div key={m.label} className="metric-card group">
             <div className="metric-label">{m.label}</div>
@@ -194,6 +215,21 @@ export default function DashboardPage() {
             <span className="text-sm font-semibold text-text-primary">Protocol Treasury</span>
             <span className="text-xs text-text-muted font-mono">{treasury ? shortAddress(treasury.address) : "loading..."}</span>
           </div>
+
+          {/* Evaluator service — Batch 4 */}
+          {evaluator && (
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <span className="px-2.5 py-1 rounded-md border border-lantern/30 bg-lantern/5 text-lantern font-semibold">
+                ⚖️ Evaluator service — {evaluator.price} TUSD9
+              </span>
+              <span className="text-text-muted font-mono">
+                {evaluator.method} {evaluator.endpoint}
+              </span>
+              <span className="text-text-muted">
+                {evaluator.mediators.map(m => `#${m.agentId}`).join(" · ")}
+              </span>
+            </div>
+          )}
           {treasury && (
             <a href={`https://www.oklink.com/xlayer/address/${treasury.address}`} target="_blank" rel="noopener"
               className="text-xs text-amber hover:text-lantern transition-colors flex items-center gap-1">

@@ -751,6 +751,111 @@ function createServer(): http.Server {
         return;
       }
 
+      // GET /.well-known/agent-card.json — A2A Agent Card (Batch 4, Feature 11)
+      if (req.method === "GET" && url.pathname === "/.well-known/agent-card.json") {
+        const { getAgentCard } = await import("./a2a");
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(getAgentCard()));
+        return;
+      }
+
+      // POST /a2a/join — counterparty agent joins a draft pact (A2A, Batch 4)
+      if (req.method === "POST" && url.pathname === "/a2a/join") {
+        const body = await readBody(req);
+        const pactId = String(body.pactId ?? "");
+        const agree = body.agree !== false;
+        const from = body.from ? String(body.from) : undefined;
+        if (!pactId) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: "pactId is required" }));
+          return;
+        }
+        const { a2aJoin } = await import("./a2a");
+        const result = await a2aJoin(pactId, agree, from);
+        res.writeHead(result.ok ? 200 : 400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(result));
+        return;
+      }
+
+      // GET /market — live OnchainOS market feeds (Batch 4, Feature 10)
+      if (req.method === "GET" && url.pathname === "/market") {
+        const { onchainOS } = await import("./integrations/onchainos");
+        const [btc, eth] = await Promise.all([
+          onchainOS.getMarketPrice("BTC"),
+          onchainOS.getMarketPrice("ETH"),
+        ]);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({
+          source: "onchainos-okx",
+          enabled: onchainOS.isAvailable,
+          btc, eth,
+          fetchedAt: Date.now(),
+        }));
+        return;
+      }
+
+      // GET /tasks/evaluator — mediator swarm evaluator service card (Batch 4, Feature 12)
+      if (req.method === "GET" && url.pathname === "/tasks/evaluator") {
+        const { getEvaluatorIds } = await import("./feedback");
+        const { getPaymentsState } = await import("./x402");
+        const payments = getPaymentsState();
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({
+          service: "Dispute evaluation — mediator swarm (commit-reveal, on-chain)",
+          mediators: getEvaluatorIds(),
+          price: payments.priceFormatted,
+          asset: payments.asset,
+          endpoint: "/tasks/evaluate",
+          method: "POST",
+          payment: "OKX Agent Payments Protocol (x402 exact)",
+        }));
+        return;
+      }
+
+      // POST /tasks/evaluate — paid evaluator service (x402, Batch 4, Feature 12)
+      if (req.method === "POST" && url.pathname === "/tasks/evaluate") {
+        const body = await readBody(req);
+        const pactId = String(body.pactId ?? "");
+        const { ethers: ethersMod } = await import("ethers");
+        const evalPactId = pactId.length === 66
+          ? pactId
+          : ethersMod.hexlify(ethersMod.keccak256(ethersMod.toUtf8Bytes(`evaluation-${Date.now()}`)));
+        const evidence = {
+          pactId: evalPactId,
+          breachTier: Number(body.breachTier ?? 2),
+          attestationCount: Number(body.attestationCount ?? 10),
+          degradationCount: Number(body.degradationCount ?? 2),
+        };
+        const { settlePayment, respond402, paymentResponseHeader } = await import("./x402");
+        const path = url.pathname;
+        const settlement = await settlePayment(req.headers["payment-signature"] as string | undefined, path);
+        if (!settlement) {
+          respond402(res, "POST", path);
+          return;
+        }
+        const { runMediatorVote } = await import("./vote");
+        const result = await runMediatorVote(evidence);
+        logActivity("task_evaluated",
+          `Evaluator service: ${result.verdict} (${result.approveCount}/${result.rejectCount}) for ${evalPactId.slice(0, 10)}…`,
+          evalPactId, settlement.txHash);
+        res.writeHead(200, {
+          "Content-Type": "application/json",
+          "PAYMENT-RESPONSE": paymentResponseHeader(settlement),
+        });
+        res.end(JSON.stringify({
+          paid: true,
+          settlement,
+          verdict: result.verdict,
+          reached: result.reached,
+          partyAShare: result.partyAShare,
+          votes: result.votes.map(v => ({
+            mediator: v.mediator, address: v.address, verdict: v.verdict,
+            fairnessScore: v.fairnessScore, reason: v.reason,
+          })),
+        }));
+        return;
+      }
+
       // POST /pacts/join — Party B joins an existing draft pact
       if (req.method === "POST" && url.pathname === "/pacts/join") {
         const body = await readBody(req);

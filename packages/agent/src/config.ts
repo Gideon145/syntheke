@@ -45,7 +45,7 @@ const configSchema = z.object({
 
   // Oracles
   PYTH_ENDPOINT: z.string().default("https://hermes.pyth.network"),
-  ONCHAINOS_ENABLED: z.coerce.boolean().default(false),
+  ONCHAINOS_ENABLED: z.coerce.boolean().default(true),
 
   // AI (Phase 3) — dual-model swarm: Claude (Themis) + DeepSeek (Athena/Solon)
   AI_API_KEY: z.string().optional(),
@@ -60,6 +60,7 @@ const configSchema = z.object({
 
   // Server
   PORT: z.coerce.number().default(3002),
+  AGENT_PUBLIC_URL: z.string().optional(),
   DEMO_MODE: z.coerce.boolean().default(false),
 });
 

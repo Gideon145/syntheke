@@ -3,7 +3,7 @@ import { ethers } from "ethers";
 import { config } from "./config";
 import { getProvider } from "./pact";
 import { onchainOS } from "./integrations/onchainos";
-import type { ConditionResult, ConditionBit } from "./conditions";
+import { ConditionBit, type ConditionResult } from "./conditions";
 
 /**
  * Oracle Data Source Layer
@@ -243,6 +243,17 @@ export async function collectConditions(
     if (enabledConditions & (1n << BigInt(bit))) {
       // Demo degradation: soft conditions 4 + 8 report failing
       const degradingNow = degrade && (bit === 4 || bit === 8);
+
+      // Live OnchainOS market feeds (Batch 4, Feature 10) — real price data
+      // for the oracle-stability (8) and liquidity (9) conditions.
+      if (!degradingNow && (bit === 8 || bit === 9)) {
+        const live = await evaluateLiveMarketCondition(bit as ConditionBit);
+        if (live) {
+          results.push(live);
+          continue;
+        }
+      }
+
       results.push({
         bit: bit as ConditionBit,
         healthy: degradingNow ? false : true, // Graceful: data unavailable ≠ condition failed
@@ -255,6 +266,50 @@ export async function collectConditions(
   }
 
   return results;
+}
+
+/**
+ * Evaluate oracle-stability and liquidity conditions against live OnchainOS
+ * (OKX market API) data. Returns null when the feed is unreachable — the
+ * caller then falls back to the graceful default.
+ */
+async function evaluateLiveMarketCondition(bit: ConditionBit): Promise<ConditionResult | null> {
+  try {
+    const [btc, eth] = await Promise.all([
+      onchainOS.getMarketPrice("BTC"),
+      onchainOS.getMarketPrice("ETH"),
+    ]);
+
+    if (bit === ConditionBit.ORACLE_STABLE) {
+      if (!btc || !eth) return null;
+      const fresh = Date.now() - btc.timestamp < 120_000; // data newer than 2 min
+      return {
+        bit,
+        healthy: fresh,
+        detail: fresh
+          ? `Oracle stable: BTC $${btc.price.toLocaleString()} · ETH $${eth.price.toLocaleString()} (OnchainOS/OKX live)`
+          : `Oracle stale: last update ${Math.round((Date.now() - btc.timestamp) / 1000)}s ago`,
+        sourceData: { btc, eth, source: "onchainos-okx" },
+      };
+    }
+
+    if (bit === ConditionBit.LIQUIDITY_ADEQUATE) {
+      if (!btc) return null;
+      const volumeUsd = btc.volume24h * btc.price; // OKX vol24h is in base units
+      const adequate = volumeUsd > 10_000_000; // > $10M 24h volume = healthy market
+      return {
+        bit,
+        healthy: adequate,
+        detail: adequate
+          ? `Liquidity adequate: BTC 24h volume ≈ $${Math.round(volumeUsd).toLocaleString()} (OnchainOS/OKX live)`
+          : `Liquidity thin: BTC 24h volume ≈ $${Math.round(volumeUsd).toLocaleString()}`,
+        sourceData: { btc, source: "onchainos-okx" },
+      };
+    }
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 function getConditionName(bit: number): string {
