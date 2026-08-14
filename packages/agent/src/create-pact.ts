@@ -48,6 +48,57 @@ export function getPactSubject(pactId: string): PactSubject | null {
   return pactSubjects.get(pactId) ?? null;
 }
 
+/**
+ * Register a pact's subject in memory and persist to Postgres so it
+ * survives agent restarts (subject is derived once at creation time).
+ */
+export function registerPactSubject(pactId: string, subject: PactSubject, persist = true): void {
+  pactSubjects.set(pactId, subject);
+  if (persist) {
+    try {
+      void import("./db").then(({ savePactSubject }) => savePactSubject(pactId, subject));
+    } catch { /* db unavailable */ }
+  }
+}
+
+/**
+ * Restore subject metadata at boot. Seeds the in-memory map from Postgres,
+ * then backfills any pact that exists in negotiations/contracts but has no
+ * subject row yet — deriving from its plain-English contract text.
+ */
+export async function restorePactSubjects(): Promise<void> {
+  try {
+    const db = await import("./db");
+    const rows = await db.loadPactSubjects();
+    for (const [pactId, subject] of rows) {
+      if (subject === "dex" || subject === "sla" || subject === "monitoring" || subject === "general") {
+        pactSubjects.set(pactId, subject as PactSubject);
+      }
+    }
+
+    // Backfill: pacts without a subject row derive one from stored prose.
+    const [negotiations, contracts] = await Promise.all([db.loadNegotiations(), db.loadContracts()]);
+    const known = new Set(rows.keys());
+    const derive = (pactId: string, text: string): void => {
+      if (!text.trim() || known.has(pactId)) return;
+      known.add(pactId);
+      const subject = detectPactSubject(text);
+      registerPactSubject(pactId, subject);
+      logger.info({ event: "pact_subject_backfilled", pactId: pactId.slice(0, 10), subject }, "Pact subject derived from stored prose");
+    };
+    for (const c of contracts) {
+      const p = c.payload as { title?: string; summary?: string; sections?: Array<{ heading?: string }> };
+      derive(c.pact_id, [p?.title ?? "", p?.summary ?? "", ...(p?.sections ?? []).map(s => s.heading ?? "")].join(" "));
+    }
+    for (const n of negotiations) {
+      const p = n.payload as { partyAPersona?: string; partyBPersona?: string };
+      derive(n.pact_id, [p?.partyAPersona ?? "", p?.partyBPersona ?? ""].join(" "));
+    }
+  } catch (err) {
+    logger.warn({ event: "pact_subject_restore_failed", err }, "Subject restore failed — memory-only");
+  }
+}
+
 export const SUBJECT_LABELS: Record<PactSubject, string> = {
   dex: "📈 DEX treaty",
   sla: "🛡 SLA treaty",
@@ -298,7 +349,7 @@ export async function createPactFromNL(input: CreatePactInput): Promise<CreatePa
 
     // Treaty subject metadata (Batch 5, Feature 14)
     const subject = detectPactSubject(description);
-    pactSubjects.set(pactId, subject);
+    registerPactSubject(pactId, subject);
     if (subject === "dex") {
       logger.info({ event: "dex_subject_pact", pactId: pactId.slice(0, 10) }, "📈 DEX-subject treaty — live price/liquidity conditions enabled");
     }

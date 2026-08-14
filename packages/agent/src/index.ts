@@ -973,6 +973,10 @@ async function restorePersistedState(): Promise<void> {
       for (const c of contracts) storeContract(c.payload as Parameters<typeof storeContract>[0]);
     }
 
+    // Restore + backfill treaty subject metadata (Batch 5, Feature 14)
+    const { restorePactSubjects } = await import("./create-pact");
+    await restorePactSubjects();
+
     logger.info({
       event: "state_restored",
       activity: activity.length,

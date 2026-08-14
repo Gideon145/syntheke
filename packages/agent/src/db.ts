@@ -102,6 +102,10 @@ export async function initDb(): Promise<void> {
       pact_id TEXT PRIMARY KEY,
       name TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS syntheke_pact_subjects (
+      pact_id TEXT PRIMARY KEY,
+      subject TEXT NOT NULL
+    );
     CREATE TABLE IF NOT EXISTS syntheke_feedback_queue (
       id BIGSERIAL PRIMARY KEY,
       pact_id TEXT NOT NULL,
@@ -197,6 +201,23 @@ export function savePactName(pactId: string, name: string): void {
 export async function loadPactNames(): Promise<Map<string, string>> {
   const rows = await queryRows<{ pact_id: string; name: string }>(`SELECT pact_id, name FROM syntheke_pact_names`);
   return new Map(rows.map(r => [r.pact_id, r.name]));
+}
+
+// ──── Pact subjects (Batch 5 — DEX/SLA/monitoring treaty metadata) ──
+
+export function savePactSubject(pactId: string, subject: string): void {
+  void query(
+    `INSERT INTO syntheke_pact_subjects (pact_id, subject) VALUES ($1, $2)
+     ON CONFLICT (pact_id) DO UPDATE SET subject = EXCLUDED.subject`,
+    [pactId, subject],
+  );
+}
+
+export async function loadPactSubjects(): Promise<Map<string, string>> {
+  const rows = await queryRows<{ pact_id: string; subject: string }>(
+    `SELECT pact_id, subject FROM syntheke_pact_subjects`,
+  );
+  return new Map(rows.map(r => [r.pact_id, r.subject]));
 }
 
 // ──── Feedback queue (Batch 2 — ERC-8004 dual-write) ──────
