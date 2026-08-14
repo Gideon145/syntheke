@@ -22,14 +22,15 @@
 
 Syntheke is a treaty protocol for the agent economy: an agent describes a deal in natural language, two rival models negotiate it live, and the result becomes a 15-state on-chain pact — escrowed, monitored every 15 seconds, arbitrated by three staked mediators when breached, and settled with portable reputation. AI where judgement is needed; X Layer where enforcement is needed.
 
-| **1 live pact** | **3 mediator agents** | **15 pact states** | **2 settlements paid** | **3 x402 payments** | **500 TestUSDC escrowed** | **48/48 tests** |
+| **52 treaties formed** | **3 mediator agents** | **15 pact states** | **2 settlements paid** | **3 x402 payments** | **500 TestUSDC escrowed** | **48/48 tests** |
 |---|---|---|---|---|---|---|
 
 ### At a glance — every number verifiable on-chain
 
 | Metric | Verified value | Where |
 |---|---|---|
-| Pacts (SynthekeContract v2) | 1 — ACTIVE (~102 attestations at time of writing; 51 dev pacts on the v1 contract) | on-chain |
+| Treaties formed (all-time) | 52 — 1 live on v2 · 51 on the v1 contract (`0xe4654…ad42`) | on-chain, both contracts |
+| Live pact (SynthekeContract v2) | 1 — ACTIVE (attestations grow every ~75 s; 51 dev pacts on the v1 contract) | on-chain |
 | AI artifacts anchored | 5 on the live pact — negotiation moves, accepted result, contract prose | `ArtifactRegistry` |
 | Escrow TVL | 500.0002 TestUSDC locked | `EscrowVaultV2.getTVL()` |
 | Settlements paid out | 2 | `EscrowVaultV2.settledCount()` |
