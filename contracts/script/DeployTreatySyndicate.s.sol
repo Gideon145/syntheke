@@ -20,7 +20,7 @@ contract DeployTreatySyndicate is Script {
         uint256 deployerKey = vm.envUint("PRIVATE_KEY");
         address reputationOracle = vm.envOr(
             "REPUTATION_ORACLE_ADDRESS",
-            address(0xfd61828f15fc98E1dcfE0dd6498AbEE6E003c1cf)
+            address(0xfD61828F15fC98E1DcfE0Dd6498Abee6e003c1Cf)
         );
 
         vm.startBroadcast(deployerKey);
