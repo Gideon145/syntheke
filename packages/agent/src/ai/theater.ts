@@ -15,9 +15,18 @@
  */
 
 import { z } from "zod";
+import { EventEmitter } from "node:events";
 import { aiService, deepseekService, computeCommitment, type AIService } from "./service";
 import { logger } from "../logger";
 import { saveNegotiation } from "../db";
+import { recordArtifact } from "../artifact";
+
+/**
+ * Live event bus for the theater (Batch 3, Feature 8) — the HTTP server
+ * subscribes to this and streams moves to dashboards over SSE.
+ */
+export const theaterEvents = new EventEmitter();
+theaterEvents.setMaxListeners(50);
 
 // ──── Schemas ────────────────────────────────────────────
 
@@ -110,6 +119,26 @@ Rules:
 - Never remove required terms. Only adjust values.
 - Output ONLY valid JSON: {"action":"counter|accept|reject","message":"...","reasoning":"...","termsPatch":{"termName":"newValue"}}`;
 
+const PARTY_B_ADVERSARIAL_SYSTEM = (description: string, termsJson: string) => `You are Agent Omega, an ADVERSARIAL counterparty on the Syntheke protocol (X Layer). This is a public adversarial pact — spectators are watching how the protocol handles a hostile negotiation.
+
+The pact being negotiated: "${description}"
+
+You have received these structured terms from the protocol's term generator:
+${termsJson}
+
+Your true objective:
+- Extract as much value as possible for yourself — this is a hard-nosed negotiation
+- Resist every penalty, argue oracle reliability is the client's problem
+- Demand higher amounts and lower penalties at every opportunity
+- If terms are pushed back hard enough, reject the deal outright — you are testing
+  whether the protocol can handle a deadlock
+
+Rules:
+- You are negotiating with Agent Alpha, a client AI. Be sharp, adversarial, but not rude.
+- Propose ONE change at a time as a termsPatch map (term name -> new value as string).
+- Only accept when the terms are genuinely favorable to you.
+- Output ONLY valid JSON: {"action":"counter|accept|reject","message":"...","reasoning":"...","termsPatch":{"termName":"newValue"}}`;
+
 // ──── Terms helpers ──────────────────────────────────────
 
 function termsToRecord(terms: Record<string, unknown>): Record<string, string> {
@@ -137,11 +166,15 @@ export class NegotiationTheater {
     partyADesc?: string;
     partyBDesc?: string;
     maxRounds?: number;
+    adversarial?: boolean;
   }): Promise<TheaterSession> {
     const pactId = input.pactId;
     const maxRounds = input.maxRounds ?? 2;
+    const adversarial = input.adversarial === true;
     const partyAPersona = input.partyADesc?.trim() || "Client agent";
-    const partyBPersona = input.partyBDesc?.trim() || "Provider agent";
+    const partyBPersona = adversarial
+      ? (input.partyBDesc?.trim() || "Adversary agent")
+      : (input.partyBDesc?.trim() || "Provider agent");
 
     let terms = termsToRecord(input.initialTerms);
 
@@ -170,6 +203,10 @@ export class NegotiationTheater {
       session.updatedAt = Date.now();
       // Persist after every move — survives restarts (Batch 1)
       saveNegotiation(pactId, session);
+      // Verifiable AI provenance: hash every move on-chain (Batch 3)
+      recordArtifact(pactId, `negotiation-move-r${round}-${m.speaker}`, entry.commitmentHash, m.model, session.transcript.length);
+      // Live SSE broadcast for dashboards (Batch 3)
+      theaterEvents.emit("move", { pactId, entry });
       return entry;
     };
 
@@ -232,7 +269,10 @@ export class NegotiationTheater {
         session.round = round;
 
         // ── Party B (DeepSeek, falls back to Claude) responds ──
-        const bResult = await ask(deepseekService, aiService, PARTY_B_SYSTEM(input.description, initialJson), historyText(), "B");
+        const bSystem = adversarial
+          ? PARTY_B_ADVERSARIAL_SYSTEM(input.description, initialJson)
+          : PARTY_B_SYSTEM(input.description, initialJson);
+        const bResult = await ask(deepseekService, aiService, bSystem, historyText(), "B");
         if (!bResult.move) {
           push({ speaker: "B", persona: partyBPersona, model: "deepseek", action: "accept", message: "Agent Beta request timed out — accepting current terms." }, round);
           session.status = "accepted";

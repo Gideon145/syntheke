@@ -82,6 +82,27 @@ export default function CreatePactPage() {
     }
   }
 
+  async function handleAdversarial() {
+    setLoading(true);
+    setError(null);
+    setResult(null);
+    try {
+      const r = await fetch(`${AGENT_API}/demo/adversarial`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+        signal: AbortSignal.timeout(90000),
+      });
+      const data: PactResult = await r.json();
+      setResult(data);
+      if (!data.success) setError(data.error ?? "Adversarial demo failed");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Network error");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   const termLabels: Record<string, string> = {
     amount: "Escrow Amount (wei)",
     settlementAsset: "Settlement Asset",
@@ -161,6 +182,27 @@ export default function CreatePactPage() {
               {ex.label}
             </button>
           ))}
+        </div>
+      </div>
+
+      {/* Adversarial public pact — Batch 3 */}
+      <div className="mb-6 p-4 rounded-xl border border-danger/25 bg-danger/[0.03]">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="text-sm font-semibold text-text-primary">⚔️ Adversarial public pact</div>
+            <p className="text-xs text-text-muted mt-1">
+              A hostile counterparty AI bargains against the protocol — watch the live negotiation
+              stream and the commit-reveal arbitration settle it on-chain.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleAdversarial}
+            disabled={loading}
+            className="px-4 py-2 rounded-lg text-sm font-semibold border border-danger/40 text-danger hover:bg-danger/10 transition-colors disabled:opacity-50"
+          >
+            {loading ? "Negotiating…" : "⚔️ Run adversarial demo"}
+          </button>
         </div>
       </div>
 

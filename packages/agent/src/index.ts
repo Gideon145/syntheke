@@ -220,6 +220,7 @@ function createServer(): http.Server {
         let enriched: Record<string, unknown> = { ...tracker, pactId };
         try {
           const { getPactContractRead } = await import("./pact");
+          const { isAdversarialPact } = await import("./create-pact");
           const contract = getPactContractRead();
           const onChain = await contract.getPactState(pactId);
           enriched = {
@@ -233,6 +234,7 @@ function createServer(): http.Server {
             activationBlock: Number(onChain.activationBlock) || Number(onChain.breachBlock) || 0,
             breachTier: Number(onChain.breachTier),
             closed: onChain.closed,
+            adversarial: isAdversarialPact(pactId),
           };
         } catch (err) {
           // Fall back to tracker-only data
@@ -667,9 +669,85 @@ function createServer(): http.Server {
           partyADesc: String(body.partyADesc ?? "Agent Alpha"),
           partyBDesc: String(body.partyBDesc ?? "Agent Beta"),
           description: String(body.description ?? ""),
+          adversarial: body.adversarial === true,
         });
         res.writeHead(result.success ? 200 : 400, { "Content-Type": "application/json" });
         res.end(JSON.stringify(result));
+        return;
+      }
+
+      // POST /demo/adversarial — adversarial public pact (Batch 3, Feature 9)
+      if (req.method === "POST" && url.pathname === "/demo/adversarial") {
+        const body = await readBody(req);
+        const { createPactFromNL } = await import("./create-pact");
+        const description = String(body.description ??
+          "Adversarial stress test: provider promises 99.9% uptime and liquidation monitoring every 60 seconds, with a 25% penalty for any breach");
+        logActivity("adversarial_demo", "⚔️ Adversarial public pact requested — hostile counterparty incoming");
+        const result = await createPactFromNL({
+          partyADesc: "Client agent (watchdog)",
+          partyBDesc: "Adversary agent",
+          description,
+          adversarial: true,
+        });
+        res.writeHead(result.success ? 200 : 400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(result));
+        return;
+      }
+
+      // GET /artifacts/:pactId — verifiable AI artifacts on-chain (Batch 3, Feature 7)
+      if (req.method === "GET" && url.pathname.startsWith("/artifacts/")) {
+        const pactId = url.pathname.slice("/artifacts/".length);
+        const { getPactArtifacts, verifyArtifactOnChain } = await import("./artifact");
+        const chain = await getPactArtifacts(pactId);
+        const checks: Array<{ kind: string; hash: string; onChain: boolean }> = [];
+        try {
+          const { getContract } = await import("./ai/contract-writer");
+          const c = getContract(pactId);
+          if (c) {
+            const v = await verifyArtifactOnChain(pactId, c.commitmentHash);
+            checks.push({ kind: `contract-v${c.version}`, hash: c.commitmentHash, onChain: v.found });
+          }
+        } catch { /* no contract */ }
+        try {
+          const { negotiationTheater } = await import("./ai/theater");
+          const s = negotiationTheater.getSession(pactId);
+          if (s) {
+            for (const t of s.transcript.slice(-6)) {
+              const v = await verifyArtifactOnChain(pactId, t.commitmentHash);
+              checks.push({ kind: "negotiation-move", hash: t.commitmentHash, onChain: v.found });
+            }
+          }
+        } catch { /* no session */ }
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ...chain, localChecks: checks, allVerified: checks.length > 0 && checks.every(c => c.onChain) }));
+        return;
+      }
+
+      // GET /theater/stream/:pactId — live SSE negotiation stream (Batch 3, Feature 8)
+      if (req.method === "GET" && url.pathname.startsWith("/theater/stream/")) {
+        const pactId = url.pathname.slice("/theater/stream/".length);
+        const { negotiationTheater, theaterEvents } = await import("./ai/theater");
+        res.writeHead(200, {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          "Connection": "keep-alive",
+          "Access-Control-Allow-Origin": "*",
+        });
+        const send = (event: string, data: unknown) => {
+          try { res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`); } catch { /* closed */ }
+        };
+        const session = negotiationTheater.getSession(pactId);
+        if (session) send("snapshot", session);
+        else send("snapshot", { pactId, status: "not-found" });
+        const onMove = (payload: { pactId: string; entry: unknown }) => {
+          if (payload.pactId === pactId) send("move", payload.entry);
+        };
+        theaterEvents.on("move", onMove);
+        const heartbeat = setInterval(() => { try { res.write(": ping\n\n"); } catch { /* closed */ } }, 15000);
+        req.on("close", () => {
+          clearInterval(heartbeat);
+          theaterEvents.off("move", onMove);
+        });
         return;
       }
 

@@ -357,6 +357,12 @@ async function handleArbitration(
     const voteSummary = voteResult.votes.map(v => `${v.mediator}:${v.verdict}`).join(",");
     const reasoningHash = ethers.keccak256(ethers.toUtf8Bytes(voteSummary));
 
+    // Verifiable AI provenance — mediation reasoning on-chain (Batch 3)
+    try {
+      const { recordArtifact } = await import("./artifact");
+      recordArtifact(pactId, "mediation-reasoning", reasoningHash, "mediator-swarm", 1);
+    } catch { /* artifacts unavailable */ }
+
     logger.info({
       event: "resolution_computed",
       pactId: pactId.slice(0, 10),

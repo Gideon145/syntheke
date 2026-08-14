@@ -15,6 +15,7 @@ interface PactDetail {
   lastAttestationBlock?: number;
   partyA?: string;
   partyB?: string;
+  adversarial?: boolean;
   error?: string;
 }
 
@@ -69,6 +70,14 @@ interface PaymentsState {
 interface FeedbackPending {
   pending: Array<{ id: number; pactId: string; party: string; score: number; okxAgentId: string | null; submitted?: boolean }>;
   total: number;
+}
+
+interface ArtifactsState {
+  address: string;
+  count: number;
+  artifacts: Array<{ hash: string; kind: string; producer: string; version: number }>;
+  localChecks: Array<{ kind: string; hash: string; onChain: boolean }>;
+  allVerified: boolean;
 }
 
 const STATE_NAMES: Record<number, string> = {
@@ -143,6 +152,8 @@ export default function PactDetailPage() {
   const [payments, setPayments] = useState<PaymentsState | null>(null);
   const [premium, setPremium] = useState<{ status: "idle" | "locked" | "unlocked"; offer?: { x402Version?: number; accepts?: Array<{ amount?: string; asset?: string; network?: string; scheme?: string }> }; data?: { attestationHistory?: unknown[]; onChain?: Record<string, unknown> } }>({ status: "idle" });
   const [feedback, setFeedback] = useState<FeedbackPending["pending"]>([]);
+  const [artifacts, setArtifacts] = useState<ArtifactsState | null>(null);
+  const [liveMoves, setLiveMoves] = useState<NegotiationTranscript["transcript"]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -196,11 +207,36 @@ export default function PactDetailPage() {
           setFeedback(data.pending?.filter(f => f.pactId === pactId) ?? []);
         }
       } catch { /* feedback unavailable */ }
+      try {
+        const r = await fetch(`${AGENT_API}/artifacts/${pactId}`, {
+          signal: AbortSignal.timeout(5000),
+        });
+        if (r.ok) setArtifacts(await r.json());
+      } catch { /* artifacts unavailable */ }
       setLoading(false);
     };
     if (pactId) load();
     const i = setInterval(load, 10000);
-    return () => clearInterval(i);
+
+    // Live SSE theater stream (Batch 3, Feature 8) — falls back to polling above
+    let es: EventSource | null = null;
+    try {
+      es = new EventSource(`${AGENT_API}/theater/stream/${pactId}`);
+      es.addEventListener("snapshot", (e) => {
+        try {
+          const data = JSON.parse((e as MessageEvent).data);
+          if (data.status && data.status !== "not-found") setNegotiation(data);
+        } catch { /* skip */ }
+      });
+      es.addEventListener("move", (e) => {
+        try {
+          const move = JSON.parse((e as MessageEvent).data);
+          setLiveMoves(prev => [...prev, move]);
+        } catch { /* skip */ }
+      });
+    } catch { es = null; }
+
+    return () => { clearInterval(i); es?.close(); };
   }, [pactId]);
 
   // x402 premium unlock — first hit returns HTTP 402 with the payment offer
@@ -254,6 +290,11 @@ export default function PactDetailPage() {
       <div className="mb-8 sm:mb-10">
         <h1 className="page-title mb-2 text-2xl sm:text-3xl">Pact Detail</h1>
         <code className="text-xs sm:text-sm text-text-muted font-mono break-all">{pactId}</code>
+        {pact.adversarial && (
+          <span className="mt-3 inline-block px-3 py-1 rounded-md text-xs font-bold border border-danger/40 bg-danger/10 text-danger">
+            ⚔️ Adversarial public pact
+          </span>
+        )}
       </div>
 
       {/* Real Escrow */}
@@ -322,6 +363,31 @@ export default function PactDetailPage() {
           )}
           <p className="text-[11px] text-text-muted mt-3">
             🔐 Commitments land before any reveal — verified on-chain, no verdict copying possible.
+          </p>
+        </div>
+      )}
+
+      {/* Verifiable AI artifacts on-chain (Batch 3, Feature 7) */}
+      {artifacts && artifacts.count > 0 && (
+        <div className="card-glow p-4 sm:p-6 mb-6 sm:mb-8 border-l-2 border-l-success">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs sm:text-sm text-text-muted uppercase tracking-wider">AI Artifacts — On-Chain Provenance</span>
+            <span className={`px-2.5 py-1 rounded-md text-xs font-semibold border ${artifacts.allVerified ? "text-success border-success/30 bg-success/5" : "text-warning border-warning/30 bg-warning/5"}`}>
+              {artifacts.allVerified ? "✓ All verified on-chain" : `◐ ${artifacts.localChecks.filter(c => c.onChain).length}/${artifacts.localChecks.length} verified`}
+            </span>
+          </div>
+          <div className="space-y-1.5">
+            {artifacts.artifacts.slice(-8).reverse().map((a, i) => (
+              <div key={i} className="flex flex-wrap items-center justify-between gap-2 p-2 rounded-lg bg-bg/60 border border-border text-xs">
+                <span className="font-mono text-text-secondary">{a.kind}</span>
+                <span className="font-mono text-text-muted truncate max-w-[40%]">#{a.hash.slice(0, 20)}…</span>
+                <span className="text-[10px] text-text-muted">{a.producer} v{a.version}</span>
+              </div>
+            ))}
+          </div>
+          <p className="text-[11px] text-text-muted mt-3">
+            🔏 Every AI output — negotiation moves, contract prose, mediation reasoning — hashed and
+            recorded in the <span className="font-mono">{artifacts.address}</span> registry. What you read is provably what the AI produced.
           </p>
         </div>
       )}
@@ -465,6 +531,26 @@ export default function PactDetailPage() {
                     <p className="text-xs text-text-muted mt-1.5 leading-relaxed border-l border-border pl-3">{m.reasoning}</p>
                   </details>
                 )}
+              </div>
+            ))}
+            {liveMoves.map((m, i) => (
+              <div key={`live-${i}`} className="px-5 py-4 border-t border-amber/20 bg-amber/[0.03]">
+                <div className="flex flex-wrap items-center gap-2 mb-2">
+                  <span className={`text-sm font-bold ${m.speaker === "A" ? "text-amber" : "text-lantern"}`}>
+                    {m.speaker === "A" ? `🧠 ${negotiation.partyAPersona}` : `🤖 ${negotiation.partyBPersona}`}
+                  </span>
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-bg border border-border text-text-muted">
+                    {m.model}
+                  </span>
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded uppercase bg-success/10 text-success animate-pulse">
+                    ● LIVE
+                  </span>
+                  <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded uppercase ${m.action === "accept" ? "bg-success/10 text-success" : m.action === "reject" ? "bg-danger/10 text-danger" : "bg-warning/10 text-warning"}`}>
+                    {m.action}
+                  </span>
+                  <span className="text-[10px] text-text-muted">round {m.round}</span>
+                </div>
+                <p className="text-sm text-text-secondary leading-relaxed">{m.message}</p>
               </div>
             ))}
           </div>

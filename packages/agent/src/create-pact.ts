@@ -21,6 +21,14 @@ interface CreatePactInput {
   partyADesc: string;
   partyBDesc: string;
   description: string;
+  adversarial?: boolean;
+}
+
+/** Pacts created in adversarial mode (public spectator matches). */
+const adversarialPacts = new Set<string>();
+
+export function isAdversarialPact(pactId: string): boolean {
+  return adversarialPacts.has(pactId);
 }
 
 interface CreatePactResult {
@@ -263,6 +271,12 @@ export async function createPactFromNL(input: CreatePactInput): Promise<CreatePa
     const pactId = draftEvent.args.pactId as string;
     logger.info({ event: "create_pact_draft_created", pactId });
 
+    // Adversarial public pact flag (Batch 3, Feature 9)
+    if (input.adversarial) {
+      adversarialPacts.add(pactId);
+      logger.info({ event: "adversarial_pact", pactId: pactId.slice(0, 10) }, "⚔️ Adversarial public pact created");
+    }
+
     // 2.4 PROTOCOL TREASURY FEE — 0.01 OKB creation fee → on-chain TreasuryVault
     let treasuryFee: { amount: string; txHash: string; totalCollected: string } | undefined;
     try {
@@ -306,9 +320,19 @@ export async function createPactFromNL(input: CreatePactInput): Promise<CreatePa
         partyADesc,
         partyBDesc,
         maxRounds: 2,
+        adversarial: input.adversarial,
       });
       termsRecord = session.finalTerms ?? termsRecord;
       terms = recordToTerms(termsRecord, terms);
+      // Verifiable AI provenance — final negotiation result on-chain (Batch 3)
+      const { recordArtifact } = await import("./artifact");
+      recordArtifact(
+        pactId,
+        `negotiation-result-${session.status}`,
+        ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify(termsRecord))),
+        "theater",
+        session.transcript.length,
+      );
       const models: Record<string, string> = {};
       for (const m of session.transcript) models[m.speaker] = m.model;
       negotiation = {

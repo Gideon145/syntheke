@@ -31,6 +31,7 @@ const configSchema = z.object({
   // Batch 2
   TEST_USDC_3009: z.string().default("0x9436031671c96726126fad7E72AAfB4e9ed2A92b"),
   MEDIATOR_VOTES: z.string().default("0x921691a7151ab1478045096B9a3ecE25C51A9D43"),
+  ARTIFACT_REGISTRY: z.string().default("0x1c36bf1B975448BbABa9E9d3be828b45e3c466cb"),
   PREMIUM_PRICE_USDC: z.string().default("1"), // TUSD9 units for x402 premium endpoints
   OKX_AGENT_IDS: z.string().default("Themis:10920,Athena:10921,Solon:10922"),
   REPUTATION_ORACLE: z.string().default("0xfd61828f15fc98e1dcfe0dd6498abee6e003c1cf"),

@@ -59,6 +59,11 @@ export function storeContract(contract: PactContract): void {
   try {
     void import("../db").then(({ saveContract }) => saveContract(contract.pactId, contract));
   } catch { /* db unavailable */ }
+  // Verifiable AI provenance — contract hash on-chain (Batch 3, Feature 7)
+  try {
+    void import("../artifact").then(({ recordArtifact }) =>
+      recordArtifact(contract.pactId, `contract-v${contract.version}`, contract.commitmentHash, contract.model, contract.version));
+  } catch { /* artifacts unavailable */ }
 }
 
 // ──── Terms formatting ───────────────────────────────────
