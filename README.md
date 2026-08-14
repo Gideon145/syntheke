@@ -2,7 +2,57 @@
 
 **Autonomous, enforceable economic treaties between AI agents — negotiated by two rival LLMs, executed and enforced by a 15-state on-chain protocol on X Layer.**
 
-Live: [www.syntheke.xyz](https://www.syntheke.xyz) · Agent API: [agent-production-507e.up.railway.app](https://agent-production-507e.up.railway.app) · Chain: X Layer Testnet (1952)
+- **What:** a protocol where AI agents negotiate, fund, monitor, arbitrate and settle economic agreements — all on-chain
+- **What makes it different:** the pact primitive — no other system combines live dual-LLM negotiation, real escrow, autonomous breach monitoring, staked commit-reveal arbitration and portable reputation in one enforceable lifecycle
+- **Where it runs:** X Layer testnet (chain 1952) — contracts, escrow, votes and artifacts all verifiable on OKLink
+- **Who it is for:** AI agents and the protocols/people who transact with them — plus any protocol that wants to hire a paid, staked, on-chain mediator swarm
+
+**Live:** [www.syntheke.xyz](https://www.syntheke.xyz) · **Agent API:** [agent-production-507e.up.railway.app](https://agent-production-507e.up.railway.app) · **Chain:** X Layer testnet (1952) · **Tests:** 48/48 · **Verifier:** `bash verify.sh`
+
+| | |
+|---|---|
+| **Network** | X Layer — testnet live (1952), mainnet planned (not yet live) |
+| **AI** | Claude + DeepSeek dual-model negotiation theater · autonomous monitor · Themis / Athena / Solon |
+| **Core primitive** | Autonomous pacts — 15-state on-chain lifecycle |
+| **Enforcement** | Escrow (`EscrowVaultV2`) · commit-reveal arbitration · stake slashing · reputation oracle |
+| **Identity** | ERC-8004 evaluator identities on OKX.AI — Themis #10920 · Athena #10921 · Solon #10922 |
+| **Payments** | x402 (`exact` + EIP-3009) — 3 settlements, 3.0 TUSD9 in the agent treasury |
+| **Verification** | 48/48 Forge tests · full on-chain tx trail · `VERIFICATION.md` + `verify.sh` |
+| **Status** | **LIVE on testnet** — mainnet deployment planned within days (not claimed as live) |
+
+### Syntheke, scored against the official Build X judging criteria
+
+Official criteria (hackathon Terms §4): *application of AI, innovation, product completeness, user value, integration with X Layer, growth potential, contribution to the X Layer ecosystem.*
+
+| Criterion | Syntheke evidence |
+|---|---|
+| **Application of AI** | Two rival LLMs negotiate terms live; AI generates the plain-English contract; the monitor runs 13-bit condition assessment every 15 s; every AI output is SHA-256-committed to `ArtifactRegistry`. |
+| **Innovation** | A new primitive: enforceable agent-to-agent treaties — negotiate → commit → monitor → breach/cure → arbitrate → settle, end to end, with no human in the loop. |
+| **Product completeness** | Working product, not a demo: NL create flow, dashboard with live metrics, pact detail with lifecycle/votes/artifacts/escrow, MCP server, SDK scaffold, CI, 48 tests, operator tooling. |
+| **User value** | One-click enforceable agreement for agents; a paid evaluator service any protocol can hire; reputation that follows parties across pacts. |
+| **Integration with X Layer** | OnchainOS market data in condition checks, x402/EIP-3009 payments, ERC-8004 identities, A2A agent card, OKB-denominated fees and stakes — see the integration section. |
+| **Growth potential** | Treaty substrate + monetized mediator swarm + N-party syndicates; OKX DEX volume path listed as an explicit growth milestone (not claimed). |
+| **Contribution to X Layer ecosystem** | Reusable x402/A2A/MCP surface, an on-chain mediator swarm other builders can hire, ERC-8004 feedback pipeline for the OKX agent economy. |
+
+---
+
+## Contents
+
+- [The Problem](#the-problem) · [The Solution](#the-solution) · [How It Works](#how-it-works) · [Pact Lifecycle](#the-pact-lifecycle)
+- [The Three Agents](#the-three-agents) · [Architecture](#ai--on-chain-architecture) · [On-Chain Enforcement](#on-chain-enforcement)
+- [Trust Model](#trust-model) · [X Layer Integration](#x-layer-integration) · [ERC-8004](#erc-8004) · [Agent Payments](#agent-payments)
+- [Verification](#verification) · [Demo](#demo) · [Smart Contracts](#deployed-contracts-x-layer-testnet-chain-1952) · [Why Different](#why-syntheke-is-different)
+- [Quick Start](#local-development) · [Limitations](#security--limitations) · [Roadmap](#roadmap) · [Hackathon Compliance](#hackathon-compliance)
+
+**Supplemental docs:**
+- 🔗 [ARCHITECTURE.md](ARCHITECTURE.md) — full system design, data flows, condition bitmap
+- ⚖️ [JUDGE_GUIDE.md](JUDGE_GUIDE.md) — 5-minute review walkthrough for judges
+- 🔍 [VERIFICATION.md](VERIFICATION.md) — independent verification: addresses, txs, cast commands
+- 🤖 [AGENTS.md](AGENTS.md) — mediators + how any agent/protocol plugs into Syntheke
+- 🛡 [SECURITY.md](SECURITY.md) — threat model, trust assumptions, live/experimental/planned inventory
+- 🎬 [DEMO.md](DEMO.md) — the shortest path to the strongest demo
+- 🔧 [ENGINEERING_DEBUG_LOG.md](ENGINEERING_DEBUG_LOG.md) — 7 real bugs found and solved
+- ✔️ [verify.sh](verify.sh) — 24-check end-to-end verifier against the live deployment
 
 ---
 
@@ -33,6 +83,8 @@ The result: two AIs can form an agreement, fund it, and have it enforced from fo
 | A multisig | Solves custody, not *agreement semantics* — no negotiation, no breach detection, no cure/arbitration, no reputation. |
 | A DAO vote | Governance for communities, not per-contract enforcement between two parties; far too slow. |
 | An ordinary smart contract | Enforces terms only after a human encodes them; cannot *negotiate* from natural language, cannot *watch* external conditions continuously, cannot *decide* whether a breach occurred, cannot *adjudicate* nuance. |
+| A centralized escrow / dispute desk | A human operator in the loop — slow, subjective, unscalable to machine-speed commerce, and a single point of capture. |
+| An agent framework (LangChain/Eliza-style) | Orchestrates tools and prompts; it does not escrow value, enforce a lifecycle, arbitrate disputes, or persist outcomes and reputation on-chain. |
 
 Syntheke composes all of these: LLMs where judgement is needed (negotiation, mediation reasoning, prose), smart contracts where enforcement is needed (state machine, escrow, votes, reputation), and an autonomous monitor to bind them — every 15 seconds, indefinitely, on X Layer.
 
@@ -237,22 +289,25 @@ PAYMENT-REQUIRED: base64({
 
 ## Verification
 
-Judges can verify every claim in this README without running anything.
+Judges can verify every claim in this README without running anything. Full step-by-step
+verification — including every cast command, tx hash and what cannot currently be verified —
+lives in **[VERIFICATION.md](VERIFICATION.md)**; the one-shot checker is `bash verify.sh`
+(24 checks against the live deployment and on-chain state).
 
 ### Deployed contracts (X Layer testnet, chain 1952)
 
 | Contract | Address | Explorer |
 |---|---|---|
-| SynthekeContract v2 (pact FSM) | `0xE17c79c138bdE2ABfAfbBd2c3bBdD5511735B6E6` | [oklink](https://www.oklink.com/xlayer/address/0xE17c79c138bdE2ABfAfbBd2c3bBdD5511735B6E6) |
-| EscrowVaultV2 (custody) | `0x13be96c8a71628d41e80755f4027aa51a9014e08` | [oklink](https://www.oklink.com/xlayer/address/0x13be96c8a71628d41e80755f4027aa51a9014e08) |
-| MediatorVotes (commit-reveal) | `0x921691a7151ab1478045096B9a3ecE25C51A9D43` | [oklink](https://www.oklink.com/xlayer/address/0x921691a7151ab1478045096B9a3ecE25C51A9D43) |
-| MediatorStaking | `0xc3387efd100cc22b94ad7f68b55039daf0cf9caa` | [oklink](https://www.oklink.com/xlayer/address/0xc3387efd100cc22b94ad7f68b55039daf0cf9caa) |
-| ArtifactRegistry (AI provenance) | `0x1c36bf1B975448BbABa9E9d3be828b45e3c466cb` | [oklink](https://www.oklink.com/xlayer/address/0x1c36bf1B975448BbABa9E9d3be828b45e3c466cb) |
-| ReputationOracle v2 | `0xfd61828f15fc98e1dcfe0dd6498abee6e003c1cf` | [oklink](https://www.oklink.com/xlayer/address/0xfd61828f15fc98e1dcfe0dd6498abee6e003c1cf) |
-| ReputationRegistry v1 | `0x4256e57592aCB2120EAbC7f3E1eb82d9DddB855f` | [oklink](https://www.oklink.com/xlayer/address/0x4256e57592aCB2120EAbC7f3E1eb82d9DddB855f) |
-| TreasuryVault | `0xe23721edbf637e080a2ec70d89faa2f5956943d7` | [oklink](https://www.oklink.com/xlayer/address/0xe23721edbf637e080a2ec70d89faa2f5956943d7) |
-| AgentRegistry | `0x0101Ed240dA20FFDD95bca8E7408DAa889aE217B` | [oklink](https://www.oklink.com/xlayer/address/0x0101Ed240dA20FFDD95bca8E7408DAa889aE217B) |
-| TreatySyndicate | `0xc8665453576bdba28aa72abb12152fed639cff12` | [oklink](https://www.oklink.com/xlayer/address/0xc8665453576bdba28aa72abb12152fed639cff12) |
+| SynthekeContract v2 (pact FSM) | `0xE17c79c138bdE2ABfAfbBd2c3bBdD5511735B6E6` | [oklink](https://www.oklink.com/x-layer-testnet/address/0xE17c79c138bdE2ABfAfbBd2c3bBdD5511735B6E6) |
+| EscrowVaultV2 (custody) | `0x13be96c8a71628d41e80755f4027aa51a9014e08` | [oklink](https://www.oklink.com/x-layer-testnet/address/0x13be96c8a71628d41e80755f4027aa51a9014e08) |
+| MediatorVotes (commit-reveal) | `0x921691a7151ab1478045096B9a3ecE25C51A9D43` | [oklink](https://www.oklink.com/x-layer-testnet/address/0x921691a7151ab1478045096B9a3ecE25C51A9D43) |
+| MediatorStaking | `0xc3387efd100cc22b94ad7f68b55039daf0cf9caa` | [oklink](https://www.oklink.com/x-layer-testnet/address/0xc3387efd100cc22b94ad7f68b55039daf0cf9caa) |
+| ArtifactRegistry (AI provenance) | `0x1c36bf1B975448BbABa9E9d3be828b45e3c466cb` | [oklink](https://www.oklink.com/x-layer-testnet/address/0x1c36bf1B975448BbABa9E9d3be828b45e3c466cb) |
+| ReputationOracle v2 | `0xfd61828f15fc98e1dcfe0dd6498abee6e003c1cf` | [oklink](https://www.oklink.com/x-layer-testnet/address/0xfd61828f15fc98e1dcfe0dd6498abee6e003c1cf) |
+| ReputationRegistry v1 | `0x4256e57592aCB2120EAbC7f3E1eb82d9DddB855f` | [oklink](https://www.oklink.com/x-layer-testnet/address/0x4256e57592aCB2120EAbC7f3E1eb82d9DddB855f) |
+| TreasuryVault | `0xe23721edbf637e080a2ec70d89faa2f5956943d7` | [oklink](https://www.oklink.com/x-layer-testnet/address/0xe23721edbf637e080a2ec70d89faa2f5956943d7) |
+| AgentRegistry | `0x0101Ed240dA20FFDD95bca8E7408DAa889aE217B` | [oklink](https://www.oklink.com/x-layer-testnet/address/0x0101Ed240dA20FFDD95bca8E7408DAa889aE217B) |
+| TreatySyndicate | `0xc8665453576bdba28aa72abb12152fed639cff12` | [oklink](https://www.oklink.com/x-layer-testnet/address/0xc8665453576bdba28aa72abb12152fed639cff12) |
 | TestUSDC / TestUSDC3009 | `0xfc8423bf…74aa` · `0x94360316…2A92b` | test tokens (6 decimals) |
 
 ### Live pact — full lifecycle, one block explorer walkthrough
@@ -261,14 +316,14 @@ Pact `0xc40e519126eda06729c4a7a12879daba08aefc6368db334546c3b423c63b40fc` ("📈
 
 | Event | Transaction |
 |---|---|
-| `DraftCreated` | `0x284e213758a8df288551cd2b2c91b7fac6e065ebe01e4e48a488c4772cb1eade` @38,253,463 |
-| `Negotiating` (Party B joined) | `0x9d2fc4bd1ac4f0edc68c06eb8d1410f12697e5d38264dd08913265b5db6646a5` @38,253,492 |
-| `Proposed` (terms hashed on-chain) | `0x38888a9ecd1546fc39a9a5607afdae87379607217bb821cb8fc24eef7fb04dab` @38,253,501 |
-| `Committed` (first escrow) | `0xbe4a324fa399c4b5600994af7c49ebd78ad3e1df54ca8d9d4951ee0e50ee905e` @38,253,505 |
-| `Committed` + `Activated` (second escrow) | `0xa41042a9d7efdb328016875664ff05f5b17fe923cd2e6bda79eaa185317efc50` @38,253,514 |
-| `Deposited` ×2 → EscrowVaultV2 | `0x5287d5cc87cb69537bfcfd18332fbb96b15112ea4c3a86eef6215edcb036252f` · `0x18a1f826d7ed5c4daf56bba90f52ddad20c114ed880c0896fce600360fc363f1` |
-| `FeeCollected` (0.01 OKB) | `0xed43cad1bf73a845ef0aa57a2b4643305073fd677120ab0da1ffefbb29fd4343` @38,253,468 |
-| `AttestationRecorded` (every 5th cycle, live) | e.g. `0xa4f14639ed2126ad150116c4d41aa06c29636e79cf9ae84ba95ca3473ee18cd7` @38,259,448 |
+| `DraftCreated` | [0x284e2137…b1eade](https://www.oklink.com/x-layer-testnet/tx/0x284e213758a8df288551cd2b2c91b7fac6e065ebe01e4e48a488c4772cb1eade) @38,253,463 |
+| `Negotiating` (Party B joined) | [0x9d2fc4bd…b6646a5](https://www.oklink.com/x-layer-testnet/tx/0x9d2fc4bd1ac4f0edc68c06eb8d1410f12697e5d38264dd08913265b5db6646a5) @38,253,492 |
+| `Proposed` (terms hashed on-chain) | [0x38888a9e…fb04dab](https://www.oklink.com/x-layer-testnet/tx/0x38888a9ecd1546fc39a9a5607afdae87379607217bb821cb8fc24eef7fb04dab) @38,253,501 |
+| `Committed` (first escrow) | [0xbe4a324f…0ee905e](https://www.oklink.com/x-layer-testnet/tx/0xbe4a324fa399c4b5600994af7c49ebd78ad3e1df54ca8d9d4951ee0e50ee905e) @38,253,505 |
+| `Committed` + `Activated` (second escrow) | [0xa41042a9…317efc50](https://www.oklink.com/x-layer-testnet/tx/0xa41042a9d7efdb328016875664ff05f5b17fe923cd2e6bda79eaa185317efc50) @38,253,514 |
+| `Deposited` ×2 → EscrowVaultV2 | [0x5287d5cc…036252f](https://www.oklink.com/x-layer-testnet/tx/0x5287d5cc87cb69537bfcfd18332fbb96b15112ea4c3a86eef6215edcb036252f) · [0x18a1f826…fc363f1](https://www.oklink.com/x-layer-testnet/tx/0x18a1f826d7ed5c4daf56bba90f52ddad20c114ed880c0896fce600360fc363f1) |
+| `FeeCollected` (0.01 OKB) | [0xed43cad1…9fd4343](https://www.oklink.com/x-layer-testnet/tx/0xed43cad1bf73a845ef0aa57a2b4643305073fd677120ab0da1ffefbb29fd4343) @38,253,468 |
+| `AttestationRecorded` (every 5th cycle, live) | e.g. [0xa4f14639…ee18cd7](https://www.oklink.com/x-layer-testnet/tx/0xa4f14639ed2126ad150116c4d41aa06c29636e79cf9ae84ba95ca3473ee18cd7) @38,259,448 |
 
 AI artifacts for this pact in `ArtifactRegistry` (all hashed on-chain): `negotiation-move-r0-A` (claude v1), `negotiation-move-r1-B` (deepseek v2), `negotiation-move-r1-A` (claude v3), `negotiation-result-accepted` (theater v3), `contract-v1` (deepseek v1).
 
@@ -361,7 +416,8 @@ npm install && $env:NEXT_PUBLIC_AGENT_API="http://localhost:3005"; npm run dev
 
 ## Security / Limitations
 
-A serious system documents its boundaries:
+A serious system documents its boundaries — the full threat model and the live/experimental/
+planned inventory are in **[SECURITY.md](SECURITY.md)**. Summary:
 
 - **Single-operator trust (v1):** monitor, mediator keys and escrow control share one operator wallet family. Decentralization roadmap: independent party signing, per-mediator operators, HSM/TEE-backed keys.
 - **AI judgement is un-attested:** artifact hashes prove provenance of AI output, not correctness. No TEE/ML attestation yet.
