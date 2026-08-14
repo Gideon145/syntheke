@@ -2,25 +2,56 @@
 
 # Syntheke
 
-**Autonomous, enforceable economic treaties between AI agents — negotiated by two rival LLMs, executed and enforced by a 15-state on-chain protocol on X Layer.**
+<p align="center">
+  <a href="https://www.syntheke.xyz"><img src="https://img.shields.io/badge/LIVE-www.syntheke.xyz-3CB878?style=for-the-badge" alt="Live"></a>
+  <a href="https://www.oklink.com/x-layer-testnet/address/0xE17c79c138bdE2ABfAfbBd2c3bBdD5511735B6E6"><img src="https://img.shields.io/badge/X_Layer-Testnet_1952-0B3B6C?style=for-the-badge" alt="X Layer"></a>
+  <a href="https://agent-production-507e.up.railway.app/health"><img src="https://img.shields.io/badge/API-health-3CB878?style=for-the-badge" alt="API health"></a>
+  <a href="https://agent-production-507e.up.railway.app/.well-known/agent-card.json"><img src="https://img.shields.io/badge/A2A-Agent_Card_v0.7.0-8B5CF6?style=for-the-badge" alt="A2A"></a>
+  <a href="https://github.com/Gideon145/syntheke/blob/master/VERIFICATION.md#5-erc-8004--okx-evaluator-identities"><img src="https://img.shields.io/badge/ERC--8004-3_mediator_IDs-6C5CE7?style=for-the-badge" alt="ERC-8004"></a>
+  <a href="https://github.com/Gideon145/syntheke"><img src="https://img.shields.io/badge/Tests-48%2F48-green?style=for-the-badge" alt="tests"></a>
+  <br>
+  <a href="https://github.com/Gideon145/syntheke/blob/master/verify.sh"><img src="https://img.shields.io/badge/Verifier-24_checks-blue?style=flat-square" alt="verifier"></a>
+  <a href="https://www.oklink.com/x-layer-testnet"><img src="https://img.shields.io/badge/Explorer-OKLink_Testnet-7eb8da?style=flat-square" alt="explorer"></a>
+  <a href="https://github.com/Gideon145/syntheke/blob/master/VERIFICATION.md"><img src="https://img.shields.io/badge/x402-EIP--3009_live-F0A030?style=flat-square" alt="x402"></a>
+  <a href="https://github.com/Gideon145/syntheke"><img src="https://img.shields.io/badge/Status-Testnet_LIVE_·_Mainnet_planned-D4AF37?style=flat-square" alt="status"></a>
+</p>
 
-- **What:** a protocol where AI agents negotiate, fund, monitor, arbitrate and settle economic agreements — all on-chain
-- **What makes it different:** the pact primitive — no other system combines live dual-LLM negotiation, real escrow, autonomous breach monitoring, staked commit-reveal arbitration and portable reputation in one enforceable lifecycle
-- **Where it runs:** X Layer testnet (chain 1952) — contracts, escrow, votes and artifacts all verifiable on OKLink
-- **Who it is for:** AI agents and the protocols/people who transact with them — plus any protocol that wants to hire a paid, staked, on-chain mediator swarm
+> **Autonomous, enforceable pacts for AI agents.** Two rival LLMs negotiate. X Layer enforces.
 
-**Live:** [www.syntheke.xyz](https://www.syntheke.xyz) · **Agent API:** [agent-production-507e.up.railway.app](https://agent-production-507e.up.railway.app) · **Chain:** X Layer testnet (1952) · **Tests:** 48/48 · **Verifier:** `bash verify.sh`
+**Live:** [www.syntheke.xyz](https://www.syntheke.xyz) · **Agent API:** [agent-production-507e.up.railway.app](https://agent-production-507e.up.railway.app) · **Demo:** [create a pact in 60 seconds](https://www.syntheke.xyz/create)
 
-| | |
-|---|---|
-| **Network** | X Layer — testnet live (1952), mainnet planned (not yet live) |
-| **AI** | Claude + DeepSeek dual-model negotiation theater · autonomous monitor · Themis / Athena / Solon |
-| **Core primitive** | Autonomous pacts — 15-state on-chain lifecycle |
-| **Enforcement** | Escrow (`EscrowVaultV2`) · commit-reveal arbitration · stake slashing · reputation oracle |
-| **Identity** | ERC-8004 evaluator identities on OKX.AI — Themis #10920 · Athena #10921 · Solon #10922 |
-| **Payments** | x402 (`exact` + EIP-3009) — 3 settlements, 3.0 TUSD9 in the agent treasury |
-| **Verification** | 48/48 Forge tests · full on-chain tx trail · `VERIFICATION.md` + `verify.sh` |
-| **Status** | **LIVE on testnet** — mainnet deployment planned within days (not claimed as live) |
+Syntheke is a treaty protocol for the agent economy: an agent describes a deal in natural language, two rival models negotiate it live, and the result becomes a 15-state on-chain pact — escrowed, monitored every 15 seconds, arbitrated by three staked mediators when breached, and settled with portable reputation. AI where judgement is needed; X Layer where enforcement is needed.
+
+| **1 live pact** | **3 mediator agents** | **15 pact states** | **2 settlements paid** | **3 x402 payments** | **500 TestUSDC escrowed** | **48/48 tests** |
+|---|---|---|---|---|---|---|
+
+### At a glance — every number verifiable on-chain
+
+| Metric | Verified value | Where |
+|---|---|---|
+| Pacts (SynthekeContract v2) | 1 — ACTIVE (~102 attestations at time of writing; 51 dev pacts on the v1 contract) | on-chain |
+| AI artifacts anchored | 5 on the live pact — negotiation moves, accepted result, contract prose | `ArtifactRegistry` |
+| Escrow TVL | 500.0002 TestUSDC locked | `EscrowVaultV2.getTVL()` |
+| Settlements paid out | 2 | `EscrowVaultV2.settledCount()` |
+| x402 payments | 3 settled · 3.0 TUSD9 in the agent treasury | `TestUSDC3009.balanceOf()` |
+| Protocol fees | 0.3 OKB · 30 creation fees | `TreasuryVault` |
+| Mediator identities | 3 — Themis #10920 · Athena #10921 · Solon #10922 | AGENT NFTs minted on mainnet |
+| N-party syndicates | 1 live | `TreatySyndicate` |
+| Test suite | 48/48 Forge tests | `forge test` |
+
+### The canonical use case
+
+An agent needs a service from another agent — say liquidity provision for its market-making. Today that's a chat and a promise. With Syntheke it's a pact:
+
+**Agent A hires Agent B → Claude (A) and DeepSeek (B) negotiate terms live → both lock escrow on X Layer → the pact is monitored every 15 s → a missed payment or drained pool breaches it → a cure window opens → if uncured, Themis, Athena and Solon commit-reveal a verdict on-chain → escrow is distributed and both parties' reputation updates.**
+
+The same primitive extends to API agreements, compute rental, data licensing, autonomous commerce and recurring agent subscriptions.
+
+### Judge evidence strip
+
+| LIVE DEMO | CONTRACTS | EXPLORER | PACT | VERIFICATION | DOCS |
+|---|---|---|---|---|---|
+| [syntheke.xyz](https://www.syntheke.xyz) | [VERIFICATION.md](VERIFICATION.md) | [OKLink testnet](https://www.oklink.com/x-layer-testnet) | [live pact](https://www.syntheke.xyz/pacts/0xc40e519126eda06729c4a7a12879daba08aefc6368db334546c3b423c63b40fc) | [verify.sh](verify.sh) | [JUDGE_GUIDE.md](JUDGE_GUIDE.md) |
 
 ### Syntheke, scored against the official Build X judging criteria
 
@@ -29,7 +60,7 @@ Official criteria (hackathon Terms §4): *application of AI, innovation, product
 | Criterion | Syntheke evidence |
 |---|---|
 | **Application of AI** | Two rival LLMs negotiate terms live; AI generates the plain-English contract; the monitor runs 13-bit condition assessment every 15 s; every AI output is SHA-256-committed to `ArtifactRegistry`. |
-| **Innovation** | A new primitive: enforceable agent-to-agent treaties — negotiate → commit → monitor → breach/cure → arbitrate → settle, end to end, with no human in the loop. |
+| **Innovation** | A new primitive: enforceable agent-to-agent treaties — negotiate → commit → monitor → breach/cure → arbitrate → settle, end to end, with no human required to operate it. |
 | **Product completeness** | Working product, not a demo: NL create flow, dashboard with live metrics, pact detail with lifecycle/votes/artifacts/escrow, MCP server, SDK scaffold, CI, 48 tests, operator tooling. |
 | **User value** | One-click enforceable agreement for agents; a paid evaluator service any protocol can hire; reputation that follows parties across pacts. |
 | **Integration with X Layer** | OnchainOS market data in condition checks, x402/EIP-3009 payments, ERC-8004 identities, A2A agent card, OKB-denominated fees and stakes — see the integration section. |
@@ -88,7 +119,7 @@ Syntheke turns agent agreements into **pacts**: structured, escrow-backed, on-ch
 5. **A reputation oracle** scores every party from each pact outcome, so trust compounds across agreements.
 6. **A monitor agent assesses the pact every 15 seconds** against a 13-bit condition bitmap — identity, escrow, collateral, payment, yield, oracle stability, liquidity, DEX price/liquidity targets — with live OKX market data, and attests on-chain.
 
-The result: two AIs can form an agreement, fund it, and have it enforced from formation to settlement — with zero humans in the loop and every step verifiable on a block explorer.
+The result: two AIs can form an agreement, fund it, and have it enforced from formation to settlement — with no human required in the runtime path (a trusted operator runs the monitor today, see Trust Model) — and every step verifiable on a block explorer.
 
 ## Why Syntheke Is Different
 
@@ -237,7 +268,7 @@ flowchart TB
   POSTGRES[(Postgres\nactivity · sessions · feedback)] --- SYN
 ```
 
-All state, escrow, votes, reputation and artifacts live on **X Layer** — the off-chain layer only *decides and explains*; the chain *holds and enforces*.
+All economic state and enforcement — escrow, votes, reputation, fees, artifacts — live on **X Layer**. The off-chain runtime only *decides and explains* (AI reasoning, monitoring judgements, prose); session history and AI transcripts are persisted in Postgres. The chain *holds and enforces*.
 
 ## Why Three Agents?
 
@@ -258,6 +289,8 @@ We state exactly what is trusted and what is verified — a protocol that hides 
 
 **Verified on-chain (trustless):**
 - Every state transition, escrow deposit, settlement, vote, fee, artifact hash and reputation update is a transaction on X Layer testnet that anyone can inspect.
+
+**How AI connects to the chain:** LLM reasoning → SHA-256 commitment recorded on-chain (`ArtifactRegistry`) → deterministic on-chain verification and enforcement (state machine, votes, escrow). The chain never executes LLM output; it verifies commitments and enforces transitions.
 
 **Explicitly NOT trustless:**
 - AI judgement itself. Artifact hashes prove *what the AI produced*, not that it was right. There is no TEE/HSM attestation of model execution in this version. (`signer.ts` documents the HSM/TEE path as future work.)
