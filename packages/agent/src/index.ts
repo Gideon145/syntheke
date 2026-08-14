@@ -899,6 +899,83 @@ function createServer(): http.Server {
         return;
       }
 
+      // POST /services/arbitrate — free marketplace arbitration (OKX.AI ASP service).
+      // Same 3-mediator commit-reveal vote as /tasks/evaluate, without the x402 gate.
+      if (req.method === "POST" && url.pathname === "/services/arbitrate") {
+        const body = await readBody(req);
+        const pactId = String(body.pactId ?? "");
+        if (!pactId || pactId.length !== 66) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "pactId is required (66-char bytes32 hex)" }));
+          return;
+        }
+        const evidence = {
+          pactId,
+          breachTier: Number(body.breachTier ?? 2),
+          attestationCount: Number(body.attestationCount ?? 0),
+          degradationCount: Number(body.degradationCount ?? 0),
+        };
+        try {
+          const { runMediatorVote } = await import("./vote");
+          const result = await runMediatorVote(evidence);
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({
+            verdict: result.verdict,
+            reached: result.reached,
+            partyAShare: result.partyAShare,
+            votes: result.votes.map(v => ({
+              mediator: v.mediator, address: v.address, verdict: v.verdict,
+              fairnessScore: v.fairnessScore, reason: v.reason,
+            })),
+          }));
+        } catch (err) {
+          res.writeHead(500, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: err instanceof Error ? err.message : "arbitration failed" }));
+        }
+        return;
+      }
+
+      // POST /services/assess — free marketplace pact health assessment (OKX.AI ASP service).
+      if (req.method === "POST" && url.pathname === "/services/assess") {
+        const body = await readBody(req);
+        const pactId = String(body.pactId ?? "");
+        if (!pactId || pactId.length !== 66) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "pactId is required (66-char bytes32 hex)" }));
+          return;
+        }
+        try {
+          const { getPactContractRead } = await import("./pact");
+          const { getPactSubject, SUBJECT_LABELS } = await import("./create-pact");
+          const onChain = await getPactContractRead().getPactState(pactId);
+          const subject = getPactSubject(pactId) ?? "general";
+          const STATE_NAMES = [
+            "DRAFT", "NEGOTIATING", "PROPOSED", "COMMITTED", "ACTIVE", "DEGRADING",
+            "RENEGOTIATING", "BREACHED", "CURING", "ARBITRATING", "RESOLVING",
+            "SETTLING", "CLOSED", "EXPIRED", "TERMINATED",
+          ];
+          const TIER_NAMES = ["NONE", "MINOR", "MATERIAL", "FUNDAMENTAL", "CATASTROPHIC"];
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({
+            pactId,
+            state: STATE_NAMES[Number(onChain.state)] ?? String(onChain.state),
+            stateId: Number(onChain.state),
+            attestationCount: Number(onChain.attestationCount),
+            degradationCount: Number(onChain.consecutiveDegradation),
+            breachTier: TIER_NAMES[Number(onChain.breachTier)] ?? String(onChain.breachTier),
+            subject,
+            subjectLabel: SUBJECT_LABELS[subject as keyof typeof SUBJECT_LABELS],
+            partyA: onChain.partyA,
+            partyB: onChain.partyB,
+            closed: onChain.closed,
+          }));
+        } catch (err) {
+          res.writeHead(500, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: err instanceof Error ? err.message : "assessment failed" }));
+        }
+        return;
+      }
+
       // POST /pacts/join — Party B joins an existing draft pact
       if (req.method === "POST" && url.pathname === "/pacts/join") {
         const body = await readBody(req);
