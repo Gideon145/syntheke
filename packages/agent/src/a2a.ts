@@ -1,9 +1,9 @@
 /**
- * a2a.ts — A2A interoperability (Batch 4, Feature 11)
+ * a2a.ts - A2A interoperability (Batch 4, Feature 11)
  *
  * Syntheke speaks the Agent-to-Agent protocol: an A2A Agent Card advertises
  * its skills to the OKX.AI marketplace, and a minimal A2A message endpoint
- * lets counterparty agents join drafts directly — no web form, just agents
+ * lets counterparty agents join drafts directly - no web form, just agents
  * talking to agents.
  */
 
@@ -16,11 +16,14 @@ export const AGENT_CARD_VERSION = "0.7.0";
 
 /** A2A Agent Card (spec-compatible shape for the OKX.AI marketplace). */
 export function getAgentCard(): Record<string, unknown> {
-  const publicUrl = config.AGENT_PUBLIC_URL || `http://localhost:${config.PORT}`;
+  const defaultUrl = config.XLAYER_CHAIN_ID === 196
+    ? "https://agent-mainnet-production.up.railway.app"
+    : "https://agent-production-507e.up.railway.app";
+  const publicUrl = config.AGENT_PUBLIC_URL || defaultUrl;
   return {
     name: "Syntheke",
     description:
-      "Autonomous economic treaties between AI agents on X Layer — natural-language pact creation, live AI negotiation, 24/7 on-chain monitoring, and a staked AI mediator swarm for disputes.",
+      "Autonomous economic treaties between AI agents on X Layer: natural-language pact creation, live AI negotiation, 24/7 on-chain monitoring, and a staked AI mediator swarm for disputes.",
     url: publicUrl,
     version: AGENT_CARD_VERSION,
     capabilities: {
@@ -45,19 +48,19 @@ export function getAgentCard(): Record<string, unknown> {
         name: "Pact join",
         description: "Join an existing draft pact as the counterparty. POST the pact id to /a2a/join.",
         tags: ["treaty", "counterparty"],
-        examples: ["Join pact 0x… and accept the proposed terms"],
+        examples: ["Join pact 0x1234... and accept the proposed terms"],
       },
       {
         id: "mediation",
         name: "AI mediation",
-        description: "The staked mediator swarm (Themis · Athena · Solon) resolves breaches with on-chain commit-reveal votes and escrow settlement.",
+        description: "The staked mediator swarm (Themis, Athena, and Solon) resolves breaches with on-chain commit-reveal votes and escrow settlement.",
         tags: ["dispute", "arbitration"],
         examples: ["Mediate a breached pact and split escrow fairly"],
       },
       {
         id: "monitoring",
         name: "Autonomous monitoring",
-        description: "Every pact is monitored on-chain every 15 seconds — attestations, degradation tracking, and automatic escalation.",
+        description: "Every pact is monitored on-chain every 15 seconds: attestations, degradation tracking, and automatic escalation.",
         tags: ["oracle", "attestation"],
       },
       {
@@ -97,7 +100,7 @@ export async function a2aJoin(pactId: string, agree: boolean, from?: string): Pr
   try {
     const { joinExistingPact } = await import("./create-pact");
     const result = await joinExistingPact(pactId);
-    logActivity("a2a_join", `Counterparty agent ${from ?? "unknown"} joined via A2A — ${result.state ?? result.error}`, pactId);
+    logActivity("a2a_join", `Counterparty agent ${from ?? "unknown"} joined via A2A - ${result.state ?? result.error}`, pactId);
     logger.info({ event: "a2a_join", pactId: pactId.slice(0, 10), from: from ?? "unknown", ok: result.success },
       `A2A join: ${result.success ? "accepted" : "failed"}`);
     return { ok: result.success, pactId, state: result.state, error: result.error };
