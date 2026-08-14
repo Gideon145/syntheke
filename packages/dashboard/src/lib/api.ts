@@ -37,6 +37,22 @@ export async function fetchPacts(): Promise<PactSummary[]> {
   } catch { return []; }
 }
 
+export interface PactStats {
+  total: number;
+  totalAllTime: number;
+  legacy: Array<{ address: string; count: number }>;
+}
+
+/** All-time treaty totals: live (current contract) + every legacy contract. */
+export async function fetchPactStats(): Promise<PactStats | null> {
+  try {
+    const r = await fetch(`${AGENT_API}/pacts`, { signal: AbortSignal.timeout(8000) });
+    if (!r.ok) return null;
+    const d = await r.json();
+    return { total: d.total ?? 0, totalAllTime: d.totalAllTime ?? d.total ?? 0, legacy: d.legacy ?? [] };
+  } catch { return null; }
+}
+
 export async function fetchIntegrations(): Promise<Record<string, unknown> | null> {
   try {
     const r = await fetch(`${AGENT_API}/integrations`, { signal: AbortSignal.timeout(5000) });

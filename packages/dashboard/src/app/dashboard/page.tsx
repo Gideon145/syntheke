@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Shield, ExternalLink, Coins } from "lucide-react";
-import { fetchAgentStatus, fetchPacts, shortAddress, type AgentStatus, type PactSummary } from "@/lib/api";
+import { fetchAgentStatus, fetchPacts, fetchPactStats, shortAddress, type AgentStatus, type PactSummary, type PactStats } from "@/lib/api";
 
 const AGENT_API = process.env.NEXT_PUBLIC_AGENT_API ?? "http://localhost:3005";
 
@@ -43,6 +43,7 @@ interface NotificationEvent {
 export default function DashboardPage() {
   const [status, setStatus] = useState<AgentStatus | null>(null);
   const [pacts, setPacts] = useState<PactSummary[]>([]);
+  const [pactStats, setPactStats] = useState<PactStats | null>(null);
   const [activity, setActivity] = useState<ActivityEvent[]>([]);
   const [notifications, setNotifications] = useState<NotificationEvent[]>([]);
   const [treasury, setTreasury] = useState<TreasuryState | null>(null);
@@ -84,6 +85,8 @@ export default function DashboardPage() {
       try {
         const p = await fetchPacts();
         if (p.length > 0 || firstLoad) setPacts(p);
+        const ps = await fetchPactStats();
+        if (ps) setPactStats(ps);
         firstLoad = false;
       } catch { /* keep existing */ }
       try {
@@ -140,8 +143,10 @@ export default function DashboardPage() {
         {[
           {
             label: "Total Treaties",
-            value: pacts.length ? pacts.length.toLocaleString() : "—",
-            sub: "on SynthekeContract v2",
+            value: pactStats ? pactStats.totalAllTime.toLocaleString() : (pacts.length ? pacts.length.toLocaleString() : "—"),
+            sub: pactStats
+              ? `${pactStats.total} live on v2 · ${pactStats.legacy.reduce((s, l) => s + l.count, 0)} on legacy contracts`
+              : "formed on X Layer",
             accent: true,
           },
           {

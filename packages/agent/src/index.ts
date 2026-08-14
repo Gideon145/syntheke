@@ -201,12 +201,25 @@ function createServer(): http.Server {
         return;
       }
 
-      // GET /pacts — return from cache (refreshed every 30s)
+      // GET /pacts — live pacts (current contract) + all-time totals across versions
       if (req.method === "GET" && url.pathname === "/pacts") {
         // Trigger async refresh if cache is stale
         if (Date.now() - lastPactRefresh > 15_000) refreshPactCache();
+        let legacy: Array<{ address: string; count: number }> = [];
+        let totalAllTime = cachedPacts.length;
+        try {
+          const { ethers } = await import("ethers");
+          const provider = new ethers.JsonRpcProvider(config.XLAYER_RPC_URL, config.XLAYER_CHAIN_ID);
+          const abi = ["function pactCount() view returns (uint256)"];
+          for (const addr of config.LEGACY_SYNTHEKE_CONTRACTS.split(",").map(a => a.trim()).filter(Boolean)) {
+            const c = new ethers.Contract(addr, abi, provider);
+            const n = Number(await c.pactCount());
+            legacy.push({ address: addr, count: n });
+            totalAllTime += n;
+          }
+        } catch { /* keep live-only totals */ }
         res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ pacts: cachedPacts, total: cachedPacts.length }));
+        res.end(JSON.stringify({ pacts: cachedPacts, total: cachedPacts.length, totalAllTime, legacy }));
         return;
       }
 

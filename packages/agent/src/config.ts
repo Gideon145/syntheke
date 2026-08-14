@@ -21,6 +21,13 @@ const configSchema = z.object({
 
   // Syntheke contracts (Phase 1 deployed addresses)
   SYNTHEKE_CONTRACT: z.string().default("0xE17c79c138bdE2ABfAfbBd2c3bBdD5511735B6E6"),
+  /**
+   * Previous pact-contract versions (comma-separated). Pacts on these
+   * contracts still count toward all-time totals shown on the dashboard
+   * ("treaties formed"). When the protocol is redeployed again, append the
+   * old address here so the cumulative number keeps growing.
+   */
+  LEGACY_SYNTHEKE_CONTRACTS: z.string().default("0xe465405380E2E0f625028447E85917662E71ad42"),
   AGENT_REGISTRY: z.string().default("0x0101Ed240dA20FFDD95bca8E7408DAa889aE217B"),
   ESCROW_VAULT: z.string().default("0x5535cEc5D9CcBe77EBF99e33BE88dCE00047e142"),
   REPUTATION_REGISTRY: z.string().default("0x4256e57592aCB2120EAbC7f3E1eb82d9DddB855f"),
