@@ -269,6 +269,29 @@ verdict (visible on-chain and in the reputation oracle).
 
 **Deploys:** Railway `agent-production-507e.up.railway.app` (deployment `80f1f571-b2b0-4164-83fe-4319fd99b992`), Vercel `www.syntheke.xyz` (build `syntheke-fy1i7peww-ogxyz.vercel.app`). Prod verified: 402 challenge on the premium endpoint, `/payments`, `/votes` (3 commits round-complete), commit-reveal ran inside a real prod arbitration (pact `0x337ba81e…` → CLOSED with on-chain votes; feedback queued by the instance that won the settle race). Lesson logged: only ONE monitor instance may run against the same owner wallet — local dev agent must be stopped while prod is live.
 
+### Batch 3 — Verifiable AI, Live Streaming, Adversarial Mode (Aug 14 2026)
+
+**Commit:** `743aa28` — "Verifiable AI artifacts and live negotiation streaming"
+
+**Feature 7 — Verifiable AI artifacts on-chain**
+- New contract `ArtifactRegistry` → `0x1c36bf1B975448BbABa9E9d3be828b45e3c466cb` — every AI artifact hash (negotiation moves, contract prose, mediation reasoning) recorded on-chain per pact with kind/producer/version/timestamp; `verifyArtifact` checks any hash. 4 new Forge tests — suite now 43/43.
+- New module `src/artifact.ts` — nonce-safe fire-and-forget recording from the owner wallet + chain reads. Wired into: theater `push()` (every negotiation move), create-pact (negotiation-result hash), contract-writer `storeContract` (contract-vN hash), monitor arbitration (mediation-reasoning hash).
+- New endpoint `GET /artifacts/:pactId` — on-chain artifact list + local-hash verification checks (`localChecks`, `allVerified`).
+- **Verified**: adversarial pact `0xfc3192dc…` on prod — 7 artifacts (5 moves + result + mediation), `allVerified: true`.
+- Frontend: pact page "AI Artifacts — On-Chain Provenance" panel with per-artifact rows + ✓/◐ verified badge.
+
+**Feature 8 — Live SSE theater**
+- `theaterEvents` EventEmitter in theater.ts broadcasts every move; new endpoint `GET /theater/stream/:pactId` streams `snapshot` + `move` events + 15s heartbeats over Server-Sent Events.
+- **Verified**: captured 3 live `move` events in real-time while an adversarial negotiation was still in flight (curl SSE + terminal).
+- Frontend: pact page subscribes via `EventSource`, renders streamed moves with a pulsing "● LIVE" badge; falls back to 10s polling.
+
+**Feature 9 — Adversarial public pact mode**
+- Theater gained a hostile Party B persona (`PARTY_B_ADVERSARIAL_SYSTEM` — pushes value, resists penalties, rejects bad deals). `createPactFromNL({ adversarial })` threads it through; new endpoint `POST /demo/adversarial` creates a public adversarial pact (marked ⚔️ in `adversarialPacts`, surfaced via enriched `/pacts/:id`).
+- **Verified end-to-end**: pact `0x8a3e2553…` — genuinely hostile negotiation (penalty fight 25%→15%, grace-period standoff 50↔100→75 blocks) → ACTIVE → forced breach → commit-reveal arbitration → CLOSED with `mediation-reasoning` artifact recorded.
+- Frontend: create page "⚔️ Run adversarial demo" button + pact page red "⚔️ Adversarial public pact" badge.
+
+**Deploys:** Railway `4c7fb954-5e82-4c07-b714-73d5f91c3149`, Vercel `syntheke-cjhu4nhnk-ogxyz.vercel.app`. Prod verified: prod-created adversarial pact with `adversarial:true`, `allVerified:true` artifacts, SSE snapshot streaming; all panels visible on www.syntheke.xyz. Debug notes: forge-artifact ABI must be stripped to the bare array before use (same as Batch 2); Railway drops long-lived HTTP responses on /demo/adversarial — pacts still complete server-side (verify via /pacts).
+
 ---
 
 ## License
