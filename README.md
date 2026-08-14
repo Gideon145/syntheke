@@ -267,7 +267,7 @@ verdict (visible on-chain and in the reputation oracle).
 - **Verified**: closed pact queued 2 reviews (4.5/5 and 0.5/5) — visible via API + frontend "⭐ OKX marketplace feedback queued" badge.
 - Frontend: dashboard metric cards "x402 Payments" + "OKX Feedback Queue".
 
-**Deploys:** _fill after deploy_
+**Deploys:** Railway `agent-production-507e.up.railway.app` (deployment `80f1f571-b2b0-4164-83fe-4319fd99b992`), Vercel `www.syntheke.xyz` (build `syntheke-fy1i7peww-ogxyz.vercel.app`). Prod verified: 402 challenge on the premium endpoint, `/payments`, `/votes` (3 commits round-complete), commit-reveal ran inside a real prod arbitration (pact `0x337ba81e…` → CLOSED with on-chain votes; feedback queued by the instance that won the settle race). Lesson logged: only ONE monitor instance may run against the same owner wallet — local dev agent must be stopped while prod is live.
 
 ---
 
