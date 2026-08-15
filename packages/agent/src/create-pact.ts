@@ -326,7 +326,7 @@ export async function createPactFromNL(input: CreatePactInput): Promise<CreatePa
     // Fund Party A for gas + treasury fee
     await sendWithRetry(funder, null, "sendTransaction", [
       signerA.address,
-      ethers.parseEther("0.015"),
+      ethers.parseEther("0.012"),
     ], "fundPartyA");
     logger.info({ event: "create_pact_funded_party_a", partyA: signerA.address });
 
@@ -588,12 +588,12 @@ export async function joinExistingPact(pactId: string): Promise<CreatePactResult
     // Party B so both can transact on-chain.
     const fundA = await funderWallet().sendTransaction({
       to: signerA.address,
-      value: ethers.parseEther("0.02"),
+      value: ethers.parseEther("0.006"),
     });
     await fundA.wait();
     const gasTransfer = await signerA.sendTransaction({
       to: signerB.address,
-      value: ethers.parseEther("0.01"),
+      value: ethers.parseEther("0.004"),
     });
     await gasTransfer.wait();
     logger.info({ event: "join_pact_funded_party_b", partyB: signerB.address });

@@ -5,7 +5,8 @@ param()
 $ErrorActionPreference = "Stop"
 $here = "c:\Users\vergio\Dev\syntheke\packages\agent"
 
-$agentKey = (Get-Content "$here\.env.mainnet" -Raw).Trim()
+$agentKey = (Get-Content "$here\.env.mainnet" | Select-Object -First 1).Trim()
+$partyBKey = (Get-Content "$here\.env.mainnet" | Select-Object -Last 1).Trim()
 $envLines = Get-Content "$here\.env"
 function Get-EnvValue([string]$name) {
   $line = $envLines | Where-Object { $_ -like "$name=*" } | Select-Object -First 1
@@ -19,6 +20,7 @@ $vars = @(
   "LEGACY_SYNTHEKE_CONTRACTS=",
   "SERVICE_PRICE_USD=0.1",
   "AGENT_PRIVATE_KEY=$agentKey",
+  "DEMO_PARTY_B_KEY=$partyBKey",
   "THEMIS_PRIVATE_KEY=$(Get-EnvValue 'THEMIS_PRIVATE_KEY')",
   "THEMIS_ADDRESS=$(Get-EnvValue 'THEMIS_ADDRESS')",
   "ATHENA_PRIVATE_KEY=$(Get-EnvValue 'ATHENA_PRIVATE_KEY')",
@@ -32,8 +34,8 @@ $vars = @(
   "DEEPSEEK_MODEL=$(Get-EnvValue 'DEEPSEEK_MODEL')",
   "DEEPSEEK_BASE_URL=$(Get-EnvValue 'DEEPSEEK_BASE_URL')",
   "OKX_AGENT_IDS=Themis:10920,Athena:10921,Solon:10922",
-  "MONITOR_INTERVAL_SEC=60",
-  "MONITOR_ENABLED=false",
+  "MONITOR_INTERVAL_SEC=15",
+  "MONITOR_ENABLED=true",
   "MEDIATOR_STAKE_AMOUNT=0.0005"
 )
 
