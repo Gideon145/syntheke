@@ -323,10 +323,10 @@ export async function createPactFromNL(input: CreatePactInput): Promise<CreatePa
     const contractA = getPactContract(signerA);
     const funder = funderWallet();
 
-    // Fund Party A for gas + treasury fee
+    // Fund Party A for gas (treasury fee is skipped if funds are tight)
     await sendWithRetry(funder, null, "sendTransaction", [
       signerA.address,
-      ethers.parseEther("0.012"),
+      ethers.parseEther("0.002"),
     ], "fundPartyA");
     logger.info({ event: "create_pact_funded_party_a", partyA: signerA.address });
 
@@ -466,7 +466,7 @@ export async function createPactFromNL(input: CreatePactInput): Promise<CreatePa
 
     await sendWithRetry(funder, null, "sendTransaction", [
       signerB.address,
-      ethers.parseEther("0.005"),
+      ethers.parseEther("0.0015"),
     ], "fundPartyB");
     logger.info({ event: "create_pact_funded_party_b", partyB: signerB.address });
 
@@ -504,7 +504,7 @@ export async function createPactFromNL(input: CreatePactInput): Promise<CreatePa
 
     // 8. Fund & deposit Party B escrow (from agent wallet)
     const escrowAmount = terms.amount;
-    const gasAmount = ethers.parseEther("0.005");
+    const gasAmount = ethers.parseEther("0.0015");
     const fundTx = await sendWithRetry(funder, null, "sendTransaction", [signerB.address, escrowAmount + gasAmount], "fundPartyB");
     logger.info({ event: "party_b_funded", pactId, amount: ethers.formatEther(escrowAmount + gasAmount) });
     await sendWithRetry(signerB, contractB, "depositEscrow", [pactId], "depositEscrow_B");
