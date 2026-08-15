@@ -466,7 +466,7 @@ export async function createPactFromNL(input: CreatePactInput): Promise<CreatePa
 
     await sendWithRetry(funder, null, "sendTransaction", [
       signerB.address,
-      ethers.parseEther("0.01"),
+      ethers.parseEther("0.005"),
     ], "fundPartyB");
     logger.info({ event: "create_pact_funded_party_b", partyB: signerB.address });
 
