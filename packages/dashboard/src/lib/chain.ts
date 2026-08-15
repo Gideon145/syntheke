@@ -5,11 +5,15 @@
  */
 
 export function chainLabel(chainId: number | undefined | null): string {
-  return chainId === 196 ? "X Layer Mainnet" : "X Layer Testnet";
+  if (chainId === 196) return "X Layer Mainnet";
+  if (chainId === 1952) return "X Layer Testnet";
+  return "X Layer";
 }
 
 export function chainLabelShort(chainId: number | undefined | null): string {
-  return chainId === 196 ? "Mainnet" : "Testnet";
+  if (chainId === 196) return "Mainnet";
+  if (chainId === 1952) return "Testnet";
+  return "X Layer";
 }
 
 export function escrowAssetLabel(chainId: number | undefined | null): string {
