@@ -73,7 +73,7 @@ export default function Home() {
         <div className="flex-1 space-y-6 sm:space-y-8">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-lantern-glow border border-lantern-glow text-amber text-xs sm:text-sm animate-fade-in-slow animate-lantern">
             <div className="w-1.5 h-1.5 rounded-full bg-amber animate-pulse" />
-            Live on X Layer Testnet
+            Live on X Layer
           </div>
 
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-text-primary leading-[1.08] animate-fade-up">

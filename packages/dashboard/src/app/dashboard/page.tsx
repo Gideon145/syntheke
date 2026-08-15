@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Shield, ExternalLink, Coins } from "lucide-react";
 import { fetchAgentStatus, fetchPacts, fetchPactStats, shortAddress, type AgentStatus, type PactSummary, type PactStats } from "@/lib/api";
+import { escrowAssetLabel } from "@/lib/chain";
 
 const AGENT_API = process.env.NEXT_PUBLIC_AGENT_API ?? "http://localhost:3005";
 
@@ -167,7 +168,7 @@ export default function DashboardPage() {
           },
           {
             label: "Escrow TVL",
-            value: escrow ? `${escrow.tvlFormatted} TestUSDC` : "—",
+            value: escrow ? `${escrow.tvlFormatted} ${escrowAssetLabel(status?.chainId)}` : "—",
             sub: `${escrow?.settledCount ?? "—"} settlements paid out`,
             accent: true,
           },
@@ -184,7 +185,7 @@ export default function DashboardPage() {
           {
             label: "x402 Payments",
             value: payments ? String(payments.settledCount) : "—",
-            sub: `settled · ${payments?.priceFormatted ?? 1} TUSD9 access`,
+            sub: `settled · ${payments?.priceFormatted ?? 1} ${escrowAssetLabel(status?.chainId)} access`,
             accent: true,
           },
           {
@@ -225,7 +226,7 @@ export default function DashboardPage() {
           {evaluator && (
             <div className="flex flex-wrap items-center gap-2 text-xs">
               <span className="px-2.5 py-1 rounded-md border border-lantern/30 bg-lantern/5 text-lantern font-semibold">
-                ⚖️ Evaluator service — {evaluator.price} TUSD9
+                ⚖️ Evaluator service — {evaluator.price} {escrowAssetLabel(status?.chainId)}
               </span>
               <span className="text-text-muted font-mono">
                 {evaluator.method} {evaluator.endpoint}

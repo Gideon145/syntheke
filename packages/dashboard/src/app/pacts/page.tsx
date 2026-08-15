@@ -80,7 +80,7 @@ export default function PactsPage() {
         </div>
       )}
       <p className="text-xs text-text-muted mt-6 text-center">
-        Data sourced live from Syntheke agent → X Layer testnet (chain 1952)
+        Data sourced live from the Syntheke agent on X Layer
       </p>
     </div>
   );

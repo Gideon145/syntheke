@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { shortAddress } from "@/lib/api";
+import { escrowAssetLabel } from "@/lib/chain";
 
 const AGENT_API = process.env.NEXT_PUBLIC_AGENT_API ?? "http://localhost:3005";
 
@@ -157,6 +158,7 @@ export default function PactDetailPage() {
   const [artifacts, setArtifacts] = useState<ArtifactsState | null>(null);
   const [liveMoves, setLiveMoves] = useState<NegotiationTranscript["transcript"]>([]);
   const [loading, setLoading] = useState(true);
+  const [chainId, setChainId] = useState<number | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -166,6 +168,15 @@ export default function PactDetailPage() {
         });
         if (r.ok) setPact(await r.json());
       } catch { /* agent offline */ }
+      try {
+        const r = await fetch(`${AGENT_API}/status`, {
+          signal: AbortSignal.timeout(5000),
+        });
+        if (r.ok) {
+          const s = await r.json() as { chainId?: number };
+          setChainId(s.chainId ?? null);
+        }
+      } catch { /* status unavailable */ }
       try {
         const r = await fetch(`${AGENT_API}/negotiations/${pactId}`, {
           signal: AbortSignal.timeout(5000),
@@ -316,7 +327,7 @@ export default function PactDetailPage() {
           <div className="grid grid-cols-3 gap-3 text-center">
             <div className="p-3 rounded-lg bg-bg border border-border">
               <div className="text-lg font-mono text-text-primary">{escrowPos.amountAFormatted}</div>
-              <div className="text-xs text-text-muted mt-1">Party A · TestUSDC</div>
+              <div className="text-xs text-text-muted mt-1">Party A · {escrowAssetLabel(chainId)}</div>
             </div>
             <div className="p-3 rounded-lg bg-bg border border-border">
               <div className="text-lg font-mono text-amber">{escrowPos.totalFormatted}</div>
@@ -324,7 +335,7 @@ export default function PactDetailPage() {
             </div>
             <div className="p-3 rounded-lg bg-bg border border-border">
               <div className="text-lg font-mono text-text-primary">{escrowPos.amountBFormatted}</div>
-              <div className="text-xs text-text-muted mt-1">Party B · TestUSDC</div>
+              <div className="text-xs text-text-muted mt-1">Party B · {escrowAssetLabel(chainId)}</div>
             </div>
           </div>
         </div>
@@ -420,7 +431,7 @@ export default function PactDetailPage() {
               <div>scheme: <span className="text-text-primary">{premium.offer.accepts?.[0]?.scheme}</span></div>
               <div>network: <span className="text-text-primary">{premium.offer.accepts?.[0]?.network}</span></div>
               <div>asset: <span className="text-text-primary break-all">{premium.offer.accepts?.[0]?.asset}</span></div>
-              <div>price: <span className="text-amber">{payments?.priceFormatted ?? "1.0"} TUSD9</span></div>
+              <div>price: <span className="text-amber">{payments?.priceFormatted ?? "1.0"} {escrowAssetLabel(chainId)}</span></div>
             </div>
             <p className="text-[11px] text-text-muted mt-2">
               Pay with the **OKX Agent Payments Protocol** — any OKX.AI agent (or the onchainos CLI) signs the

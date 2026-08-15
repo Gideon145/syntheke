@@ -2,7 +2,21 @@
 
 import { ArrowUpRight, Shield, Activity, FileText, AlertTriangle, CheckCircle, Clock, XCircle, RefreshCw, Plus, Menu, X } from "lucide-react";
 import { STATE_COLORS, stateLabel } from "@/lib/api";
-import { useState } from "react";
+import { chainLabel, chainLabelShort } from "@/lib/chain";
+import { useEffect, useState } from "react";
+
+const AGENT_API = process.env.NEXT_PUBLIC_AGENT_API ?? "http://localhost:3005";
+
+function useChainId(): number | null {
+  const [chainId, setChainId] = useState<number | null>(null);
+  useEffect(() => {
+    fetch(`${AGENT_API}/status`, { signal: AbortSignal.timeout(5000) })
+      .then(r => (r.ok ? r.json() : null))
+      .then((s: { chainId?: number } | null) => { if (s) setChainId(s.chainId ?? null); })
+      .catch(() => { /* offline */ });
+  }, []);
+  return chainId;
+}
 
 export function StatusBadge({ state }: { state: string }) {
   const color = STATE_COLORS[state] ?? "text-text-muted";
@@ -56,6 +70,7 @@ export function PactCard({ id, state, partyA, partyB, attestations }: {
 
 export function Navbar() {
   const [open, setOpen] = useState(false);
+  const chainId = useChainId();
 
   const navLinks = [
     ["Dashboard", "/dashboard"],
@@ -94,8 +109,8 @@ export function Navbar() {
         <div className="flex items-center gap-3">
           <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-full text-xs font-medium bg-amber/5 border border-amber/10 text-amber">
             <div className="w-1.5 h-1.5 rounded-full bg-amber animate-lantern-pulse" />
-            <span className="hidden sm:inline">X Layer Testnet</span>
-            <span className="sm:hidden">Testnet</span>
+            <span className="hidden sm:inline">{chainLabel(chainId)}</span>
+            <span className="sm:hidden">{chainLabelShort(chainId)}</span>
           </div>
           {/* Hamburger */}
           <button

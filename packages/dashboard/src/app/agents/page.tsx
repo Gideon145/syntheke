@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Users, Scale, Shield, History, Lock, Award, Database, Landmark } from "lucide-react";
 import { fetchAgentStatus, shortAddress } from "@/lib/api";
+import { chainLabel } from "@/lib/chain";
 
 const AGENT_API = process.env.NEXT_PUBLIC_AGENT_API ?? "http://localhost:3005";
 
@@ -149,7 +150,7 @@ export default function AgentsPage() {
               </div>
               <div className="flex flex-col gap-1 p-3 rounded-lg bg-bg border border-border">
                 <span className="text-text-muted text-xs uppercase tracking-wider">Chain</span>
-                <span className="text-text-primary font-medium">X Layer Testnet ({chainId})</span>
+                <span className="text-text-primary font-medium">{chainLabel(chainId)} ({chainId})</span>
               </div>
               <div className="flex flex-col gap-1 p-3 rounded-lg bg-bg border border-border">
                 <span className="text-text-muted text-xs uppercase tracking-wider">Address</span>
