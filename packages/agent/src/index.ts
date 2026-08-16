@@ -63,13 +63,12 @@ let lastPactRefresh = 0;
 
 async function refreshPactCache(): Promise<void> {
   try {
-    const { getPactContractRead } = await import("./pact");
-    const contract = getPactContractRead();
-    const ids: string[] = await contract.getPactIds();
+    const { fetchAllPactIds, fetchPactState } = await import("./pact");
+    const ids = await fetchAllPactIds();
     const list: CachedPact[] = [];
     for (const id of ids) {
       try {
-        const onChain = await contract.getPactState(id);
+        const onChain = await fetchPactState(id);
         const savedName = pactNames.get(id);
         // Derive treaty number from position in the reversed list (newest = highest #)
         const treatyNum = ids.length - list.length;
@@ -205,19 +204,18 @@ function createServer(): http.Server {
       if (req.method === "GET" && url.pathname === "/pacts") {
         // Trigger async refresh if cache is stale
         if (Date.now() - lastPactRefresh > 15_000) refreshPactCache();
-        let legacy: Array<{ address: string; count: number }> = [];
-        let totalAllTime = cachedPacts.length;
+        // The cache now spans the current + legacy contracts, so it IS the all-time total.
+        const legacy: Array<{ address: string; count: number }> = [];
         try {
           const { ethers } = await import("ethers");
           const provider = new ethers.JsonRpcProvider(config.XLAYER_RPC_URL, config.XLAYER_CHAIN_ID);
           const abi = ["function pactCount() view returns (uint256)"];
           for (const addr of config.LEGACY_SYNTHEKE_CONTRACTS.split(",").map(a => a.trim()).filter(Boolean)) {
             const c = new ethers.Contract(addr, abi, provider);
-            const n = Number(await c.pactCount());
-            legacy.push({ address: addr, count: n });
-            totalAllTime += n;
+            legacy.push({ address: addr, count: Number(await c.pactCount()) });
           }
         } catch { /* keep live-only totals */ }
+        const totalAllTime = cachedPacts.length;
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ pacts: cachedPacts, total: cachedPacts.length, totalAllTime, legacy }));
         return;

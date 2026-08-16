@@ -75,6 +75,7 @@ contract SynthekeContract {
         bool partyADeposited;
         bool partyBDeposited;
         bool closed;
+        address breachingParty;
     }
 
     struct Attestation {
@@ -117,6 +118,7 @@ contract SynthekeContract {
     event Renegotiating(bytes32 indexed pactId, uint256 round);
     event Amended(bytes32 indexed pactId, bytes32 amendmentHash);
     event Breached(bytes32 indexed pactId, BreachTier tier, string reason);
+    event BreachAttributed(bytes32 indexed pactId, address indexed breachingParty);
     event Curing(bytes32 indexed pactId, uint256 deadline);
     event Arbitrating(bytes32 indexed pactId);
     event Resolved(bytes32 indexed pactId, uint256 settlementAmount);
@@ -295,13 +297,35 @@ contract SynthekeContract {
                 p.consecutiveDegradation = 0;
                 p.breachTier = BreachTier.NONE;
                 p.cureDeadline = 0;
+                p.breachingParty = address(0);
             }
         }
+    }
+
+    /// @notice Record a breach WITH attribution — the monitor names the breaching
+    ///         party, enabling the true CURING → confirmCure → ACTIVE path.
+    function recordBreach(
+        bytes32 pactId,
+        uint256 conditionBitmap,
+        string calldata reason,
+        address breachingParty
+    ) external onlyMonitor notClosed(pactId) {
+        PactData storage p = pacts[pactId];
+        require(breachingParty == p.partyA || breachingParty == p.partyB, "Invalid breaching party");
+        p.state = SynthekeState.BREACHED;
+        p.breachBlock = block.number;
+        p.breachingParty = breachingParty;
+        emit BreachAttributed(pactId, breachingParty);
+        _classifyAndEscalateBreach(pactId, conditionBitmap, reason);
     }
 
     /// @notice Classify breach severity and auto-escalate.
     function _classifyAndEscalateBreach(bytes32 pactId, uint256 bitmap, string memory reason) internal {
         PactData storage p = pacts[pactId];
+
+        // Without explicit attribution the provider (Party B) is the default
+        // breaching party — the counterparty that failed the SLA.
+        if (p.breachingParty == address(0)) p.breachingParty = p.partyB;
 
         // Tier classification based on which conditions failed
         bool identityRevoked = (bitmap & (1 << 0)) != 0;
@@ -373,15 +397,16 @@ contract SynthekeContract {
 
     // ──── CURING ───────────────────────────────────────────
 
-    /// @notice Confirm that a breach has been cured.
+    /// @notice Confirm that a breach has been cured — callable by the breaching party.
     function confirmCure(bytes32 pactId) external onlyParty(pactId) inState(pactId, SynthekeState.CURING) {
         PactData storage p = pacts[pactId];
-        if (msg.sender == _breachingParty(p)) revert NotBreachingParty();
+        if (msg.sender != _breachingParty(p)) revert NotBreachingParty();
         if (block.number > p.cureDeadline) revert CureDeadlineExceeded();
         p.state = SynthekeState.ACTIVE;
         p.breachTier = BreachTier.NONE;
         p.consecutiveDegradation = 0;
         p.cureDeadline = 0;
+        p.breachingParty = address(0);
     }
 
     /// @notice Escalate uncured breach to arbitration.
@@ -479,9 +504,7 @@ contract SynthekeContract {
     // ──── HELPERS ──────────────────────────────────────────
 
     function _breachingParty(PactData storage p) internal view returns (address) {
-        // The party that is NOT the one calling confirmCure is the breaching party.
-        // Simplified: return the counterparty. In production, this would track which party breached.
-        return address(0); // Placeholder — tracking requires breach attribution
+        return p.breachingParty;
     }
 
     // ──── ADMIN ────────────────────────────────────────────

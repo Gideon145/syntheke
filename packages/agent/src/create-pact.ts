@@ -203,10 +203,19 @@ function getPartyAProvider(): ethers.JsonRpcProvider {
   return new ethers.JsonRpcProvider(config.XLAYER_RPC_URL, config.XLAYER_CHAIN_ID);
 }
 
-// Each pact gets UNIQUE Party A and Party B wallets (funded from the agent
-// deployer wallet) — so every treaty looks like two distinct users on-chain.
-const partyAWallet = (): ethers.Wallet => new ethers.Wallet(ethers.Wallet.createRandom().privateKey, getPartyAProvider());
-const partyBWallet = (): ethers.Wallet => new ethers.Wallet(ethers.Wallet.createRandom().privateKey, getPartyAProvider());
+// Each pact gets UNIQUE Party A and Party B wallets — DERIVED deterministically
+// from a seed text (the treaty description or pactId), so counterparty keys can
+// be reconstructed later and parties can act for themselves on-chain
+// (e.g. the breaching party calling confirmCure during a cure window).
+const partyWallet = (seedBytes: string): ethers.Wallet =>
+  new ethers.Wallet(ethers.keccak256(ethers.toUtf8Bytes(seedBytes)), getPartyAProvider());
+const partyAWallet = (seedText: string): ethers.Wallet =>
+  partyWallet(`${config.AGENT_PRIVATE_KEY}:pact:${ethers.keccak256(ethers.toUtf8Bytes(seedText))}:A`);
+const partyBWallet = (seedText: string): ethers.Wallet =>
+  partyWallet(`${config.AGENT_PRIVATE_KEY}:pact:${ethers.keccak256(ethers.toUtf8Bytes(seedText))}:B`);
+
+/** pactId → derived party keys (in-process; enables party-side calls like self-heal & confirmCure). */
+export const pactPartyKeys = new Map<string, { A: string; B: string }>();
 const funderWallet = () => getSigner();
 
 /**
@@ -319,8 +328,7 @@ export async function createPactFromNL(input: CreatePactInput): Promise<CreatePa
 
     // 2. Create draft on-chain — Party A is a UNIQUE wallet per pact
     //    (funded by the agent wallet), so every treaty has 2 distinct users.
-    const signerA = partyAWallet();
-    const contractA = getPactContract(signerA);
+    const signerA = partyAWallet(description);    const contractA = getPactContract(signerA);
     const funder = funderWallet();
 
     // Fund Party A for gas + the 0.01 OKB protocol treasury creation fee,
@@ -346,6 +354,7 @@ export async function createPactFromNL(input: CreatePactInput): Promise<CreatePa
       return { success: false, error: "Failed to extract pactId from DraftCreated event" };
     }
     const pactId = draftEvent.args.pactId as string;
+    pactPartyKeys.set(pactId, { A: signerA.privateKey, B: "" });
     logger.info({ event: "create_pact_draft_created", pactId });
 
     // Treaty subject metadata (Batch 5, Feature 14)
@@ -462,7 +471,9 @@ export async function createPactFromNL(input: CreatePactInput): Promise<CreatePa
     }
 
     // 3. Fund Party B wallet from the agent wallet
-    const signerB = partyBWallet();
+    const signerB = partyBWallet(description);
+    const keys = pactPartyKeys.get(pactId);
+    if (keys) keys.B = signerB.privateKey;
     const contractB = getPactContract(signerB);
 
     await sendWithRetry(funder, null, "sendTransaction", [
@@ -581,8 +592,8 @@ export async function createPactFromNL(input: CreatePactInput): Promise<CreatePa
  */
 export async function joinExistingPact(pactId: string): Promise<CreatePactResult> {
   try {
-    const signerA = partyAWallet();
-    const signerB = partyBWallet();
+    const signerA = partyAWallet(pactId);
+    const signerB = partyBWallet(pactId);
     const contractB = getPactContract(signerB);
 
     // Fund Party A (relay wallet) from the agent funder, then forward gas to

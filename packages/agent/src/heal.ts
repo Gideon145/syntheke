@@ -46,7 +46,9 @@ export async function selfHealPact(
     const aiResult = await generateAIRenegotiation(
       currentTerms,
       degradationReason,
-      "X Layer testnet — dual-model AI monitoring (Claude + DeepSeek)",
+      config.XLAYER_CHAIN_ID === 196
+        ? "X Layer mainnet — live OKX market data feeds active"
+        : "X Layer testnet — dual-model AI monitoring (Claude + DeepSeek)",
     );
     if (aiResult.terms && aiResult.fairnessScore > 0) {
       newTerms = aiResult.terms;
@@ -71,10 +73,17 @@ export async function selfHealPact(
     return { healed: false, reason: `Amendment rejected — fairness ${fairness}/100 below threshold`, fairness };
   }
 
-  // 3. Execute on-chain: DEGRADING → RENEGOTIATING → ACTIVE
+  // 3. Execute on-chain: DEGRADING → RENEGOTIATING → ACTIVE.
+  //    Renegotiation is a party action — Party A (derived wallet) initiates
+  //    and accepts, so the treaty genuinely heals itself between its parties.
   try {
-    const { getPactContract } = await import("./pact");
-    const contract = getPactContract(signer);
+    const { getPactContractFor } = await import("./pact");
+    const { pactPartyKeys } = await import("./create-pact");
+    const partyKeys = pactPartyKeys.get(pactId);
+    const healer = partyKeys?.A
+      ? new ethers.Wallet(partyKeys.A, signer.provider)
+      : signer;
+    const contract = await getPactContractFor(pactId, healer);
 
     const tx1 = await contract.initiateRenegotiation(pactId);
     await tx1.wait();

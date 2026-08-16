@@ -41,16 +41,17 @@ export const NegotiationOutputSchema = z.object({
 export type NegotiationOutput = z.infer<typeof NegotiationOutputSchema>;
 
 // ──── Mediation Output ────────────────────────────────────
-
+// Lenient: models return verdicts like "UPHOLD_BREACH" or "BREACH_CONFIRMED";
+// mediator.ts normalizes them to approve/reject/abstain after parsing.
 export const MediationVerdictSchema = z.object({
-  verdict: z.enum(["approve", "reject", "abstain"]),
-  fairnessScore: z.number().int().min(0).max(100),
-  settlementAmount: z.string().describe("Recommended settlement in wei"),
-  partyAPayout: z.string().describe("Payout to Party A in wei"),
-  partyBPayout: z.string().describe("Payout to Party B in wei"),
-  reasoning: z.string().max(1000).describe("Detailed reasoning behind verdict"),
-  keyEvidence: z.array(z.string().max(200)).max(5),
-  confidence: z.number().min(0).max(1),
+  verdict: z.preprocess(v => String(v ?? "abstain"), z.string()),
+  fairnessScore: z.preprocess(v => (typeof v === "number" ? v : 50), z.number().int().min(0).max(100)),
+  settlementAmount: z.preprocess(v => String(v ?? "0"), z.string()),
+  partyAPayout: z.preprocess(v => String(v ?? "0"), z.string()),
+  partyBPayout: z.preprocess(v => String(v ?? "0"), z.string()),
+  reasoning: z.preprocess(v => String(v ?? ""), z.string().max(1000)),
+  keyEvidence: z.preprocess(v => (Array.isArray(v) ? v : []), z.array(z.string().max(200)).max(5)),
+  confidence: z.preprocess(v => (typeof v === "number" ? v : 0.5), z.number().min(0).max(1)),
   precedentReference: z.string().max(200).optional(),
 });
 

@@ -71,8 +71,60 @@ export function getPactContractRead(): ethers.Contract {
   return new ethers.Contract(config.SYNTHEKE_CONTRACT, ABI, getProvider());
 }
 
+/**
+ * Per-pact contract routing.
+ * New pacts live on SYNTHEKE_CONTRACT; pacts from earlier deployments live
+ * on the comma-separated LEGACY_SYNTHEKE_CONTRACTS addresses. The cache is
+ * keyed by pactId and resolved lazily, so redeploying the protocol never
+ * orphans treaty history.
+ */
+const pactOwnerCache = new Map<string, string>();
+
+export function legacyContractAddresses(): string[] {
+  return (config.LEGACY_SYNTHEKE_CONTRACTS ?? "")
+    .split(",")
+    .map(a => a.trim())
+    .filter(a => /^0x[0-9a-fA-F]{40}$/.test(a));
+}
+
+function contractAt(
+  address: string,
+  signerOrProvider: ethers.Signer | ethers.Provider,
+): ethers.Contract {
+  return new ethers.Contract(address, ABI, signerOrProvider);
+}
+
+async function resolvePactOwner(pactId: string): Promise<string> {  const cached = pactOwnerCache.get(pactId);
+  if (cached) return cached;
+  const provider = getProvider();
+  const candidates = [config.SYNTHEKE_CONTRACT, ...legacyContractAddresses()];
+  for (const addr of candidates) {
+    try {
+      const raw = await contractAt(addr, provider).getPactState(pactId);
+      if (
+        raw.partyA !== ethers.ZeroAddress ||
+        raw.partyB !== ethers.ZeroAddress ||
+        Number(raw.state) !== 0
+      ) {
+        pactOwnerCache.set(pactId, addr);
+        return addr;
+      }
+    } catch { /* pact not on this contract */ }
+  }
+  return config.SYNTHEKE_CONTRACT;
+}
+
+/** Contract instance bound to whichever deployment owns the given pact. */
+export async function getPactContractFor(
+  pactId: string,
+  signerOrProvider: ethers.Signer | ethers.Provider,
+): Promise<ethers.Contract> {
+  return contractAt(await resolvePactOwner(pactId), signerOrProvider);
+}
+
 export async function fetchPactState(pactId: string): Promise<PactData> {
-  const contract = getPactContractRead();
+  const owner = await resolvePactOwner(pactId);
+  const contract = contractAt(owner, getProvider());
   const raw = await contract.getPactState(pactId);
   return {
     state: Number(raw.state),
@@ -104,9 +156,21 @@ export async function fetchPactState(pactId: string): Promise<PactData> {
   };
 }
 
+export async function fetchAllPactIds(): Promise<string[]> {
+  const provider = getProvider();
+  const candidates = [config.SYNTHEKE_CONTRACT, ...legacyContractAddresses()];
+  const ids = new Set<string>();
+  for (const addr of candidates) {
+    try {
+      const contract = contractAt(addr, provider);
+      for (const id of await contract.getPactIds()) ids.add(id);
+    } catch { /* skip unreachable contract */ }
+  }
+  return [...ids];
+}
+
 export async function fetchActivePacts(): Promise<string[]> {
-  const contract = getPactContractRead();
-  const ids: string[] = await contract.getPactIds();
+  const ids = await fetchAllPactIds();
   const active: string[] = [];
   const zeroAddr = "0x" + "0".repeat(40);
   for (const id of ids) {
@@ -132,9 +196,30 @@ export async function recordAttestation(
   dataHash: string,
   reason: string,
 ): Promise<ethers.TransactionReceipt> {
-  const contract = getPactContract(signer);
+  const contract = contractAt(await resolvePactOwner(pactId), signer);
   const tx = await contract.recordAttestation(
     pactId, conditionBitmap, recommendedState, dataHash, reason,
+    { gasLimit: 500_000 },
+  );
+  return tx.wait();
+}
+
+/**
+ * Record a breach WITH attribution (V3+ contracts). Returns null when the
+ * owning contract predates breach attribution — the attestation alone then
+ * carries the state transition.
+ */
+export async function recordBreach(
+  signer: ethers.Wallet,
+  pactId: string,
+  conditionBitmap: bigint,
+  reason: string,
+  breachingParty: string,
+): Promise<ethers.TransactionReceipt | null> {
+  const contract = contractAt(await resolvePactOwner(pactId), signer);
+  if (!contract.interface.hasFunction("recordBreach")) return null;
+  const tx = await contract.recordBreach(
+    pactId, conditionBitmap, reason, breachingParty,
     { gasLimit: 500_000 },
   );
   return tx.wait();
@@ -144,7 +229,7 @@ export async function escalateUncuredBreach(
   signer: ethers.Wallet,
   pactId: string,
 ): Promise<ethers.TransactionReceipt> {
-  const contract = getPactContract(signer);
+  const contract = contractAt(await resolvePactOwner(pactId), signer);
   const tx = await contract.escalateUncuredBreach(pactId, { gasLimit: 300_000 });
   return tx.wait();
 }
@@ -157,7 +242,7 @@ export async function resolvePact(
   partyBPayout: bigint,
   reasoningHash: string,
 ): Promise<ethers.TransactionReceipt> {
-  const contract = getPactContract(signer);
+  const contract = contractAt(await resolvePactOwner(pactId), signer);
   const tx = await contract.resolvePact(
     pactId, settlementAmount, partyAPayout, partyBPayout, reasoningHash,
     { gasLimit: 500_000 },
@@ -169,7 +254,7 @@ export async function finalizeSettlement(
   signer: ethers.Wallet,
   pactId: string,
 ): Promise<ethers.TransactionReceipt> {
-  const contract = getPactContract(signer);
+  const contract = contractAt(await resolvePactOwner(pactId), signer);
   const tx = await contract.finalizeSettlement(pactId, { gasLimit: 300_000 });
   return tx.wait();
 }

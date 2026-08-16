@@ -38,6 +38,13 @@ interface VotingResult {
   partyAShare: number; // percentage
 }
 
+/** A verdict produced by an AI mediator (LLM) that will be committed on-chain. */
+export interface AiMediatorVerdict {
+  verdict: "approve" | "reject" | "abstain";
+  fairnessScore: number;
+  reason: string;
+}
+
 const MEDIATOR_KEYS: Record<string, { pk: string; address: string }> = {
   Themis: { pk: config.THEMIS_PRIVATE_KEY ?? "", address: config.THEMIS_ADDRESS ?? "" },
   Athena: { pk: config.ATHENA_PRIVATE_KEY ?? "", address: config.ATHENA_ADDRESS ?? "" },
@@ -67,6 +74,7 @@ function getVotesContract(signerOrProvider: ethers.Wallet | ethers.Provider): et
  */
 export async function runMediatorVote(
   evidence: { pactId: string; breachTier: number; attestationCount: number; degradationCount: number },
+  aiVerdicts?: Partial<Record<string, AiMediatorVerdict>>,
 ): Promise<VotingResult> {
   const provider = new ethers.JsonRpcProvider(config.XLAYER_RPC_URL, config.XLAYER_CHAIN_ID);
   const pactIdBytes = ethers.getBytes(evidence.pactId);
@@ -78,7 +86,17 @@ export async function runMediatorVote(
     if (!keys.pk || !keys.address) continue;
     try {
       const signer = new ethers.Wallet(keys.pk, provider);
-      const vote = evaluateDispute(name, evidence);
+      // AI verdicts take priority (LLM-judged); deterministic policy is the fallback
+      const ai = aiVerdicts?.[name];
+      const vote: MediatorVote = ai
+        ? {
+            mediator: name,
+            address: "",
+            verdict: ai.verdict,
+            fairnessScore: Math.max(0, Math.min(100, ai.fairnessScore)),
+            reason: ai.reason,
+          }
+        : evaluateDispute(name, evidence);
       const reasonHash = ethers.keccak256(ethers.toUtf8Bytes(vote.reason));
       const nonce = ethers.hexlify(ethers.randomBytes(32));
       const commitment = ethers.solidityPackedKeccak256(

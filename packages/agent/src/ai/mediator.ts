@@ -80,10 +80,19 @@ Output ONLY valid JSON with your verdict, fairness score (0-100), settlement rec
 
 // ──── Consensus Types ─────────────────────────────────────
 
+/** Map free-form model verdicts to the on-chain enum. */
+function normalizeVerdict(raw: string): "approve" | "reject" | "abstain" {
+  const v = raw.toLowerCase();
+  if (v.includes("abstain") || v.includes("undecided") || v.includes("insufficient")) return "abstain";
+  if (v.includes("reject") || v.includes("deny") || v.includes("dismiss") || v.includes("no breach")) return "reject";
+  if (v.includes("approve") || v.includes("uphold") || v.includes("breach") || v.includes("penalty") || v.includes("confirm")) return "approve";
+  return "abstain";
+}
+
 export interface MediatorVote {
   mediator: string;
   specialty: string;
-  verdict: MediationVerdict;
+  verdict: Omit<MediationVerdict, "verdict"> & { verdict: "approve" | "reject" | "abstain" };
   commitmentHash: string;
 }
 
@@ -225,20 +234,22 @@ export class MediatorSwarm {
       return null;
     }
 
+    const normalizedVerdict = normalizeVerdict(result.data.verdict);
     logger.info({
       event: "mediator_vote_cast",
       mediator: mediator.name,
       specialty: mediator.specialty,
       model: modelProvider,
-      verdict: result.data.verdict,
+      verdict: normalizedVerdict,
+      rawVerdict: result.data.verdict,
       fairnessScore: result.data.fairnessScore,
       confidence: result.confidence,
-    }, `${mediator.name} [${modelProvider}] (${mediator.specialty}): ${result.data.verdict} (fairness: ${result.data.fairnessScore}/100, confidence: ${result.confidence})`);
+    }, `${mediator.name} [${modelProvider}] (${mediator.specialty}): ${normalizedVerdict} (fairness: ${result.data.fairnessScore}/100, confidence: ${result.confidence})`);
 
     return {
       mediator: mediator.name,
       specialty: mediator.specialty,
-      verdict: result.data,
+      verdict: { ...result.data, verdict: normalizedVerdict },
       commitmentHash: result.commitmentHash,
     };
   }
