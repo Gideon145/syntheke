@@ -474,6 +474,10 @@ export async function createPactFromNL(input: CreatePactInput): Promise<CreatePa
     const signerB = partyBWallet(description);
     const keys = pactPartyKeys.get(pactId);
     if (keys) keys.B = signerB.privateKey;
+    try {
+      const { savePactKeys } = await import("./db");
+      savePactKeys(pactId, signerA.privateKey, signerB.privateKey);
+    } catch { /* db unavailable */ }
     const contractB = getPactContract(signerB);
 
     await sendWithRetry(funder, null, "sendTransaction", [

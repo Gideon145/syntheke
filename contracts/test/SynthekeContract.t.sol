@@ -141,11 +141,11 @@ contract SynthekeContractTest is Test {
     function test_RecordAttestation_BreachCatastrophic() public {
         bytes32 pactId = _activatePact();
 
-        // Identity revoked = bit 0 set = CATASTROPHIC
+        // Identity revoked = bit 0 failed (0) = CATASTROPHIC
         vm.prank(monitor);
         syntheke.recordAttestation(
             pactId,
-            0x001, // bit 0 = identity revoked
+            0x3FE, // bit 0 = 0 → identity revoked (0=unhealthy convention)
             SynthekeContract.SynthekeState.BREACHED,
             bytes32(uint256(3)),
             "Agent identity revoked"
@@ -158,11 +158,11 @@ contract SynthekeContractTest is Test {
     function test_RecordAttestation_BreachMinor() public {
         bytes32 pactId = _activatePact();
 
-        // Soft condition only = MINOR, goes to CURING
+        // Soft condition failed (bit 3 = 0), critical bits healthy = MINOR → CURING
         vm.prank(monitor);
         syntheke.recordAttestation(
             pactId,
-            0x008, // bit 3 = soft condition
+            0x007, // bits 0-2 healthy, bit 3 = 0 → soft failure
             SynthekeContract.SynthekeState.BREACHED,
             bytes32(uint256(4)),
             "Minor deviation"

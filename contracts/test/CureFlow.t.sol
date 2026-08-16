@@ -70,7 +70,7 @@ contract CureFlowTest is Test {
         bytes32 pactId = _activePact();
 
         vm.prank(monitor);
-        syntheke.recordBreach(pactId, uint256(0), "payment failed", partyB);
+        syntheke.recordBreach(pactId, uint256(0x7), "payment failed", partyB);
 
         SynthekeContract.PactData memory p = syntheke.getPactState(pactId);
         assertEq(p.breachingParty, partyB);
@@ -81,13 +81,13 @@ contract CureFlowTest is Test {
         bytes32 pactId = _activePact();
         vm.prank(monitor);
         vm.expectRevert(bytes("Invalid breaching party"));
-        syntheke.recordBreach(pactId, uint256(0), "payment failed", makeAddr("outsider"));
+        syntheke.recordBreach(pactId, uint256(0x7), "payment failed", makeAddr("outsider"));
     }
 
     function test_confirmCure_byBreachingParty_restoresActive() public {
         bytes32 pactId = _activePact();
         vm.prank(monitor);
-        syntheke.recordBreach(pactId, uint256(0), "payment failed", partyB);
+        syntheke.recordBreach(pactId, uint256(0x7), "payment failed", partyB);
 
         vm.prank(partyB);
         syntheke.confirmCure(pactId);
@@ -102,7 +102,7 @@ contract CureFlowTest is Test {
     function test_confirmCure_byNonBreachingParty_reverts() public {
         bytes32 pactId = _activePact();
         vm.prank(monitor);
-        syntheke.recordBreach(pactId, uint256(0), "payment failed", partyB);
+        syntheke.recordBreach(pactId, uint256(0x7), "payment failed", partyB);
 
         vm.prank(partyA);
         vm.expectRevert(SynthekeContract.NotBreachingParty.selector);
@@ -112,7 +112,7 @@ contract CureFlowTest is Test {
     function test_confirmCure_afterDeadline_reverts() public {
         bytes32 pactId = _activePact();
         vm.prank(monitor);
-        syntheke.recordBreach(pactId, uint256(0), "payment failed", partyB);
+        syntheke.recordBreach(pactId, uint256(0x7), "payment failed", partyB);
 
         vm.roll(block.number + 101);
         vm.prank(partyB);
@@ -125,7 +125,7 @@ contract CureFlowTest is Test {
         vm.prank(monitor);
         syntheke.recordAttestation(
             pactId,
-            uint256(0),
+            uint256(0x7),
             SynthekeContract.SynthekeState.BREACHED,
             bytes32(uint256(1)),
             "breach"

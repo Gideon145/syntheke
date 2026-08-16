@@ -101,7 +101,7 @@ contract LifecycleFixesTest is Test {
 
         // First breach → CURING with deadline D1 (bitmap 0 → MINOR tier)
         vm.prank(monitor);
-        syntheke.recordAttestation(pactId, 0, SynthekeContract.SynthekeState.BREACHED, bytes32(0), "breach");
+        syntheke.recordAttestation(pactId, 0x7, SynthekeContract.SynthekeState.BREACHED, bytes32(0), "breach");
 
         SynthekeContract.PactData memory p1 = syntheke.getPactState(pactId);
         assertEq(uint256(p1.state), uint256(SynthekeContract.SynthekeState.CURING));
@@ -111,7 +111,7 @@ contract LifecycleFixesTest is Test {
         // Persistent breach — a second BREACHED attestation must NOT reset it
         vm.roll(block.number + 10);
         vm.prank(monitor);
-        syntheke.recordAttestation(pactId, 0, SynthekeContract.SynthekeState.BREACHED, bytes32(0), "still breaching");
+        syntheke.recordAttestation(pactId, 0x7, SynthekeContract.SynthekeState.BREACHED, bytes32(0), "still breaching");
 
         SynthekeContract.PactData memory p2 = syntheke.getPactState(pactId);
         assertEq(uint256(p2.state), uint256(SynthekeContract.SynthekeState.CURING));
@@ -122,7 +122,7 @@ contract LifecycleFixesTest is Test {
         bytes32 pactId = _activePact();
 
         vm.prank(monitor);
-        syntheke.recordAttestation(pactId, 0, SynthekeContract.SynthekeState.BREACHED, bytes32(0), "breach");
+        syntheke.recordAttestation(pactId, 0x7, SynthekeContract.SynthekeState.BREACHED, bytes32(0), "breach");
 
         SynthekeContract.PactData memory p1 = syntheke.getPactState(pactId);
         uint256 deadline = p1.cureDeadline;
@@ -147,7 +147,7 @@ contract LifecycleFixesTest is Test {
         bytes32 pactId = _activePact();
 
         vm.prank(monitor);
-        syntheke.recordAttestation(pactId, 0, SynthekeContract.SynthekeState.BREACHED, bytes32(0), "breach");
+        syntheke.recordAttestation(pactId, 0x7, SynthekeContract.SynthekeState.BREACHED, bytes32(0), "breach");
 
         // Within the window, healthy attestation heals the pact
         vm.prank(monitor);

@@ -12,6 +12,7 @@ import {
   loadPactNames,
   loadNegotiations,
   loadContracts,
+  loadPactKeys,
   savePactName,
 } from "./db";
 
@@ -462,6 +463,56 @@ function createServer(): http.Server {
         logActivity("demo_breach", "Demo trigger: critical condition failure — AI arbitration + reputation update incoming", pactId);
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ status: "breaching", pactId, windowMs: 300_000 }));
+        return;
+      }
+
+      // POST /internal/pact-keys — bootstrap derived party keys for a pact
+      // (demo tooling; parties are deterministic from the treaty description).
+      if (req.method === "POST" && url.pathname === "/internal/pact-keys") {
+        let body = "";
+        for await (const chunk of req) body += chunk;
+        try {
+          const { pactId, partyAKey, partyBKey } = JSON.parse(body) as { pactId: string; partyAKey: string; partyBKey: string };
+          if (!pactId || !partyAKey || !partyBKey) throw new Error("bad keys");
+          const { pactPartyKeys } = await import("./create-pact");
+          pactPartyKeys.set(pactId, { A: partyAKey, B: partyBKey });
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ registered: pactId.slice(0, 12) }));
+        } catch (err) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "bad_request" }));
+        }
+        return;
+      }
+
+      // POST /demo/cure/:pactId — the breaching party (derived wallet) confirms
+      // the cure on-chain: CURING → ACTIVE. Real party-signed transaction.
+      if (req.method === "POST" && url.pathname.startsWith("/demo/cure/")) {
+        const pactId = url.pathname.slice("/demo/cure/".length);
+        try {
+          const { pactPartyKeys } = await import("./create-pact");
+          const { getPactContractFor, fetchPactState } = await import("./pact");
+          const keys = pactPartyKeys.get(pactId);
+          const onChain = await fetchPactState(pactId);
+          if (!keys?.B || onChain.state !== 8) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: "not_curing_or_no_party_key", state: onChain.state }));
+            return;
+          }
+          const provider = new ethers.JsonRpcProvider(config.XLAYER_RPC_URL, config.XLAYER_CHAIN_ID);
+          const partyB = new ethers.Wallet(keys.B, provider);
+          const contract = await getPactContractFor(pactId, partyB);
+          const tx = await contract.confirmCure(pactId, { gasLimit: 300_000 });
+          const receipt = await tx.wait();
+          logger.info({ event: "cure_confirmed", pactId: pactId.slice(0, 10), txHash: receipt.hash },
+            "Breaching party confirmed cure on-chain — pact restored to ACTIVE");
+          logActivity("cure_confirmed", `Breaching party ${onChain.partyB.slice(0, 10)}… confirmed the cure — treaty healed to ACTIVE`, pactId, receipt.hash);
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ status: "cured", pactId, txHash: receipt.hash }));
+        } catch (err) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: err instanceof Error ? err.message.slice(0, 120) : "cure_failed" }));
+        }
         return;
       }
 
@@ -1115,11 +1166,12 @@ async function restorePersistedState(): Promise<void> {
   try {
     await initDb();
 
-    const [activity, names, negotiations, contracts] = await Promise.all([
+    const [activity, names, negotiations, contracts, pactKeys] = await Promise.all([
       loadRecentActivity(30),
       loadPactNames(),
       loadNegotiations(),
       loadContracts(),
+      loadPactKeys(),
     ]);
 
     if (activity.length > 0) {
@@ -1127,6 +1179,11 @@ async function restorePersistedState(): Promise<void> {
       while (activityLog.length > MAX_ACTIVITY) activityLog.shift();
     }
     for (const [pactId, name] of names) pactNames.set(pactId, name);
+
+    if (pactKeys.length > 0) {
+      const { pactPartyKeys } = await import("./create-pact");
+      for (const k of pactKeys) pactPartyKeys.set(k.pactId, { A: k.partyAKey, B: k.partyBKey });
+    }
 
     if (negotiations.length > 0 || contracts.length > 0) {
       const { negotiationTheater } = await import("./ai/theater");

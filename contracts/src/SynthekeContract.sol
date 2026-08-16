@@ -327,11 +327,12 @@ contract SynthekeContract {
         // breaching party — the counterparty that failed the SLA.
         if (p.breachingParty == address(0)) p.breachingParty = p.partyB;
 
-        // Tier classification based on which conditions failed
-        bool identityRevoked = (bitmap & (1 << 0)) != 0;
-        bool escrowCompromised = (bitmap & (1 << 1)) != 0;
-        bool criticalCondition = (bitmap & (1 << 2)) != 0;
-        bool softCondition = (bitmap & (1 << 3)) != 0;
+        // Tier classification based on which conditions failed.
+        // conditionBitmap convention: 0 = failed, 1 = healthy.
+        bool identityRevoked = (bitmap & (1 << 0)) == 0;
+        bool escrowCompromised = (bitmap & (1 << 1)) == 0;
+        bool criticalCondition = (bitmap & (1 << 2)) == 0;
+        bool softCondition = (bitmap & (1 << 3)) == 0;
 
         if (identityRevoked || escrowCompromised) {
             p.breachTier = BreachTier.CATASTROPHIC;

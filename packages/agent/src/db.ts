@@ -106,6 +106,11 @@ export async function initDb(): Promise<void> {
       pact_id TEXT PRIMARY KEY,
       subject TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS syntheke_pact_keys (
+      pact_id TEXT PRIMARY KEY,
+      party_a_key TEXT NOT NULL,
+      party_b_key TEXT NOT NULL
+    );
     CREATE TABLE IF NOT EXISTS syntheke_feedback_queue (
       id BIGSERIAL PRIMARY KEY,
       pact_id TEXT NOT NULL,
@@ -120,6 +125,25 @@ export async function initDb(): Promise<void> {
       created_at BIGINT NOT NULL
     );
   `);
+}
+
+// ──── Pact party keys ─────────────────────────────────────
+
+/** Persist derived party keys so parties can act after agent restarts. */
+export async function savePactKeys(pactId: string, partyAKey: string, partyBKey: string): Promise<void> {
+  await query(
+    `INSERT INTO syntheke_pact_keys (pact_id, party_a_key, party_b_key)
+     VALUES ($1, $2, $3)
+     ON CONFLICT (pact_id) DO UPDATE SET party_a_key = EXCLUDED.party_a_key, party_b_key = EXCLUDED.party_b_key`,
+    [pactId, partyAKey, partyBKey],
+  );
+}
+
+export async function loadPactKeys(): Promise<Array<{ pactId: string; partyAKey: string; partyBKey: string }>> {
+  const rows = await queryRows<{ pact_id: string; party_a_key: string; party_b_key: string }>(
+    "SELECT pact_id, party_a_key, party_b_key FROM syntheke_pact_keys",
+  );
+  return rows.map(r => ({ pactId: r.pact_id, partyAKey: r.party_a_key, partyBKey: r.party_b_key }));
 }
 
 // ──── Activity log ────────────────────────────────────────

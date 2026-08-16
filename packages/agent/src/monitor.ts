@@ -162,8 +162,21 @@ async function monitorPact(pactId: string): Promise<void> {
     return;
   }
 
-  // Skip fully closed pacts (RESOLVING, SETTLING, CLOSED, EXPIRED, TERMINATED handled below)
-  if (pact.state >= 10 && pact.state <= 14) return; // RESOLVING, SETTLING, CLOSED, EXPIRED, TERMINATED
+  // Skip fully closed pacts (CLOSED, EXPIRED, TERMINATED)
+  if (pact.state >= 12 && pact.state <= 14) return;
+
+  // SETTLING — complete the settlement (recovers pacts stranded mid-flow,
+  // e.g. when the agent ran out of gas between resolve and finalize).
+  if (Number(pact.state) === 11) {
+    try {
+      const receipt = await finalizeSettlement(monitorState.signer, pactId);
+      logger.info({ event: "pact_closed", pactId: pactId.slice(0, 10), txHash: receipt.hash }, "Pact CLOSED (recovered settlement)");
+      logActivity("pact_closed", "Settlement finalized — pact CLOSED", pactId, receipt.hash);
+    } catch (err) {
+      logError(`settle:${pactId.slice(0, 10)}`, err);
+    }
+    return;
+  }
 
   // Handle ARBITRATING → AI mediation → RESOLVING → SETTLING → CLOSED
   if (Number(pact.state) === 9) { // ARBITRATING
