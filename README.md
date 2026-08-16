@@ -22,7 +22,7 @@
 
 **Live:** [www.syntheke.xyz](https://www.syntheke.xyz) · **Mainnet API:** [agent-mainnet-production.up.railway.app](https://agent-mainnet-production.up.railway.app) · **Repo:** [Gideon145/syntheke](https://github.com/Gideon145/syntheke)
 
-**Verified today, on chain 196:** **21 treaties** · **19 x402 payments (1.9 USDT)** · **9 protocol fees (0.09 OKB)** ·
+**Verified today, on chain 196:** **21 treaties** · **19 x402 payments from 19 distinct payer wallets (1.9 USDT)** · **9 protocol fees (0.09 OKB)** ·
 **3 ERC-8004 mediators** · **54/54 tests** · **15-state pact machine** · **live AI arbitration + self-healing on mainnet**
 
 **On-chain evidence strip:** [treasury `0x8fFC…6F8D`](https://www.oklink.com/xlayer/address/0x8fFCC37900133e173b91ac7f1425152F646e6F8D) · [pact contract V4 `0x668776ff…`](https://www.oklink.com/xlayer/address/0x668776ffc7a1da6f39413987f038a7a1e0e1fb9d) · [self-healing treaty](https://www.syntheke.xyz/pacts/0xb42abaf4a8320f4f49f913a954db0aa81b1e61e19cea80ab94aa6d3cdcfd2f26) · [cure tx `0x0331ceeb…`](https://www.oklink.com/xlayer/tx/0x0331ceebd10535070b5d5c1a174b566211ffa366ce3ac0764070dfcac64f3916) · [one-command verifier](verify.sh)
@@ -121,7 +121,7 @@ The split is the product.
 | X Layer mainnet (196) | all protocol settlement | [pact contract V4](https://www.oklink.com/xlayer/address/0x668776ffc7a1da6f39413987f038a7a1e0e1fb9d) |
 | OnchainOS market data | live condition bits (DEX price/liquidity) | `oracles.ts` → OKX ticker, `/market` |
 | ERC-8004 | 3 mediator identities #10920–22 | mint txs in `VERIFICATION.md` §5 |
-| x402 / EIP-3009 | 19 settled payments, 0.1 USDT service rail | `GET /payments` |
+| x402 / EIP-3009 | 19 settled payments, each from a distinct payer wallet with its own EIP-3009 signature | `GET /payments` |
 | A2A | agent card + join endpoint | `/.well-known/agent-card.json` |
 | OKX.AI marketplace | evaluator ASP #10948 (arbitrate/assess/create) | [okx.ai/agents/10948](https://www.okx.ai/agents/10948) |
 | OKB | creation fees (9 paid) + mediator stakes + slashing | [treasury `0x8fFC…`](https://www.oklink.com/xlayer/address/0x8fFCC37900133e173b91ac7f1425152F646e6F8D) |
@@ -146,7 +146,7 @@ explicit roadmap.
 | AI arbitration is live | on-chain votes 50/50/85 for `0xe9b88bff…` | [pact](https://www.syntheke.xyz/pacts/0xe9b88bff30f32c442f9112a84270b8d725f185fb73a72c75c74c33c4b5fe9e26) · `MediatorVotes` |
 | Self-healing is live | `Amended` event + activity log for `0xb42abaf4…` | [pact](https://www.syntheke.xyz/pacts/0xb42abaf4a8320f4f49f913a954db0aa81b1e61e19cea80ab94aa6d3cdcfd2f26) |
 | Breach cure is live | [cure tx](https://www.oklink.com/xlayer/tx/0x0331ceebd10535070b5d5c1a174b566211ffa366ce3ac0764070dfcac64f3916) | OKLink |
-| x402 is live | 19 settlements · 1.9 USDT | `GET /payments` |
+| x402 is live | 19 settlements from 19 distinct payer wallets · 1.9 USDT | `GET /payments` |
 | 3 ERC-8004 mediators | agent IDs #10920–22, mint txs | `VERIFICATION.md` §5 |
 | Mainnet contracts | addresses + deploy txs | `MAINNET.md` |
 | 54/54 tests | `cd contracts && forge test` | this repo |

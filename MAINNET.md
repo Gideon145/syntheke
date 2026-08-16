@@ -55,7 +55,7 @@ to the mainnet set (overridable per-address via `MAINNET_*` env vars).
 | V4 pact contract deploy (breach attribution + cure) | [0xb61c340c…e07750](https://www.oklink.com/xlayer/tx/0xb61c340c94bf05e58a59616c6a7218b0db779edcdd52b40db09dd0f294e07750) |
 | V3 pact contract deploy | [0xd4d05382…302a32](https://www.oklink.com/xlayer/tx/0xd4d05382cf7bf605e44fa8be2b1671f631066cd86f6b1605a658f62523902a32) |
 | 9 treaty creation fees → 0.09 OKB in treasury | `TreasuryVault.feeCount()` = 9 · balance `0x8fFC…6F8D` |
-| 19 x402 payments settled (1.9 USDT) | `GET /payments` (agent-mainnet) |
+| 19 x402 payments settled (1.9 USDT) — 19 distinct payer wallets, each with its own EIP-3009 signature | `GET /payments` (agent-mainnet) |
 | AI-mediated arbitration (3-model swarm) | pact `0xffbc1946…` votes + `ArtifactRegistry` verdict hashes |
 | Self-healing treaty (degrade → AI amendment → ACTIVE) | pact `0xb42abaf4…fd2f26` activity log + `Amended` event |
 | Breach attributed → cured by breaching party | [0x0331ceeb…4f3916](https://www.oklink.com/xlayer/tx/0x0331ceebd10535070b5d5c1a174b566211ffa366ce3ac0764070dfcac64f3916) |
