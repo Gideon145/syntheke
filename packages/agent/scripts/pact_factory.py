@@ -84,9 +84,6 @@ PACT_PLANS = [
     ("Vault watcher agent", "Collateral manager", "Provider A keeps Client B's vault collateral above 150 percent at all times and alerts within 5 minutes"),
     ("Settlement agent", "Payment operator", "Provider A settles Client B's payment batch every 4 hours with 99.9 percent accuracy"),
     ("Portfolio mirror agent", "Allocator client", "Provider A mirrors Client B's portfolio with a tracking error under 0.5 percent, checked hourly"),
-    ("Research agent", "Analyst client", "Provider A delivers research reports to Client B within 24 hours of request, with a maximum of 2 late deliveries per month"),
-    ("Backup agent", "Infra client", "Provider A runs backup sync for Client B every 6 hours and verifies checksums within 30 minutes"),
-    ("Traffic router agent", "Network client", "Provider A routes Client B's API traffic with 99 percent success rate and sub-second latency"),
 ]
 
 results = []
@@ -98,7 +95,7 @@ for plan in PACT_PLANS:
     time.sleep(4)
     a, b, d = plan
     r = create_pact(payer, a, b, d)
-    results.append({"payer": payer.address, **{k: r.get(k) for k in ("result", "pactId", "state", "error", "http", "body")}})
+    results.append({"payer": payer.address, **{k: r.get(k) for k in ("result", "pactId", "state", "treasuryFee", "error", "http", "body")}})
     print(json.dumps(results[-1]), flush=True)
     time.sleep(5)
 

@@ -323,10 +323,11 @@ export async function createPactFromNL(input: CreatePactInput): Promise<CreatePa
     const contractA = getPactContract(signerA);
     const funder = funderWallet();
 
-    // Fund Party A for gas (treasury fee is skipped if funds are tight)
+    // Fund Party A for gas + the 0.01 OKB protocol treasury creation fee,
+    // so every treaty genuinely pays its fee on-chain (fee is never skipped).
     await sendWithRetry(funder, null, "sendTransaction", [
       signerA.address,
-      ethers.parseEther("0.002"),
+      ethers.parseEther("0.012"),
     ], "fundPartyA");
     logger.info({ event: "create_pact_funded_party_a", partyA: signerA.address });
 
