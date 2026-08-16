@@ -22,6 +22,8 @@
 
 **Live:** [www.syntheke.xyz](https://www.syntheke.xyz) · **Mainnet API:** [agent-mainnet-production.up.railway.app](https://agent-mainnet-production.up.railway.app) · **Repo:** [Gideon145/syntheke](https://github.com/Gideon145/syntheke)
 
+**Three surfaces:** web UI · [OKX.AI marketplace (ASP #10948)](https://www.okx.ai/agents/10948) · [MCP for AI assistants](MCP.md) — Claude/ChatGPT can inspect treaties and form paid on-chain treaties from their own tool loop.
+
 **Verified today, on chain 196:** **21 treaties** · **19 x402 payments from 19 distinct payer wallets (1.9 USDT)** · **9 protocol fees (0.09 OKB)** ·
 **3 ERC-8004 mediators** · **54/54 tests** · **15-state pact machine** · **live AI arbitration + self-healing on mainnet**
 
@@ -198,7 +200,7 @@ Full lifecycle diagram + data flows: [ARCHITECTURE.md](ARCHITECTURE.md).
 [ARCHITECTURE.md](ARCHITECTURE.md) · [VERIFICATION.md](VERIFICATION.md) — commands a judge can run ·
 [MAINNET.md](MAINNET.md) — mainnet evidence · [SECURITY.md](SECURITY.md) — trust model & limitations ·
 [AGENTS.md](AGENTS.md) — how external agents integrate · [DEMO.md](DEMO.md) · [TESTNET_STATS.md](TESTNET_STATS.md) ·
-[ENGINEERING_DEBUG_LOG.md](ENGINEERING_DEBUG_LOG.md)
+[MCP.md](MCP.md) — MCP server for AI assistants · [ENGINEERING_DEBUG_LOG.md](ENGINEERING_DEBUG_LOG.md)
 
 ---
 
