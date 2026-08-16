@@ -108,11 +108,15 @@ export async function fetchActivePacts(): Promise<string[]> {
   const contract = getPactContractRead();
   const ids: string[] = await contract.getPactIds();
   const active: string[] = [];
+  const zeroAddr = "0x" + "0".repeat(40);
   for (const id of ids) {
     try {
       const state = await fetchPactState(id);
-      // Monitor everything except CLOSED(12), EXPIRED(13), TERMINATED(14)
-      if (state.state < 12) {
+      // Skip DRAFT (0 — no counterparty yet) and fully closed pacts
+      // (CLOSED 12 / EXPIRED 13 / TERMINATED 14). A pact must also have a
+      // joined Party B before the monitor attests it.
+      if (state.state >= 1 && state.state < 12 &&
+          state.partyB.toLowerCase() !== zeroAddr) {
         active.push(id);
       }
     } catch { /* skip pacts that fail to load */ }
