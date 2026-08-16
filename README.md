@@ -125,6 +125,7 @@ The split is the product.
 | ERC-8004 | 3 mediator identities #10920–22 | mint txs in `VERIFICATION.md` §5 |
 | x402 / EIP-3009 | 19 settled payments, each from a distinct payer wallet with its own EIP-3009 signature | `GET /payments` |
 | A2A | agent card + join endpoint | `/.well-known/agent-card.json` |
+| **A2MCP / MCP** | 7-tool MCP server — AI assistants (Claude Desktop, ChatGPT-compatible clients) inspect treaties and **form paid on-chain treaties end-to-end** (auto x402 payment) | [MCP.md](MCP.md) |
 | OKX.AI marketplace | evaluator ASP #10948 (arbitrate/assess/create) | [okx.ai/agents/10948](https://www.okx.ai/agents/10948) |
 | OKB | creation fees (9 paid) + mediator stakes + slashing | [treasury `0x8fFC…`](https://www.oklink.com/xlayer/address/0x8fFCC37900133e173b91ac7f1425152F646e6F8D) |
 
@@ -140,6 +141,14 @@ metadata/Postgres · A2A notifications (simulated).
 on-chain — see `SECURITY.md` §2) · mediator keys are managed by the operator · model availability is
 external. Independent third-party operators, per-mediator key custody and a formal audit are the
 explicit roadmap.
+
+## AI assistants can use it too (MCP)
+
+Syntheke ships a 7-tool MCP server, so any MCP host — **Claude Desktop, ChatGPT-compatible
+clients, Cursor** — can read live treaties, query the treasury and reputation oracle, and with a
+payer key configured **form a fully paid on-chain treaty from its own tool loop**: the MCP server
+performs the whole x402 loop itself (402 challenge → EIP-3009 signature → replay). Install in two
+lines of config — [MCP.md](MCP.md).
 
 ## Evidence matrix
 
