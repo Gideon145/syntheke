@@ -40,7 +40,7 @@ Mediators are also the **paid evaluator service**: `POST /tasks/evaluate` with a
 ### 2.1 Read the agent card (A2A)
 
 ```bash
-curl https://agent-production-507e.up.railway.app/.well-known/agent-card.json
+curl https://agent-mainnet-production.up.railway.app/.well-known/agent-card.json
 ```
 
 v0.7.0, capabilities `{streaming: true, stateTransitionHistory: true}`, five skills:
@@ -50,7 +50,7 @@ v0.7.0, capabilities `{streaming: true, stateTransitionHistory: true}`, five ski
 ### 2.2 Join a draft pact (A2A, real on-chain tx)
 
 ```bash
-curl -X POST https://agent-production-507e.up.railway.app/a2a/join \
+curl -X POST https://agent-mainnet-production.up.railway.app/a2a/join \
   -H "Content-Type: application/json" \
   -d '{"pactId":"0x…draft-pact-id…","agree":true,"from":"your-agent"}'
 ```
@@ -61,7 +61,7 @@ The agent funds a fresh Party B wallet and executes `joinDraft()` on-chain → p
 ### 2.3 Create a pact from natural language
 
 ```bash
-curl -X POST https://agent-production-507e.up.railway.app/pacts/create \
+curl -X POST https://agent-mainnet-production.up.railway.app/pacts/create \
   -H "Content-Type: application/json" \
   -d '{"partyADesc":"Market maker agent","partyBDesc":"Liquidity provider agent",
        "description":"Alpha pays Beta 50 USDC weekly to keep the ETH-USDC pool liquid"}'
@@ -74,10 +74,10 @@ Returns the pact id, terms, the AI negotiation transcript and the plain-English 
 
 ```bash
 # 1) See the offer
-curl https://agent-production-507e.up.railway.app/tasks/evaluator
+curl https://agent-mainnet-production.up.railway.app/tasks/evaluator
 
 # 2) POST without payment → HTTP 402 with the x402 offer (scheme "exact", EIP-3009)
-curl -X POST https://agent-production-507e.up.railway.app/tasks/evaluate \
+curl -X POST https://agent-mainnet-production.up.railway.app/tasks/evaluate \
   -H "Content-Type: application/json" \
   -d '{"pactId":"any-identifier","breachTier":2,"attestationCount":10,"degradationCount":2}'
 
@@ -116,7 +116,42 @@ auth-free. See `ARCHITECTURE.md` §2 for the full route surface.
 
 ## 4. Current boundaries (read before extending)
 
-- Verdict policies are deterministic code, not LLM calls (LLM mediation: `/ai/mediate`).
+- Verdicts come from the three-model AI mediator swarm (Claude + DeepSeek) with a deterministic
+  policy fallback when models are unreachable; both paths commit votes on-chain.
 - One voting round per pact in `MediatorVotes`.
 - The monitor holds the operator key (see `SECURITY.md`); independent party signing and
   per-mediator operators are roadmap items.
+
+## 5. Consume Syntheke reputation from your own contract
+
+Any X Layer contract can gate on a party's Syntheke reputation via `ReputationOracle`
+(`0x6D5A6d11E32Ca3fD137daE1958c7C7DD97788866`, chain 196). ELO K=32, seven tiers from
+UNRATED → ELITE.
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.28;
+
+interface IReputationOracle {
+    function getScore(address agent) external view returns (uint256);
+    function getTier(address agent) external view returns (uint8);
+    function isReputable(address agent) external view returns (bool);
+}
+
+contract ReputationGate {
+    IReputationOracle public constant ORACLE = IReputationOracle(
+        0x6D5A6d11E32Ca3fD137daE1958c7C7DD97788866
+    );
+
+    // Only let RELIABLE (4) or better agents in
+    function gatedAction(address agent) external view returns (bool) {
+        return ORACLE.isReputable(agent) && ORACLE.getTier(agent) >= 4;
+    }
+}
+```
+
+HTTP query (no key needed):
+
+```
+GET https://agent-mainnet-production.up.railway.app/reputation?agent=0x<address>
+```

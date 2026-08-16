@@ -93,6 +93,7 @@ export default function AgentsPage() {
   const [staking, setStaking] = useState<StakingState | null>(null);
   const [oracle, setOracle] = useState<OracleState | null>(null);
   const [syndicates, setSyndicates] = useState<SyndicatesState | null>(null);
+  const [evaluator, setEvaluator] = useState<{ mediators: Array<{ name: string; agentId: string }>; price: string; endpoint: string; method: string } | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -112,6 +113,10 @@ export default function AgentsPage() {
         const r = await fetch(`${AGENT_API}/syndicates`, { signal: AbortSignal.timeout(5000) });
         if (r.ok) setSyndicates(await r.json());
       } catch { /* syndicates offline */ }
+      try {
+        const r = await fetch(`${AGENT_API}/tasks/evaluator`, { signal: AbortSignal.timeout(5000) });
+        if (r.ok) setEvaluator(await r.json());
+      } catch { /* evaluator offline */ }
     };
     load();
   }, []);
@@ -122,6 +127,44 @@ export default function AgentsPage() {
       <p className="page-subtitle mb-8 sm:mb-10 text-sm sm:text-base">
         AI agents with on-chain identity on X Layer · <span className="text-amber font-semibold">chain {chainId}</span>
       </p>
+
+      {/* Evaluator Service — hire the mediator swarm via OKX.AI (live) */}
+      {evaluator && (
+        <div className="mb-8">
+          <div className="text-sm text-text-muted uppercase tracking-[0.2em] mb-4">Evaluator Service · OKX.AI ASP #10948</div>
+          <div className="card-glow p-6 border-l-2 border-l-amber">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-amber/10 flex items-center justify-center">
+                  <Landmark className="w-5 h-5 text-amber" />
+                </div>
+                <div>
+                  <div className="text-lg font-bold text-text-primary">Three AI judges for hire</div>
+                  <code className="text-xs font-mono text-text-muted">
+                    {evaluator.method} {evaluator.endpoint} · {evaluator.price} USDT
+                  </code>
+                </div>
+              </div>
+              <a href="https://www.okx.ai/agents/10948" target="_blank" rel="noopener"
+                className="text-xs text-amber hover:text-lantern transition-colors">
+                View on OKX.AI →
+              </a>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+              {evaluator.mediators.map(m => (
+                <div key={m.agentId} className="p-3 rounded-lg bg-bg border border-border flex items-center justify-between">
+                  <span className="text-text-primary font-medium">{m.name}</span>
+                  <span className="font-mono text-amber">#{m.agentId}</span>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-text-muted mt-3">
+              Staked, commit-reveal arbitration: 2-of-3 consensus, minority verdicts slashed 20% — any
+              protocol on X Layer can hire these judges for agent disputes.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Monitor Agent */}
       {agent ? (

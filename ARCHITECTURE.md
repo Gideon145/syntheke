@@ -191,6 +191,24 @@ critical fail → BREACHED (CATASTROPHIC tier, straight to ARBITRATING).
 | ReputationOracle v2 | monitor = agent wallet · registry fallback = ReputationRegistry v1 |
 | TreasuryVault | feeAmount = 0.01 OKB |
 
+## 6b. Contract wiring (mainnet, chain 196)
+
+The same architecture runs on mainnet since Aug 14. The pact contract has been upgraded in-place
+three times; the agent scans all of them and routes every transaction to whichever contract owns
+a given pact (`pact.ts` → `resolvePactOwner`), so redeploys never orphan treaty history.
+
+| Contract | Address | Wiring |
+|---|---|---|
+| SynthekeContract **V4** (current) | `0x668776ff…e1fb9d` | monitor = agent wallet · breach attribution (`recordBreach`) · working `confirmCure` |
+| SynthekeContract V3 (legacy) | `0x91ddd53e…f24f0b` | breach attribution, pre-convention-fix |
+| SynthekeContract V2 (legacy) | `0x2693Bab6…5b0fE7A` | original mainnet deploy (18 treaties) |
+| EscrowVaultV2 | `0xAa2821e2…0f2994f` | owner = agent wallet · asset-agnostic (mainnet USDT) |
+| MediatorVotes / Staking | `0xf0CD343c…` / `0x1eB320CC…` | mediators = Themis/Athena/Solon · 20% slash |
+| ReputationOracle v2 | `0x6D5A6d11…` | monitor = agent wallet |
+| TreasuryVault | `0x8fFCC379…` | 0.01 OKB creation fee |
+| ArtifactRegistry | `0x00cdEF3F…` | agent-owned AI provenance store |
+| TreatySyndicate | `0x2D22A051…` | N-party mini-DAO |
+
 ## 7. Known architectural boundaries
 
 See `SECURITY.md` for the threat model. Summary: the monitor agent is a single trusted operator in v1;

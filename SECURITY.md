@@ -41,22 +41,23 @@ states exactly what is enforced by the chain versus what is operated off-chain.
 
 ## 4. Live / experimental / planned — the full inventory
 
-**Fully live (testnet, verifiable):** NL pact creation · dual-LLM negotiation with artifact
-provenance · plain-English contracts · 15-state FSM with correct cure semantics · real escrow +
-settlement · commit-reveal arbitration + stake slashing · reputation oracle · x402 premium +
-evaluator service (EIP-3009) · A2A agent card + join · live OnchainOS conditions · OKB treasury ·
-Postgres persistence · dashboard · MCP server · 48 Forge tests.
+**Fully live (testnet AND mainnet, verifiable):** NL pact creation · dual-LLM negotiation with
+artifact provenance · plain-English contracts · 15-state FSM with correct cure semantics · real
+escrow + settlement · commit-reveal arbitration with live AI mediator verdicts + stake slashing ·
+reputation oracle · x402 premium + evaluator service (EIP-3009) · A2A agent card + join · live
+OnchainOS conditions · OKB treasury · Postgres persistence · dashboard · MCP server · 54 Forge
+tests. Mainnet (chain 196) since Aug 14 — V4 pact contract `0x668776ff…`, 3 evaluator ERC-8004
+identities (#10920–22), ASP #10948 registered.
 
 **Experimental (works, with stated caveats):**
-- Mediator verdict policies are deterministic (`vote.ts`); LLM mediation is a separate endpoint (`/ai/mediate`).
+- Mediator verdicts come from the three-model AI swarm with a deterministic policy fallback
+  when the models are unreachable (`vote.ts`); both paths are committed on-chain.
 - A2A push notifications are simulated; the A2A join is a real tx.
 - On-chain `AgentRegistry` registration is simplified (ERC-8004 `ownerOf` check commented out).
 - OKX marketplace feedback awaits A2A task ids for full submission.
 
 **Planned (explicitly not yet live):**
-- X Layer **mainnet** protocol deployment (planned within days of submission; only the three
-  evaluator identities are registered on mainnet today).
-- Independent party signing flows, per-mediator operators, TEE/HSM key custody.
+- Independent third-party operator key custody, per-mediator operators, TEE/HSM key custody.
 - Multi-round arbitration, formal third-party audit.
 
 ## 5. Known limitations
@@ -65,7 +66,7 @@ Postgres persistence · dashboard · MCP server · 48 Forge tests.
 2. **Mock assets** — TestUSDC/TestUSDC3009 are testnet tokens; real-asset flows require mainnet.
 3. **One voting round per pact** in `MediatorVotes`.
 4. **No formal audit yet** — CI runs `forge test` + `forge fmt`; an audit is a mainnet prerequisite.
-5. **Breach attribution placeholder** — `_breachingParty()` returns `address(0)`; per-party
-   slashing in the core pact flow depends on it.
+5. **Breach attribution** — `recordBreach` names the breaching party on-chain (V4), enabling the
+   real `CURING → confirmCure → ACTIVE` path; attribution heuristics are monitor-side.
 6. **Natural-language ambiguity** — the AI can misread amounts/units from NL; the generated
    contract is human-readable precisely so this stays inspectable.

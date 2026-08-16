@@ -23,6 +23,8 @@
 
 Syntheke is a treaty protocol for the agent economy: an agent describes a deal in natural language, two rival models negotiate it live, and the result becomes a 15-state on-chain pact — escrowed, monitored every 15 seconds, arbitrated by three staked mediators when breached, and settled with portable reputation. AI where judgement is needed; X Layer where enforcement is needed.
 
+**On-chain evidence strip:** [treasury `0x8fFC…6F8D`](https://www.oklink.com/xlayer/address/0x8fFCC37900133e173b91ac7f1425152F646e6F8D) · [pact contract V4 `0x668776ff…`](https://www.oklink.com/xlayer/address/0x668776ffc7a1da6f39413987f038a7a1e0e1fb9d) · [live self-healing treaty](https://www.syntheke.xyz/pacts/0xb42abaf4a8320f4f49f913a954db0aa81b1e61e19cea80ab94aa6d3cdcfd2f26) · [cure tx `0x0331ceeb…`](https://www.oklink.com/xlayer/tx/0x0331ceebd10535070b5d5c1a174b566211ffa366ce3ac0764070dfcac64f3916) · [one-command verifier](verify.sh)
+
 | **70 treaties all-time** — 52 testnet + 18 mainnet | **3 mediator agents** | **15 pact states** | **8 mainnet creation fees · 0.08 OKB** | **19 x402 payments · 1.9 USDT** | **500 TestUSDC escrowed on testnet** | **48/48 tests** |
 |---|---|---|---|---|---|---|
 
@@ -479,7 +481,12 @@ npm install && $env:NEXT_PUBLIC_AGENT_API="http://localhost:3005"; npm run dev
 
 **Testnet (X Layer 1952) — LIVE.** Dashboard: [www.syntheke.xyz](https://www.syntheke.xyz) (Vercel) · Agent: [agent-production-507e.up.railway.app](https://agent-production-507e.up.railway.app) (Railway + Postgres). All contract addresses above are deployed and verifiable.
 
-**Mainnet (X Layer 196) — NOT yet deployed.** The mediator evaluator identities are already registered on the OKX marketplace on mainnet (chainIndex 196). Full protocol mainnet deployment is the immediate next step (planned Aug 16); `foundry.toml` already configures the mainnet RPC. This README makes no mainnet claims beyond the evaluator registrations.
+**Mainnet (X Layer 196) — LIVE since Aug 14.** The full protocol stack is deployed on mainnet —
+pact contract V4 `0x668776ff…` (breach attribution + working confirmCure), escrow, mediator
+voting/staking, treasury, artifacts, reputation — with the three mediator evaluator identities
+(#10920–22) and ASP #10948 registered on OKX.AI. Live activity: 18+ treaties, 9 creation fees
+(0.09 OKB treasury), 19 x402 payments (1.9 USDT), AI-mediated arbitration and a self-healing
+treaty — all verified on-chain, evidence in `MAINNET.md`.
 
 ## Security / Limitations
 
@@ -499,7 +506,7 @@ planned inventory are in **[SECURITY.md](SECURITY.md)**. Summary:
 
 **Built (all verifiable above):** NL→pact creation flow · dual-LLM negotiation theater with on-chain artifact provenance · plain-English AI contracts · 15-state lifecycle with correct cure semantics · real escrow custody + settlement · commit-reveal mediator arbitration with stake slashing · reputation oracle v2 + v1 decay fallback · x402 (EIP-3009) paid premium + evaluator service · A2A agent card + join · live OnchainOS market conditions · ERC-8004 evaluator identities on OKX · Postgres persistence · dashboard with live metrics · MCP server · CI · 48 tests.
 
-**In progress:** mainnet deployment (target Aug 16) · feedback bridge activation via A2A task ids · breach attribution (`_breachingParty` placeholder) · LLM-per-mediator verdicts in arbitration.
+**In progress:** feedback bridge activation via A2A task ids · independent third-party operator key custody · formal audit.
 
 **Future:** TEE/HSM attestation of monitor execution · independent party signing flows · multi-round arbitration · OKX DEX volume path (Launch Grant) · syndicate → pact composability · AI-RWA-adjacent asset treaties.
 

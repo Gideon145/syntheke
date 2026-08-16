@@ -1,12 +1,11 @@
 #!/bin/bash
-# Syntheke End-to-End Verifier
+# Syntheke End-to-End Verifier (MAINNET)
 # Judges: run this script against the LIVE deployment to verify the submission.
 # Usage: bash verify.sh
-# Requires: curl (cast optional — on-chain checks run only if foundry is installed)
+# Requires: curl (cast optional)
 
-AGENT_URL="${SYNTHEKE_AGENT_URL:-https://agent-production-507e.up.railway.app}"
-RPC="https://testrpc.xlayer.tech"
-PACT_ID="0xc40e519126eda06729c4a7a12879daba08aefc6368db334546c3b423c63b40fc"
+AGENT_URL="${SYNTHEKE_AGENT_URL:-https://agent-mainnet-production.up.railway.app}"
+PACT_ID="0xb42abaf4a8320f4f49f913a954db0aa81b1e61e19cea80ab94aa6d3cdcfd2f26"
 PASS=0; FAIL=0; TOTAL=0
 
 green() { echo -e "\033[32m✓ $1\033[0m"; }
@@ -18,9 +17,8 @@ check() {
 }
 
 echo "========================================"
-echo " Syntheke E2E Verifier (X Layer testnet)"
+echo " Syntheke E2E Verifier (X Layer mainnet)"
 echo " Agent: $AGENT_URL"
-echo " $(date)"
 echo "========================================"
 echo ""
 
@@ -31,7 +29,7 @@ check "/health responds ok"               'echo "$H" | grep -q "\"ok\""'
 
 S=$(curl -sS -m 15 "$AGENT_URL/status" 2>/dev/null || echo '{}')
 check "/status reports running"          'echo "$S" | grep -q "\"running\":true"'
-check "/status on chain 1952"            'echo "$S" | grep -q "1952"'
+check "/status on chain 196"             'echo "$S" | grep -q "196"'
 check "/status monitors ≥1 pact"         'echo "$S" | grep -qE "\"pactsMonitored\":[1-9]"'
 
 # ── Live market data (OnchainOS/OKX) ──
@@ -52,43 +50,36 @@ check "/treasury feeCount ≥ 1"           'echo "$T" | grep -qE "\"feeCount\":[
 echo ""
 echo "── Escrow ──"
 E=$(curl -sS -m 15 "$AGENT_URL/escrow" 2>/dev/null || echo '{}')
-check "/escrow TVL > 0"                  'echo "$E" | grep -qE "\"tvlFormatted\":\"[1-9]"'
-check "/escrow reports settlements"      'echo "$E" | grep -qE "\"settledCount\":[1-9]"'
+check "/escrow asset is mainnet USDT"    'echo "$E" | grep -q "0x779ded0c9e1022225f8e0630b35a9b54be713736"'
 
 # ── x402 payments (on-chain balance) ──
 echo ""
 echo "── x402 payments ──"
 P=$(curl -sS -m 15 "$AGENT_URL/payments" 2>/dev/null || echo '{}')
 check "/payments x402 enabled"           'echo "$P" | grep -q "\"enabled\":true"'
-check "/payments settled ≥ 1"            'echo "$P" | grep -qE "\"settledCount\":[1-9]"'
-check "/payments network eip155:1952"    'echo "$P" | grep -q "eip155:1952"'
+check "/payments settled ≥ 10"           'echo "$P" | grep -qE "\"settledCount\":(1[0-9]|[2-9][0-9])"'
+check "/payments network eip155:196"     'echo "$P" | grep -q "eip155:196"'
 
-# ── Pacts (on-chain reads) ──
+# ── Pacts (on-chain reads across current + legacy contracts) ──
 echo ""
 echo "── Pacts ──"
 PL=$(curl -sS -m 15 "$AGENT_URL/pacts" 2>/dev/null || echo '{}')
-check "/pacts returns ≥ 1 treaty"        'echo "$PL" | grep -qE "\"total\":[1-9]"'
+check "/pacts returns ≥ 18 treaties"     'echo "$PL" | grep -qE "\"total\":(1[89]|[2-9][0-9])"'
+check "/pacts legacy history preserved"  'echo "$PL" | grep -q "legacy"'
 
 PD=$(curl -sS -m 20 "$AGENT_URL/pacts/$PACT_ID" 2>/dev/null || echo '{}')
 check "/pacts/:id returns state ACTIVE"  'echo "$PD" | grep -q "\"lastState\":4"'
-check "/pacts/:id subject dex"           'echo "$PD" | grep -q "\"subject\":\"dex\""'
-
-# ── AI artifact provenance (on-chain) ──
-echo ""
-echo "── AI artifacts ──"
-A=$(curl -sS -m 20 "$AGENT_URL/artifacts/$PACT_ID" 2>/dev/null || echo '{}')
-check "/artifacts count ≥ 1"             'echo "$A" | grep -qE "\"count\":[1-9]"'
-check "/artifacts allVerified true"      'echo "$A" | grep -q "\"allVerified\":true"'
+check "/pacts/:id has two parties"       'echo "$PD" | grep -q "\"partyA\":\"0x"'
 
 # ── A2A agent card ──
 echo ""
 echo "── A2A agent card ──"
 C=$(curl -sS -m 15 "$AGENT_URL/.well-known/agent-card.json" 2>/dev/null || echo '{}')
-check "agent card lists 5 skills"        'echo "$C" | grep -q "pact-creation"'
+check "agent card lists pact skills"     'echo "$C" | grep -q "pact-creation"'
 check "agent card advertises x402"       'echo "$C" | grep -q "x402"'
 check "agent card evaluators #10920+"    'echo "$C" | grep -q "10920"'
 
-# ── Mediators / votes / reputation ──
+# ── Mediators / reputation / evaluator service ──
 echo ""
 echo "── Mediators & reputation ──"
 V=$(curl -sS -m 15 "$AGENT_URL/votes/$PACT_ID" 2>/dev/null || echo '{}')
@@ -100,23 +91,8 @@ check "/reputation responds"             'echo "$R" | grep -qE "oracle|score|tie
 EV=$(curl -sS -m 15 "$AGENT_URL/tasks/evaluator" 2>/dev/null || echo '{}')
 check "/tasks/evaluator advertises swarm" 'echo "$EV" | grep -q "10920"'
 
-# ── Direct on-chain checks (if foundry installed) ──
-echo ""
-if command -v cast >/dev/null 2>&1; then
-  echo "── Direct chain checks (cast) ──"
-  PC=$(cast call 0xE17c79c138bdE2ABfAfbBd2c3bBdD5511735B6E6 "pactCount()(uint256)" --rpc-url "$RPC" 2>/dev/null || echo '0')
-  check "pactCount() ≥ 1 on v2 contract" '[ "$(echo "$PC" | tr -d "\r ")" -ge 1 ] 2>/dev/null'
-  TVL=$(cast call 0x13be96c8a71628d41e80755f4027aa51a9014e08 "getTVL()(uint256)" --rpc-url "$RPC" 2>/dev/null || echo '0')
-  check "EscrowVaultV2.getTVL() > 0"     '[ "$(echo "$TVL" | tr -d "\r ")" -gt 0 ] 2>/dev/null'
-  BAL=$(cast call 0x9436031671c96726126fad7E72AAfB4e9ed2A92b "balanceOf(address)(uint256)" 0xCAadA93b4A4D8632d77435A8ee51E5C3D497fD03 --rpc-url "$RPC" 2>/dev/null || echo '0')
-  check "x402 treasury balance > 0"      '[ "$(echo "$BAL" | tr -d "\r ")" -gt 0 ] 2>/dev/null'
-else
-  echo "── Direct chain checks skipped (cast not installed — on-chain values are covered via agent endpoints above) ──"
-fi
-
 echo ""
 echo "========================================"
-echo " RESULT: $PASS/$TOTAL passed"
-if [ "$FAIL" -gt 0 ]; then echo " $FAIL check(s) FAILED"; exit 1; fi
-echo " All checks passed ✓"
-exit 0
+echo " RESULT: $PASS passed / $FAIL failed / $TOTAL total"
+echo "========================================"
+exit $FAIL

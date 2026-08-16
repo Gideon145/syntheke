@@ -118,11 +118,13 @@ Each tx shows `Mint · 721 · AGENT · Token ID #109xx` to the corresponding own
 
 ## 6. What cannot currently be verified on-chain (stated plainly)
 
-- **LLM execution itself** — artifacts prove *which AI output was produced*, not that a specific
-  model produced it. No TEE/ML attestation in this version.
+- **Mainnet protocol deployment** — LIVE since Aug 14. All contracts on chain 196 (addresses
+  and tx evidence in `MAINNET.md`); the pact contract is V4 `0x668776ff…` with breach
+  attribution and working `confirmCure`. Forge suite: 54/54 green.
+- **LLM mediation** — the live arbitration path runs the three-model mediator swarm
+  (Claude for Themis, DeepSeek for Athena/Solon) with deterministic policy fallback; AI
+  verdicts are hash-anchored to `ArtifactRegistry`. The *models themselves* are not TEE-attested.
 - **A2A push notifications** — simulated (`notify.ts`); the A2A *join* is a real on-chain tx.
 - **OKX marketplace feedback** — queued on-chain data awaits A2A task ids for full submission.
-- **Mainnet protocol deployment** — not yet performed; only the evaluator identities above are
-  registered on mainnet.
 
 If a number on our dashboard ever disagrees with these commands, the chain is right.
