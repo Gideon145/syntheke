@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Shield, ExternalLink, Coins } from "lucide-react";
-import { fetchAgentStatus, fetchPacts, fetchPactStats, shortAddress, type AgentStatus, type PactSummary, type PactStats } from "@/lib/api";
+import { fetchAgentStatus, fetchPacts, fetchPactStats, fetchTestnetPactStats, shortAddress, type AgentStatus, type PactSummary, type PactStats } from "@/lib/api";
 import { escrowAssetLabel } from "@/lib/chain";
 
 const AGENT_API = process.env.NEXT_PUBLIC_AGENT_API ?? "http://localhost:3005";
@@ -45,6 +45,7 @@ export default function DashboardPage() {
   const [status, setStatus] = useState<AgentStatus | null>(null);
   const [pacts, setPacts] = useState<PactSummary[]>([]);
   const [pactStats, setPactStats] = useState<PactStats | null>(null);
+  const [testnetStats, setTestnetStats] = useState<PactStats | null>(null);
   const [activity, setActivity] = useState<ActivityEvent[]>([]);
   const [notifications, setNotifications] = useState<NotificationEvent[]>([]);
   const [treasury, setTreasury] = useState<TreasuryState | null>(null);
@@ -88,6 +89,8 @@ export default function DashboardPage() {
         if (p.length > 0 || firstLoad) setPacts(p);
         const ps = await fetchPactStats();
         if (ps) setPactStats(ps);
+        const ts = await fetchTestnetPactStats();
+        if (ts) setTestnetStats(ts);
         firstLoad = false;
       } catch { /* keep existing */ }
       try {
@@ -144,9 +147,11 @@ export default function DashboardPage() {
         {[
           {
             label: "Total Treaties",
-            value: pactStats ? pactStats.totalAllTime.toLocaleString() : (pacts.length ? pacts.length.toLocaleString() : "—"),
+            value: pactStats
+              ? (pactStats.totalAllTime + (testnetStats?.totalAllTime ?? 0)).toLocaleString()
+              : (pacts.length ? pacts.length.toLocaleString() : "—"),
             sub: pactStats
-              ? `${pactStats.total} live on v2 · ${pactStats.legacy.reduce((s, l) => s + l.count, 0)} on legacy contracts`
+              ? `${pactStats.totalAllTime} on mainnet · ${testnetStats?.totalAllTime ?? 0} on testnet`
               : "formed on X Layer",
             accent: true,
           },

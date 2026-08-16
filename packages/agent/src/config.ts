@@ -47,6 +47,9 @@ const configSchema = z.object({
   X402_ASSET: z.string().optional(),
   X402_DOMAIN_NAME: z.string().optional(),
   X402_DOMAIN_VERSION: z.string().optional(),
+  // Settlements that happened before this deployment (the in-memory log
+  // resets on restart; this keeps the public count honest).
+  X402_SETTLED_BASELINE: z.coerce.number().default(0),
 
   OKX_AGENT_IDS: z.string().default("Themis:10920,Athena:10921,Solon:10922"),
   REPUTATION_ORACLE: z.string().default("0xfd61828f15fc98e1dcfe0dd6498abee6e003c1cf"),

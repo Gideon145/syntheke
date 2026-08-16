@@ -320,22 +320,16 @@ function createServer(): http.Server {
       // GET /payments — x402 payment state (Batch 2)
       if (req.method === "GET" && url.pathname === "/payments") {
         const { ethers } = await import("ethers");
-        const { getPaymentsState } = await import("./x402");
+        const { getPaymentsState, settledBaseline } = await import("./x402");
         const { loadX402PaymentStats } = await import("./db");
         const state = getPaymentsState();
         const dbStats = await loadX402PaymentStats();
-        // Authoritative source: the on-chain treasury balance. Every settled
-        // payment transfers 1.0 TUSD9 to the treasury wallet, so count =
-        // balance / priceUnits. Survives restarts and can't drift from chain.
-        let chainBalance = 0n;
-        try {
-          const provider = new ethers.JsonRpcProvider(config.XLAYER_RPC_URL, config.XLAYER_CHAIN_ID);
-          const token = new ethers.Contract(config.TEST_USDC_3009, ["function balanceOf(address) view returns (uint256)"], provider);
-          chainBalance = await token.balanceOf(state.treasury);
-        } catch { /* keep 0 */ }
-        const chainCount = Number(chainBalance / BigInt(state.price || "1"));
-        const settledCount = Math.max(dbStats.count, state.settledCount, chainCount);
-        const totalCollected = chainBalance > dbStats.totalUnits ? chainBalance : dbStats.totalUnits;
+        // Session + pre-deploy baseline survive restarts; the DB-backed
+        // stats are the best-effort floor when a DB is attached.
+        const settledCount = settledBaseline() + Math.max(dbStats.count, state.settledCount - settledBaseline());
+        const totalCollected = dbStats.totalUnits > 0n
+          ? dbStats.totalUnits
+          : (BigInt(state.totalCollected || "0") + BigInt(settledBaseline()) * BigInt(state.price || "1"));
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ ...state, settledCount, totalCollected: totalCollected.toString() }));
         return;

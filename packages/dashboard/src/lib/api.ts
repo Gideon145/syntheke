@@ -53,6 +53,18 @@ export async function fetchPactStats(): Promise<PactStats | null> {
   } catch { return null; }
 }
 
+const TESTNET_AGENT_API = process.env.NEXT_PUBLIC_TESTNET_AGENT_API ?? "https://agent-production-507e.up.railway.app";
+
+/** Historical testnet totals — the testnet system keeps running in parallel. */
+export async function fetchTestnetPactStats(): Promise<PactStats | null> {
+  try {
+    const r = await fetch(`${TESTNET_AGENT_API}/pacts`, { signal: AbortSignal.timeout(8000) });
+    if (!r.ok) return null;
+    const d = await r.json();
+    return { total: d.total ?? 0, totalAllTime: d.totalAllTime ?? d.total ?? 0, legacy: d.legacy ?? [] };
+  } catch { return null; }
+}
+
 export async function fetchIntegrations(): Promise<Record<string, unknown> | null> {
   try {
     const r = await fetch(`${AGENT_API}/integrations`, { signal: AbortSignal.timeout(5000) });

@@ -60,6 +60,12 @@ export function priceUnits(): bigint {
   return BigInt(Math.round(usd * 1e6));
 }
 
+/** Settlements from previous deployments (kept accurate via env). */
+export function settledBaseline(): number {
+  const n = Number(config.X402_SETTLED_BASELINE);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
+}
+
 /** Marketplace service fee units (OKX.AI ASP). 0 = free endpoint. */
 export function servicePriceUnits(): bigint {
   const usd = Number(config.SERVICE_PRICE_USD);
@@ -337,14 +343,19 @@ export function getPaymentsState(): {
   recent: Settlement[];
 } {
   const total = paymentsLog.reduce((acc, p) => acc + BigInt(p.amount), 0n);
+  // Mainnet service settlements are priced by SERVICE_PRICE_USD (0.1);
+  // testnet premium endpoints use PREMIUM_PRICE_USDC. The display price
+  // follows whichever rail this instance settles.
+  const serviceUnits = servicePriceUnits();
+  const priceUnitsForDisplay = serviceUnits > 0n ? serviceUnits : priceUnits();
   return {
     enabled: true,
     asset: config.TEST_USDC_3009,
-    price: priceUnits().toString(),
-    priceFormatted: ethers.formatUnits(priceUnits(), 6),
+    price: priceUnitsForDisplay.toString(),
+    priceFormatted: ethers.formatUnits(priceUnitsForDisplay, 6),
     treasury: TREASURY,
     network: `eip155:${config.XLAYER_CHAIN_ID}`,
-    settledCount: paymentsLog.length,
+    settledCount: settledBaseline() + paymentsLog.length,
     totalCollected: total.toString(),
     recent: paymentsLog.slice(-10),
   };
