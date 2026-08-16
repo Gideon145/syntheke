@@ -10,17 +10,21 @@
 
 | | Themis | Athena | Solon |
 |---|---|---|---|
-| **Tuning** | fairness | conservatism | precedent |
+| **Specialty** | fairness | risk assessment | historical precedent |
+| **Model / provider** | Claude (Anthropic) | DeepSeek | DeepSeek |
 | **Policy** | payout share scaled by breach tier + evidence | discounts favorable evidence; protective payouts on ambiguity | weights attestation history; repeat offenders get nothing |
-| **Wallet (testnet)** | `0x3208DF56…9f516` | `0xf19aF06D…78c37` | `0x435d6bd5…AC016e` |
 | **OKX agent id** | **#10920** | **#10921** | **#10922** |
 | **Stake** | 0.00384 OKB | 0.00432 OKB | 0.00384 OKB |
 
 ### How a verdict is produced
 
 1. The monitor builds dispute evidence (tier, attestation count, degradation history).
-2. Each mediator computes a verdict + fairness score + reason hash with its own policy
-   function (`vote.ts` — deterministic today; the LLM path is `POST /ai/mediate`).
+2. Each mediator's **LLM** (`ai/mediator.ts` — Themis via Claude, Athena/Solon via DeepSeek,
+   cross-provider fallback) evaluates the evidence and returns a structured verdict + fairness
+   score + reasoning. If no model is reachable, a deterministic policy function (`vote.ts`)
+   votes in its place — both paths commit on-chain.
+3. Each AI verdict + reasoning is SHA-256 hash-anchored to `ArtifactRegistry`
+   (`mediator-verdict-<name>` artifacts).
 3. **Commit phase:** each signs `MediatorVotes.commitVote(pactId, keccak256(verdict, fairness,
    reasonHash, nonce))` — sealed before any reveal.
 4. **Reveal phase** (unlocked only when all three have committed): the **contract** verifies each

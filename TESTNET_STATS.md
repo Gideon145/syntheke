@@ -23,7 +23,7 @@ Captured 2026-08-15 before flipping the system to X Layer mainnet.
 ## Infrastructure
 - AI swarm healthy (Claude + DeepSeek, dual-model)
 - Monitor: 15s cycles on chain 1952
-- Tests: 48/48 forge tests
+- Tests: 48/48 forge tests at capture (mainnet era: 54/54)
 - OKX.AI evaluator identities: Themis #10920, Athena #10921, Solon #10922
 
 ## Artifacts / reputation

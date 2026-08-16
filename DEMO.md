@@ -1,81 +1,73 @@
-# Syntheke — Demo Script
+# Syntheke — Demo Script (mainnet)
 
-The exact shortest path to the strongest demo, on the live testnet deployment.
-Every step below works right now on https://www.syntheke.xyz — nothing to install.
-
----
-
-## Path A — 3-minute judge demo (recommended)
-
-1. **Open https://www.syntheke.xyz** → click **"Create a Pact"**.
-2. Type a deal between two agents, e.g.:
-   `Alpha pays Beta 50 USDC weekly to keep the ETH-USDC pool liquid`
-   (or click any example deal, or "⚔️ Run adversarial demo" for a hostile counterparty).
-3. **Watch the negotiation theater live** — Party A (Claude) and Party B (DeepSeek) exchange
-   counters in the SSE stream (pulsing ● LIVE). Each move mints an on-chain artifact hash
-   (visible in the provenance panel as it happens).
-4. When the pact lands on its detail page, walk:
-   - the **15-stage lifecycle tracker** (DRAFT → NEGOTIATING → PROPOSED → COMMITTED → ACTIVE),
-   - the **plain-English contract** written by the AI,
-   - the **escrow panel** (real TestUSDC in `EscrowVaultV2`),
-   - the **📈 DEX treaty** subject badge (DEX deals auto-enable live market condition bits).
-5. **Open the dashboard** (https://www.syntheke.xyz/dashboard): total treaties, attestation
-   counter climbing every ~75 s, treasury 0.3 OKB / 30 fees, escrow TVL, x402 payments, live
-   OKX BTC/ETH prices feeding the monitor's condition bits.
-6. **Verify on-chain without us:** open any transaction from the pact page's explorer links, or
-   run the two cast commands below.
-
-### Breach demo (adds 2 minutes, strongest proof of enforcement)
-
-```bash
-# soft-degrade a pact (soft conditions fail → DEGRADING)
-curl -X POST https://agent-production-507e.up.railway.app/demo/degrade/<pactId>
-
-# or force a critical breach (→ BREACHED → ARBITRATING, catastrophic skips cure)
-curl -X POST https://agent-production-507e.up.railway.app/demo/breach/<pactId>
-```
-Then watch the pact page: three mediators commit → reveal votes on-chain → verdict → escrow
-settlement → reputation outcome. The demo overrides have a 300-second window.
-
-### Payment demo (x402)
-
-```bash
-curl -i https://agent-production-507e.up.railway.app/premium/timeline/<pactId>
-# → HTTP 402 + PAYMENT-REQUIRED (1.0 TUSD9, EIP-3009)
-# settle with the OnchainOS CLI, retry with PAYMENT-SIGNATURE → premium timeline unlocks
-```
-
-### Evaluator demo (paid swarm)
-
-```bash
-curl -X POST https://agent-production-507e.up.railway.app/tasks/evaluate \
-  -H "Content-Type: application/json" \
-  -d '{"breachTier":2,"attestationCount":10,"degradationCount":2}'
-# → 402 offer → pay → paid commit-reveal verdict from Themis/Athena/Solon
-```
+The strongest reproducible demo path, on the **live X Layer mainnet deployment**
+(chain 196). Everything below is clickable right now — nothing to install.
 
 ---
 
-## Path B — 90-second proof (no UI)
+## Path A — 4-minute judge demo (recommended)
+
+1. **Open https://www.syntheke.xyz/dashboard** — start with the evidence:
+   - **Protocol Treasury** panel: 9 fees · 0.09 OKB (on-chain `TreasuryVault`)
+   - **x402 Payments** card: 19 settled · 1.9 USDT
+   - **Total Treaties**: 70+ all-time (52 testnet + 21 mainnet, live from both agents)
+   - **Escrow TVL** + live OKX BTC/ETH prices feeding the monitor's condition bits
+2. **Open the self-healing treaty** — https://www.syntheke.xyz/pacts/0xb42abaf4a8320f4f49f913a954db0aa81b1e61e19cea80ab94aa6d3cdcfd2f26
+   - its on-chain history contains: degradation → **AI self-heal amendment (party-signed)** →
+     breach → **breaching party cured its own breach** ([tx `0x0331ceeb…`](https://www.oklink.com/xlayer/tx/0x0331ceebd10535070b5d5c1a174b566211ffa366ce3ac0764070dfcac64f3916)) →
+     final dispute → **AI arbitration verdicts on-chain**.
+3. **Open the AI-arbitrated DEX treaty** — https://www.syntheke.xyz/pacts/0xe9b88bff30f32c442f9112a84270b8d725f185fb73a72c75c74c33c4b5fe9e26
+   (closed by the mediator swarm: Themis approve 50 · Athena approve 50 · Solon abstain 85,
+   readable from `MediatorVotes` on-chain).
+4. **Open the Agents page** — https://www.syntheke.xyz/agents — evaluator service card:
+   `POST /tasks/evaluate · 0.1 USDT · #10920 · #10921 · #10922` + ASP #10948 link on OKX.AI.
+5. **Verify independently:** run `bash verify.sh` (26 mainnet checks) or the `cast` commands
+   in `VERIFICATION.md`.
+
+### Live creation demo (if you want to watch formation, ~2 minutes)
+
+1. https://www.syntheke.xyz/create → describe any two-agent deal.
+2. Watch the negotiation theater: Party A (Claude) vs Party B (DeepSeek) exchange live counters;
+   every move mints an on-chain artifact hash (provenance panel).
+3. The pact lands on its detail page: 15-stage tracker, AI plain-English contract, escrow panel.
+   (Creation costs a 0.01 OKB protocol fee + a 0.1 USDT x402 payment — real money on mainnet.)
+
+### Breach / arbitration demo (adds 2 minutes)
 
 ```bash
-# 1. live pact state (expect state 4 = ACTIVE)
-cast call 0xE17c79c138bdE2ABfAfbBd2c3bBdD5511735B6E6 \
- "getPactState(bytes32)(tuple(uint8,address,address,tuple(uint256,address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256),uint256,uint256,uint256,uint8,uint256,uint256,uint256,uint256,bytes32,uint256,bool,bool,bool))" \
- 0xc40e519126eda06729c4a7a12879daba08aefc6368db334546c3b423c63b40fc --rpc-url https://testrpc.xlayer.tech
-
-# 2. real escrow TVL
-cast call 0x13be96c8a71628d41e80755f4027aa51a9014e08 "getTVL()(uint256)" --rpc-url https://testrpc.xlayer.tech
-
-# 3. everything else: bash verify.sh
+AGENT=https://agent-mainnet-production.up.railway.app
+# soft-degrade a live pact (soft conditions fail → DEGRADING → self-heal)
+curl -X POST $AGENT/demo/degrade/<pactId>
+# or force a critical breach (→ BREACHED → ARBITRATING → AI swarm votes)
+curl -X POST $AGENT/demo/breach/<pactId>
 ```
+
+Then watch the pact page: three AI mediators commit sealed verdict hashes → reveal → consensus →
+escrow settlement → reputation. Demo overrides expire after 300 s.
+
+### Payment demo (x402, real money rail)
+
+```bash
+# any gated endpoint answers HTTP 402 first:
+curl -i $AGENT/premium/timeline/<pactId>
+# PAYMENT-REQUIRED header carries the exact EIP-3009 authorization to sign.
+```
+
+`scripts/pact_factory.py` replays the full flow: fund a fresh payer 0.1 USDT → sign EIP-3009 →
+`POST /pacts/create` with `PAYMENT-SIGNATURE` → on-chain settlement. 19 such settlements are
+live on mainnet (1.9 USDT collected).
 
 ---
 
-## Demo pitfalls to avoid
+## Path B — 90-second elevator demo
 
-- **Breach demos expire after 300 s** — trigger, then narrate fast or re-trigger.
-- The prod agent restarts on deploys; if `/status` is briefly empty, reload after ~60 s.
-- Escrow amounts in new pacts are small test amounts (negotiation uses wei semantics) — lead
-  with the **mechanism**, not the dollar value.
-- If you create many pacts, the newest treaty is `Treaty #1` on the pacts page (newest first).
+The self-healing treaty page IS the demo: one pact whose on-chain history shows
+degradation → AI amendment → cure → AI arbitration. One page, every stage clickable
+to OKLink, zero setup.
+
+## The three things to leave the judge with
+
+1. **The AI does real work** — negotiation, amendment proposals and dispute verdicts are live
+   LLM outputs, hash-committed on-chain.
+2. **The chain enforces** — escrow, votes, slashing, settlement, reputation: all contract reads.
+3. **They can verify it themselves** — `verify.sh` + `VERIFICATION.md` + explorer links everywhere.

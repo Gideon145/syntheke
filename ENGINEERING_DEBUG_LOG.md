@@ -18,7 +18,7 @@ classification.
 **Fix:** Guarded with `if (p.cureDeadline == 0)` so the deadline is set exactly once; the heal
 branch in `recordAttestation` was additionally wrapped in `block.number <= cureDeadline` and
 clears the deadline on heal. Added 5 dedicated Forge tests
-(`contracts/test/LifecycleFixes.t.sol`) — suite now 48/48.
+(`contracts/test/LifecycleFixes.t.sol`) — suite now 54/54 (with later batches).
 
 **Verification:** `forge test` — `test_PersistentBreachDoesNotResetCureDeadline`,
 `test_HealAfterDeadlineDoesNotAutoRecover`.
@@ -96,3 +96,40 @@ served `Cannot find module './vendor-chunks/next.js'` until the cache was cleare
 workflow).
 
 **Verification:** pact pages render locally after each prod build.
+
+## 8. AI mediators returned verdicts the schema rejected (mainnet arbitration)
+
+**Problem:** The live arbitration path ran the three-model swarm, but models answered with
+verdict strings like `UPHOLD_BREACH` / `BREACH_CONFIRMED` while the zod schema only accepted
+`approve|reject|abstain` — every vote was dropped and arbitration fell back to the
+policy fallback (caught in mainnet logs: `ai_schema_validation_failed`).
+
+**Fix:** Made the mediation schema lenient (string verdict + optional fields) and added
+`normalizeVerdict()` in `ai/mediator.ts` mapping free-form verdicts to the on-chain enum.
+AI verdicts are now committed on-chain (e.g. Themis approve 50 · Athena approve 50 ·
+Solon abstain 85 for pact `0xe9b88bff…`), each hash-anchored to `ArtifactRegistry`.
+
+**Verification:** live mainnet votes via `MediatorVotes.getVotes`.
+
+## 9. Condition-bitmap convention was inverted (contract V3 → V4)
+
+**Problem:** The monitor emits bitmaps where `1 = healthy`, but `_classifyAndEscalateBreach`
+read set bits as failures — healthy pacts classified CATASTROPHIC on first attestation.
+
+**Fix:** Corrected the classification in the contract, deployed pact contract **V4**
+(`0x668776ff…`), updated the 4 convention-dependent tests, and kept full treaty history by
+scanning V2/V3/V4 from the agent (`LEGACY_SYNTHEKE_CONTRACTS` + per-pact contract routing).
+
+**Verification:** `forge test` 54/54; 21 treaties listed across all three generations.
+
+## 10. Settlements stranded when gas ran out mid-arbitration
+
+**Problem:** The agent ran out of OKB between `resolvePact` and `finalizeSettlement`; the monitor
+skips states ≥10, so 5 pacts sat in SETTLING forever.
+
+**Fix:** The monitor now finalizes any SETTLING pact on sight (recovery path in
+`monitor.ts`), and breach attribution (`recordBreach`) + `confirmCure` make the cure path
+real instead of a placeholder.
+
+**Verification:** pact `0xb42abaf4…` breached → CURING → cured by the breaching party
+(tx `0x0331ceeb…`) → later arbitrated and closed.

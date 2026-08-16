@@ -4,18 +4,51 @@ Everything in the Syntheke submission can be checked independently. No API keys,
 no trusting our dashboard. This file is the exact path: **README → explorer → contract →
 transaction → event → result**.
 
-- **Network:** X Layer testnet, chain id **1952**, RPC `https://testrpc.xlayer.tech`
-- **Explorer:** https://www.oklink.com/x-layer-testnet (addresses and transactions)
+- **Network:** X Layer **mainnet**, chain id **196**, RPC `https://rpc.xlayer.tech`
+- **Explorer:** https://www.oklink.com/xlayer (addresses and transactions)
+- **Mainnet evidence + deploy txs:** [MAINNET.md](MAINNET.md)
+- **Testnet-era stats:** [TESTNET_STATS.md](TESTNET_STATS.md) (testnet: chain 1952)
 
 ## 0. One-shot verifier
 
 ```bash
 git clone https://github.com/Gideon145/syntheke && cd syntheke
-bash verify.sh            # 24 checks against the LIVE deployment + on-chain state
-cd contracts && forge test   # 48/48
+bash verify.sh            # 26 checks against the LIVE mainnet deployment + on-chain state
+cd contracts && forge test   # 54/54
 ```
 
-## 1. Contract addresses (all deployed, all readable)
+## 1. Mainnet contracts (chain 196 — the live submission)
+
+| Contract | Address | Explorer |
+|---|---|---|
+| SynthekeContract **V4** (current) | `0x668776ffc7a1da6f39413987f038a7a1e0e1fb9d` | [link](https://www.oklink.com/xlayer/address/0x668776ffc7a1da6f39413987f038a7a1e0e1fb9d) |
+| SynthekeContract V3 / V2 (legacy history) | `0x91ddd53e…` / `0x2693Bab6…` | [MAINNET.md](MAINNET.md) |
+| EscrowVaultV2 | `0xAa2821e2aC393c9258FeC9dD3614358Db0f2994f` | [link](https://www.oklink.com/xlayer/address/0xAa2821e2aC393c9258FeC9dD3614358Db0f2994f) |
+| MediatorVotes | `0xf0CD343caFDdD4148B3F2240d14E47287b8Fc56c` | [link](https://www.oklink.com/xlayer/address/0xf0CD343caFDdD4148B3F2240d14E47287b8Fc56c) |
+| MediatorStaking | `0x1eB320CC08DD481559174d073C12106F8Dc52082` | [link](https://www.oklink.com/xlayer/address/0x1eB320CC08DD481559174d073C12106F8Dc52082) |
+| TreasuryVault | `0x8fFCC37900133e173b91ac7f1425152F646e6F8D` | [link](https://www.oklink.com/xlayer/address/0x8fFCC37900133e173b91ac7f1425152F646e6F8D) |
+| ArtifactRegistry | `0x00cdEF3FF818Eb4CE9a9fd529E6aF6f4efEa24e9` | [link](https://www.oklink.com/xlayer/address/0x00cdEF3FF818Eb4CE9a9fd529E6aF6f4efEa24e9) |
+| ReputationOracle / Registry | `0x6D5A6d11…` / `0x01C9E7f8…` | [MAINNET.md](MAINNET.md) |
+| AgentRegistry / TreatySyndicate | `0xc6cfFA52…` / `0x2D22A051…` | [MAINNET.md](MAINNET.md) |
+
+**Cast checks (any judge, 60 seconds):**
+
+```bash
+RPC=https://rpc.xlayer.tech
+# 9 creation fees collected, 0.09 OKB held
+cast call 0x8fFCC37900133e173b91ac7f1425152F646e6F8D "feeCount()(uint256)" --rpc-url $RPC
+cast call 0x8fFCC37900133e173b91ac7f1425152F646e6F8D "balance()(uint256)" --rpc-url $RPC
+# AI arbitration votes for the DEX flagship treaty
+cast call 0xf0CD343caFDdD4148B3F2240d14E47287b8Fc56c \
+  "getVotes(bytes32)((address,string,uint256,bytes32,bool)[])" \
+  0xe9b88bff30f32c442f9112a84270b8d725f185fb73a72c75c74c33c4b5fe9e26 --rpc-url $RPC
+# Self-healing treaty state (V4): cured breach, later arbitrated, closed
+cast call 0x668776ffc7a1da6f39413987f038a7a1e0e1fb9d \
+  "getPactState(bytes32)((uint8,address,address,(uint256,address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256),uint256,uint256,uint256,uint8,uint256,uint256,uint256,uint256,bytes32,uint256,bool,bool,bool,address))" \
+  0xb42abaf4a8320f4f49f913a954db0aa81b1e61e19cea80ab94aa6d3cdcfd2f26 --rpc-url $RPC
+```
+
+## 1b. Testnet-era contract addresses (chain 1952 — historical)
 
 | Contract | Address | Testnet explorer |
 |---|---|---|

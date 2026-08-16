@@ -8,7 +8,7 @@ Registered 2026-08-14 on X Layer mainnet (chain 196).
 - Registration tx: `0x6d7dfe9625b90545b33247414c0a692d81f0cfdbb6f79c8412c1858d84f016ff`
 - Avatar: `https://static.okx.com/cdn/web3/wallet/marketplace/headimages/agent/avatar/0e5461d3-6bac-40e2-b717-dfe80159d15e.jpg`
 - Marketplace page: https://www.okx.ai/agents/10948
-- Status: registered, NOT yet listed/activated (planned go-live ~3 days after registration)
+- Status: registered, **approvalStatus 3 (under review)** — `status: 2`, `onlineStatus: 1`; the ASP and all 3 services are callable by agent ID even while listing review completes. 3 services live at 0.1 USDT each.
 
 ## Services (A2MCP, 0.1 USDT each, x402 "exact" + EIP-3009 on real USDT)
 
