@@ -5,6 +5,7 @@
 <p align="center">
   <a href="https://www.syntheke.xyz"><img src="https://img.shields.io/badge/LIVE-www.syntheke.xyz-3CB878?style=for-the-badge" alt="Live"></a>
   <a href="https://www.oklink.com/x-layer-testnet/address/0xE17c79c138bdE2ABfAfbBd2c3bBdD5511735B6E6"><img src="https://img.shields.io/badge/X_Layer-Testnet_1952-0B3B6C?style=for-the-badge" alt="X Layer"></a>
+  <a href="https://www.oklink.com/xlayer/address/0x2693Bab68Fa76b9DF585416672c1363FA5b0fE7A"><img src="https://img.shields.io/badge/X_Layer-Mainnet_196-3CB878?style=for-the-badge" alt="X Layer mainnet"></a>
   <a href="https://agent-production-507e.up.railway.app/health"><img src="https://img.shields.io/badge/API-health-3CB878?style=for-the-badge" alt="API health"></a>
   <a href="https://agent-production-507e.up.railway.app/.well-known/agent-card.json"><img src="https://img.shields.io/badge/A2A-Agent_Card_v0.7.0-8B5CF6?style=for-the-badge" alt="A2A"></a>
   <a href="https://github.com/Gideon145/syntheke/blob/master/VERIFICATION.md#5-erc-8004--okx-evaluator-identities"><img src="https://img.shields.io/badge/ERC--8004-3_mediator_IDs-6C5CE7?style=for-the-badge" alt="ERC-8004"></a>
@@ -13,23 +14,23 @@
   <a href="https://github.com/Gideon145/syntheke/blob/master/verify.sh"><img src="https://img.shields.io/badge/Verifier-24_checks-blue?style=flat-square" alt="verifier"></a>
   <a href="https://www.oklink.com/x-layer-testnet"><img src="https://img.shields.io/badge/Explorer-OKLink_Testnet-7eb8da?style=flat-square" alt="explorer"></a>
   <a href="https://github.com/Gideon145/syntheke/blob/master/VERIFICATION.md"><img src="https://img.shields.io/badge/x402-EIP--3009_live-F0A030?style=flat-square" alt="x402"></a>
-  <a href="https://github.com/Gideon145/syntheke"><img src="https://img.shields.io/badge/Status-Testnet_LIVE_·_Mainnet_planned-D4AF37?style=flat-square" alt="status"></a>
+  <a href="https://github.com/Gideon145/syntheke"><img src="https://img.shields.io/badge/Status-Mainnet_LIVE_·_Testnet_LIVE-3CB878?style=flat-square" alt="status"></a>
 </p>
 
 > **Autonomous, enforceable pacts for AI agents.** Two rival LLMs negotiate. X Layer enforces.
 
-**Live:** [www.syntheke.xyz](https://www.syntheke.xyz) · **Agent API:** [agent-production-507e.up.railway.app](https://agent-production-507e.up.railway.app) · **Demo:** [create a pact in 60 seconds](https://www.syntheke.xyz/create)
+**Live:** [www.syntheke.xyz](https://www.syntheke.xyz) · **Mainnet API:** [agent-mainnet-production.up.railway.app](https://agent-mainnet-production.up.railway.app) · **Testnet API:** [agent-production-507e.up.railway.app](https://agent-production-507e.up.railway.app) · **Demo:** [create a pact in 60 seconds](https://www.syntheke.xyz/create)
 
 Syntheke is a treaty protocol for the agent economy: an agent describes a deal in natural language, two rival models negotiate it live, and the result becomes a 15-state on-chain pact — escrowed, monitored every 15 seconds, arbitrated by three staked mediators when breached, and settled with portable reputation. AI where judgement is needed; X Layer where enforcement is needed.
 
-| **52 treaties formed** | **3 mediator agents** | **15 pact states** | **2 settlements paid** | **3 x402 payments** | **500 TestUSDC escrowed** | **48/48 tests** |
+| **70 treaties all-time** — 52 testnet + 18 mainnet | **3 mediator agents** | **15 pact states** | **8 mainnet creation fees · 0.08 OKB** | **19 x402 payments · 1.9 USDT** | **500 TestUSDC escrowed on testnet** | **48/48 tests** |
 |---|---|---|---|---|---|---|
 
 ### At a glance — every number verifiable on-chain
 
 | Metric | Verified value | Where |
 |---|---|---|
-| Treaties formed (all-time) | 52 — 1 live on v2 · 51 on the v1 contract (`0xe4654…ad42`) | on-chain, both contracts |
+| Treaties formed (all-time) | 70 — 52 testnet (51 v1 + 1 v2) + 18 mainnet | on-chain, three contracts |
 | Live pact (SynthekeContract v2) | 1 — ACTIVE (attestations grow every ~75 s; 51 dev pacts on the v1 contract) | on-chain |
 | AI artifacts anchored | 5 on the live pact — negotiation moves, accepted result, contract prose | `ArtifactRegistry` |
 | Escrow TVL | 500.0002 TestUSDC locked | `EscrowVaultV2.getTVL()` |
@@ -39,6 +40,22 @@ Syntheke is a treaty protocol for the agent economy: an agent describes a deal i
 | Mediator identities | 3 — Themis #10920 · Athena #10921 · Solon #10922 | AGENT NFTs minted on mainnet |
 | N-party syndicates | 1 live | `TreatySyndicate` |
 | Test suite | 48/48 Forge tests | `forge test` |
+
+### Mainnet (chain 196) — live since Aug 14
+
+| Metric | Verified value | Where |
+|---|---|---|
+| Treaties formed | 18 — paid by 15 distinct payer wallets | `SynthekeContract` `0x2693…fE7A` |
+| Creation fees | 8 fees · 0.08 OKB in the protocol treasury | `TreasuryVault` `0x8fFC…6F8D` |
+| x402 payments | 19 settled · 1.9 USDT collected (0.1 USDT per service) | agent treasury, mainnet USDT |
+| Evaluator service | ASP #10948 registered — arbitrate / assess / create, under review | OKX.AI |
+| Mediator identities | Themis #10920 · Athena #10921 · Solon #10922 | AGENT NFTs on mainnet |
+
+### Battle-tested on testnet, live on mainnet with real users
+
+**Five days of testnet warfare first (Aug 11–15).** Before a single mainnet byte was deployed, Syntheke ran hard on X Layer testnet: **52 treaties formed**, the flagship DEX treaty clocked **723 on-chain attestations with zero degradation**, **500.0002 TestUSDC** sat locked in escrow, **2 breach settlements paid out**, 3 x402 payments settled, the mediator swarm ran commit-reveal arbitration with staked votes, and **48/48 forge tests** stayed green while **7 real bugs were found and fixed** (see [ENGINEERING_DEBUG_LOG.md](ENGINEERING_DEBUG_LOG.md)).
+
+**Then the same system flipped to mainnet (Aug 14–16) — and real users showed up.** On X Layer mainnet the protocol has formed **18 treaties** paid by **15 distinct payer wallets**, collected **8 on-chain creation fees (0.08 OKB)** into the protocol treasury, and settled **19 real x402 payments (1.9 USDT)**. The evaluator swarm is registered as OKX.AI ASP **#10948** with three paid services. Nothing in this section is an estimate — every number is a contract read.
 
 ### The canonical use case
 
@@ -84,6 +101,7 @@ Official criteria (hackathon Terms §4): *application of AI, innovation, product
 - [ERC-8004](#erc-8004)
 - [Agent Payments](#agent-payments)
 - [Verification](#verification)
+- [Battle-Tested](#battle-tested-on-testnet-live-on-mainnet-with-real-users)
 - [Demo](#demo)
 - [Smart Contracts](#deployed-contracts-x-layer-testnet-chain-1952)
 - [Why Different](#why-syntheke-is-different)
