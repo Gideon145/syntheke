@@ -103,8 +103,15 @@ export function buildPaymentOffer(method: string, path: string, units: bigint): 
         maxPrice: amount,
         maxTimeoutSeconds: 300,
         extra: {
+          // Flat fields — our own clients (factory, MCP) read these.
           name: domain.name,
           version: domain.version,
+          assetTransferMethod: "eip-3009",
+          // Nested fields — the official OKX x402 SDK reads extra.eip712.*.
+          eip712: {
+            name: domain.name,
+            version: domain.version,
+          },
         },
       },
     ],
