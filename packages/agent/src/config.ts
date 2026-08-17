@@ -50,6 +50,11 @@ const configSchema = z.object({
   // Settlements that happened before this deployment (the in-memory log
   // resets on restart; this keeps the public count honest).
   X402_SETTLED_BASELINE: z.coerce.number().default(0),
+  // OKX official x402 SDK (service-seller path) — Developer Portal creds
+  OKX_API_KEY: z.string().default(""),
+  OKX_SECRET_KEY: z.string().default(""),
+  OKX_PASSPHRASE: z.string().default(""),
+  OKX_FACILITATOR_BASE_URL: z.string().default("https://www.okx.com"),
 
   OKX_AGENT_IDS: z.string().default("Themis:10920,Athena:10921,Solon:10922"),
   REPUTATION_ORACLE: z.string().default("0xfd61828f15fc98e1dcfe0dd6498abee6e003c1cf"),

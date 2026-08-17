@@ -2,6 +2,7 @@ import http from "node:http";
 import { ethers } from "ethers";
 import { config } from "./config";
 import { startMonitor, stopMonitor, getMonitorState } from "./monitor";
+import { initSdkX402 } from "./sdk-x402";
 import { negotiationEngine } from "./negotiator";
 import type { DisputeEvidence } from "./ai/mediator";
 import { logger } from "./logger";
@@ -166,6 +167,14 @@ function createServer(): http.Server {
       if (req.method === "GET" && url.pathname === "/health") {
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ status: "ok", uptime: process.uptime() }));
+        return;
+      }
+
+      // GET /sdk-status — OKX official x402 SDK integration state
+      if (req.method === "GET" && url.pathname === "/sdk-status") {
+        const { sdkStatus } = await import("./sdk-x402");
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(sdkStatus()));
         return;
       }
 
@@ -658,6 +667,8 @@ function createServer(): http.Server {
         }
         // Start in background — don't await
         startMonitor().catch(err => logger.error({ err }, "Monitor start failed"));
+// OKX official x402 SDK (service-seller) — optional, activates with creds
+initSdkX402();
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ status: "starting" }));
         return;

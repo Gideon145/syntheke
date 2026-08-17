@@ -237,6 +237,48 @@ export async function settlePayment(
     return null;
   }
 
+  // ── OKX official SDK path (facilitator-verified + settled) ──────────────
+  const { sdkInitialized, sdkVerifyAndSettle } = await import("./sdk-x402");
+  if (sdkInitialized()) {
+    const offer = buildPaymentOffer("POST", resourcePath, units).accepts[0];
+    const sdkResult = await sdkVerifyAndSettle(
+      {
+        from: fields.from,
+        value: fields.value.toString(),
+        validAfter: fields.validAfter.toString(),
+        validBefore: fields.validBefore.toString(),
+        nonce: fields.nonce,
+        v: fields.v,
+        r: fields.r,
+        s: fields.s,
+      },
+      {
+        x402Version: 2,
+        resource: { method: "POST", path: resourcePath },
+        ...offer,
+      },
+    );
+    if (sdkResult.ok) {
+      const settlement: Settlement = {
+        payer: sdkResult.payer ?? fields.from,
+        amount: expected.toString(),
+        txHash: sdkResult.tx ?? "okx-facilitator",
+        resource: resourcePath,
+        timestamp: Date.now(),
+      };
+      paymentsLog.push(settlement);
+      logger.info({
+        event: "x402_sdk_settled",
+        payer: settlement.payer,
+        amount: settlement.amount,
+        txHash: settlement.txHash,
+      }, `x402 payment settled via OKX SDK: ${ethers.formatUnits(settlement.amount, 6)} USDT from ${settlement.payer}`);
+      return settlement;
+    }
+    logger.warn({ event: "sdk_verify_failed", detail: sdkResult.detail },
+      "OKX SDK verification failed — falling back to native EIP-3009 settlement");
+  }
+
   try {
     const provider = new ethers.JsonRpcProvider(config.XLAYER_RPC_URL, config.XLAYER_CHAIN_ID);
     const token = new ethers.Contract(
